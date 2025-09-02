@@ -12,6 +12,7 @@
     "ui:remove": "bunx --bun shadcn@latest remove"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.45.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
