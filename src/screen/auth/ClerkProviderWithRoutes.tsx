@@ -13,7 +13,11 @@ interface ClerkProviderWithRoutesProps {
 
 export default function ClerkProviderWithRoutes({children}: ClerkProviderWithRoutesProps) {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} appearance={{
+      layout: {
+        unsafe_disableDevelopmentModeWarnings: true,
+      },
+    }}>
       <BrowserRouter>{children}</BrowserRouter>
     </ClerkProvider>
   );
