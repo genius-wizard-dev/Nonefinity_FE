@@ -8,6 +8,7 @@ import { Layout } from "./layout/Layout";
 import { UserProfile } from "@clerk/clerk-react";
 import LandingPage from "./screen/landing/LandingPage.tsx";
 import { FileManagementPage } from "./components/file-management/FileManagementPage";
+import DatasetManagementWrapper from "./components/dataset-management/DatasetManagementWrapper";
 
 function App() {
     return (
@@ -31,6 +32,10 @@ function App() {
                     <Route
                         path="/dashboard/files"
                         element={<FileManagementPage />}
+                    />
+                    <Route
+                        path="/dashboard/datasets"
+                        element={<DatasetManagementWrapper />}
                     />
                 </Route>
             </Routes>

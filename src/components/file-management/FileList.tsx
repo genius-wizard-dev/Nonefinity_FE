@@ -21,8 +21,10 @@ import {
     List,
     SortAsc,
     SortDesc,
+    Database,
 } from "lucide-react";
 import { Edit3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from "@/lib/axios";
 import { FileDelete } from "./FileDelete";
 import { BatchDelete } from "./BatchDelete";
@@ -64,6 +66,7 @@ export const FileList: React.FC<FileListProps> = ({
     showActions = true,
     pageSize = 10,
 }) => {
+    const navigate = useNavigate();
     const [files, setFiles] = useState<FileItem[]>([]);
     const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -622,6 +625,19 @@ export const FileList: React.FC<FileListProps> = ({
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
                                                         )}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(
+                                                                    `/dashboard/datasets?tab=convert&fileId=${file.id}`
+                                                                );
+                                                            }}
+                                                            title="Convert to Dataset"
+                                                        >
+                                                            <Database className="h-4 w-4" />
+                                                        </Button>
                                                         <FileDelete
                                                             fileId={file.id}
                                                             fileName={file.name}

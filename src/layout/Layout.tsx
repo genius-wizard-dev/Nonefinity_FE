@@ -27,6 +27,13 @@ export function Layout() {
                                 </Link>
 
                                 <Link
+                                    to="/dashboard/datasets"
+                                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                >
+                                    Datasets
+                                </Link>
+
+                                <Link
                                     to="/dashboard/profile"
                                     className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                                 >
