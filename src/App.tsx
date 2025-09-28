@@ -6,7 +6,7 @@ import ProtectedRoute from "./screen/auth/ProtectedRoute";
 import Dashboard from "./screen/dashboard/Dashboard.tsx";
 import { Layout } from "./layout/Layout";
 import { UserProfile } from "@clerk/clerk-react";
-import LandingPage from "./screen/landing/LandingPage.tsx";
+import LandingPage from "./screen/home/HomePage.tsx";
 import { FileManagementPage } from "./components/file-management/FileManagementPage";
 import DatasetManagementWrapper from "./components/dataset-management/DatasetManagementWrapper";
 
