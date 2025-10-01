@@ -1,3 +1,4 @@
+export { DataFlowVisualization } from "./DataFlowVisualization";
 export { Features } from "./Features";
 export { Footer } from "./Footer";
 export { Header } from "./Header";

@@ -1,160 +1,213 @@
-import { Button } from "@/components/ui/button";
+import { AuroraText } from "@/components/ui/aurora-text";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { Globe } from "@/components/ui/globe";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { Meteors } from "@/components/ui/meteors";
+import { Particles } from "@/components/ui/particles";
+import { SparklesText } from "@/components/ui/sparkles-text";
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { Brain, Database, MessageSquare, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-
 export function Hero() {
   return (
-    <section className="pt-32 pb-20 bg-gradient-to-br from-white via-blue-50/50 to-purple-50/30 overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm border rounded-full px-4 py-2 mb-8"
-          >
-            <Sparkles className="h-4 w-4 text-purple-500" />
-            <span className="text-sm font-medium text-gray-700">
-              Build AI Chatbots in Minutes
-            </span>
-          </motion.div>
+    <section className="relative pt-32 pb-20 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 overflow-hidden">
+      {/* Enhanced Background Effects */}
+      <div className="absolute inset-0">
+        <Meteors number={20} />
+        <Particles
+          className="absolute inset-0"
+          quantity={50}
+          color="#3b82f6"
+          size={0.5}
+          ease={80}
+        />
+      </div>
 
-          {/* Main Heading */}
-          <motion.h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            Build Intelligent{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-              AI Chatbots
-            </span>{" "}
-            Fast
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            Upload files, run SQL queries, create embeddings, and configure AI
-            models. Build powerful chatbots with our intuitive platform in just
-            a few clicks.
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
-            <Button size="lg" className="text-lg px-8 py-4" asChild>
-              <Link to="/sign-up">
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-4"
-              asChild
-            >
-              <Link to="/playground">
-                <Play className="mr-2 h-5 w-5" />
-                Try Playground
-              </Link>
-            </Button>
-          </motion.div>
-
-          {/* Hero Visual */}
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.8 }}
-          >
-            <div className="relative mx-auto max-w-4xl">
-              {/* Main Dashboard Mockup */}
-              <div className="bg-white rounded-2xl shadow-2xl border p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                </div>
-                <div className="space-y-4">
-                  {/* Navigation Bar */}
-                  <div className="flex space-x-6 border-b pb-4">
-                    <div className="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm font-medium">
-                      Files
-                    </div>
-                    <div className="px-3 py-1 text-gray-600 text-sm">SQL</div>
-                    <div className="px-3 py-1 text-gray-600 text-sm">
-                      Embeddings
-                    </div>
-                    <div className="px-3 py-1 text-gray-600 text-sm">
-                      AI Config
-                    </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-center lg:text-left">
+              {/* Main Heading */}
+              <BlurFade delay={0.2} inView>
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                  Build Intelligent
+                  <div className="mt-2">
+                    <SparklesText>
+                      <AuroraText>AI Agents</AuroraText>
+                    </SparklesText>
                   </div>
+                  <span className="block text-gray-900 mt-2">In Minutes</span>
+                </h1>
+              </BlurFade>
 
-                  {/* Content Area */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4 h-32 flex items-center justify-center">
-                      <span className="text-gray-500 text-sm">Upload Area</span>
+              {/* Subtitle */}
+              <BlurFade delay={0.3} inView>
+                <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                  Transform your data into intelligent AI agents with our
+                  no-code platform. Upload files, create embeddings, and deploy
+                  powerful conversational AI instantly.
+                </p>
+              </BlurFade>
+
+              {/* CTA Button */}
+              <BlurFade delay={0.4} inView>
+                <div className="flex items-center justify-center lg:justify-start mb-12">
+                  <Link to="/sign-in">
+                    <InteractiveHoverButton className="text-base px-6 py-3 bg-white border-gray-300 text-gray-900 hover:border-gray-400">
+                      Start Building Free
+                    </InteractiveHoverButton>
+                  </Link>
+                </div>
+              </BlurFade>
+
+              {/* Stats */}
+              <BlurFade delay={0.5} inView>
+                <div className="grid grid-cols-3 gap-6 text-center lg:text-left">
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                      5 min
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4 h-32 flex items-center justify-center">
-                      <span className="text-gray-500 text-sm">
-                        Preview Panel
-                      </span>
+                    <div className="text-sm text-gray-600">Setup Time</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600 mb-1">
+                      99.9%
                     </div>
+                    <div className="text-sm text-gray-600">Accuracy</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-indigo-600 mb-1">
+                      24/7
+                    </div>
+                    <div className="text-sm text-gray-600">Support</div>
                   </div>
                 </div>
-              </div>
-
-              {/* Floating Elements */}
-              <motion.div
-                className="absolute -top-4 -right-4 bg-white rounded-lg shadow-lg p-3 border"
-                animate={{
-                  y: [0, -10, 0],
-                  rotate: [0, 2, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                  <span className="text-xs text-gray-600">AI Ready</span>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="absolute -bottom-4 -left-4 bg-white rounded-lg shadow-lg p-3 border"
-                animate={{
-                  y: [0, 10, 0],
-                  rotate: [0, -2, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                  <span className="text-xs text-gray-600">Processing...</span>
-                </div>
-              </motion.div>
+              </BlurFade>
             </div>
-          </motion.div>
+
+            {/* Right Visual - Enhanced with Globe */}
+            <div className="relative">
+              <BlurFade delay={0.6} inView>
+                <div className="relative mx-auto max-w-lg">
+                  {/* Globe Component */}
+                  <div className="relative h-96 w-96 mx-auto">
+                    <Globe
+                      className="w-full h-full"
+                      config={{
+                        width: 400,
+                        height: 400,
+                        onRender: () => {},
+                        devicePixelRatio: 2,
+                        phi: 0,
+                        theta: 0.3,
+                        dark: 0,
+                        diffuse: 0.4,
+                        mapSamples: 16000,
+                        mapBrightness: 1.2,
+                        baseColor: [0.8, 0.8, 1],
+                        markerColor: [1, 0.5, 0.2],
+                        glowColor: [1, 1, 1],
+                        markers: [
+                          { location: [14.5995, 120.9842], size: 0.03 },
+                          { location: [19.076, 72.8777], size: 0.1 },
+                          { location: [23.8103, 90.4125], size: 0.05 },
+                          { location: [30.0444, 31.2357], size: 0.07 },
+                          { location: [39.9042, 116.4074], size: 0.08 },
+                          { location: [-23.5505, -46.6333], size: 0.1 },
+                          { location: [19.4326, -99.1332], size: 0.1 },
+                          { location: [40.7128, -74.006], size: 0.1 },
+                          { location: [34.6937, 135.5022], size: 0.05 },
+                          { location: [41.0082, 28.9784], size: 0.06 },
+                        ],
+                      }}
+                    />
+
+                    {/* Floating AI Elements */}
+                    <motion.div
+                      className="absolute top-8 right-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      animate={{
+                        y: [0, -8, 0],
+                        rotate: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Brain className="h-4 w-4 text-blue-600" />
+                        <span className="text-xs text-gray-700 font-medium">
+                          AI Ready
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      className="absolute bottom-8 left-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      animate={{
+                        y: [0, 8, 0],
+                        rotate: [0, -1, 0],
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Database className="h-4 w-4 text-green-600" />
+                        <span className="text-xs text-gray-700 font-medium">
+                          Data Processing
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      className="absolute top-1/2 -left-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      animate={{
+                        x: [0, -5, 0],
+                        rotate: [0, -0.5, 0],
+                      }}
+                      transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <MessageSquare className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs text-gray-700 font-medium">
+                          Chat Ready
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      className="absolute top-1/2 -right-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      animate={{
+                        x: [0, 5, 0],
+                        rotate: [0, 0.5, 0],
+                      }}
+                      transition={{
+                        duration: 6,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="h-4 w-4 text-orange-600" />
+                        <span className="text-xs text-gray-700 font-medium">
+                          Analytics
+                        </span>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </BlurFade>
+            </div>
+          </div>
         </div>
       </div>
     </section>

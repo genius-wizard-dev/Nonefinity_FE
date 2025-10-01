@@ -1,121 +1,134 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { Particles } from "@/components/ui/particles";
+import { SparklesText } from "@/components/ui/sparkles-text";
 import { motion } from "framer-motion";
-import { Database, MessageSquare, Settings, Upload, Zap } from "lucide-react";
+import {
+  Cloud,
+  FileText,
+  Rocket,
+  Search,
+  Shield,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 
-const features = [
+const capabilities = [
   {
-    icon: Upload,
-    title: "Upload & Process Files",
-    description:
-      "Upload documents, images, and data files. Our platform automatically processes and indexes your content for AI training.",
+    icon: <FileText className="h-6 w-6" />,
+    title: "Multi-Format Support",
+    description: "CSV, PDF, Excel, Word, TXT, and more",
     color: "text-blue-600",
   },
   {
-    icon: Database,
-    title: "Run SQL Queries",
-    description:
-      "Execute complex SQL queries on your data. Transform and analyze information with powerful database operations.",
-    color: "text-green-600",
-  },
-  {
-    icon: Zap,
-    title: "Create Embeddings",
-    description:
-      "Generate vector embeddings from your content. Enable semantic search and contextual understanding for your chatbot.",
+    icon: <Search className="h-6 w-6" />,
+    title: "Vector Search",
+    description: "Semantic search across all your documents",
     color: "text-purple-600",
   },
   {
-    icon: Settings,
-    title: "Configure AI Models",
-    description:
-      "Fine-tune AI models to match your needs. Choose from various architectures and customize parameters for optimal performance.",
-    color: "text-orange-600",
+    icon: <Cloud className="h-6 w-6" />,
+    title: "Cloud Storage",
+    description: "Secure, scalable cloud infrastructure",
+    color: "text-green-600",
   },
   {
-    icon: MessageSquare,
-    title: "Smart Prompt Engineering",
-    description:
-      "Design intelligent prompts and conversation flows. Create engaging and contextually aware chatbot interactions.",
-    color: "text-pink-600",
+    icon: <Shield className="h-6 w-6" />,
+    title: "Enterprise Security",
+    description: "Bank-level encryption and compliance",
+    color: "text-red-600",
+  },
+  {
+    icon: <Zap className="h-6 w-6" />,
+    title: "Real-Time Processing",
+    description: "Instant responses and updates",
+    color: "text-yellow-600",
+  },
+  {
+    icon: <Rocket className="h-6 w-6" />,
+    title: "Quick Deployment",
+    description: "Deploy in minutes, not months",
+    color: "text-indigo-600",
   },
 ];
 
 export function Features() {
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Everything You Need to Build AI Chatbots
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            From data processing to deployment, our platform provides all the
-            tools you need to create intelligent conversational AI.
-          </p>
-        </motion.div>
+    <section className="bg-gradient-to-br pt-20 from-slate-50 via-blue-50/30 to-purple-50/20 relative overflow-hidden">
+      {/* Enhanced Background Effects */}
+      <div className="absolute inset-0">
+        <Particles
+          className="absolute inset-0"
+          quantity={40}
+          color="#3b82f6"
+          size={0.4}
+          ease={70}
+        />
+      </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Section Header */}
+        <BlurFade delay={0.1} inView>
+          <div className="text-center mb-20">
             <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{
-                duration: 0.6,
-                delay: index * 0.1,
-              }}
+              transition={{ duration: 0.6 }}
             >
-              <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
-                <CardHeader>
-                  <div
-                    className={`w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors`}
-                  >
-                    <feature.icon className={`h-6 w-6 ${feature.color}`} />
-                  </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Powerful Features
+              </Badge>
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+                Everything You Need to Build
+                <div className="mt-2">
+                  <SparklesText>
+                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      Intelligent AI
+                    </span>
+                  </SparklesText>
+                </div>
+              </h2>
             </motion.div>
-          ))}
-        </div>
+          </div>
+        </BlurFade>
 
-        {/* Stats Section */}
-        <motion.div
-          className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-        >
-          <div>
-            <div className="text-3xl font-bold text-blue-600 mb-2">10K+</div>
-            <div className="text-gray-600">Chatbots Created</div>
+        {/* Capabilities Section */}
+
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              Comprehensive Capabilities
+            </h3>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Built for enterprise needs with cutting-edge AI technology
+            </p>
           </div>
-          <div>
-            <div className="text-3xl font-bold text-green-600 mb-2">50M+</div>
-            <div className="text-gray-600">Messages Processed</div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {capabilities.map((capability) => (
+              <div key={capability.title}>
+                <motion.div
+                  className="p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <div
+                    className={`inline-flex p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 mb-4 group-hover:scale-110 transition-transform duration-300 ${capability.color}`}
+                  >
+                    {capability.icon}
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    {capability.title}
+                  </h4>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {capability.description}
+                  </p>
+                </motion.div>
+              </div>
+            ))}
           </div>
-          <div>
-            <div className="text-3xl font-bold text-purple-600 mb-2">99.9%</div>
-            <div className="text-gray-600">Uptime Guarantee</div>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
