@@ -9,5 +9,4 @@ export { TxtIcon } from "./TxtIcon";
 export { ChatBotIcon } from "./ChatBotIcon";
 export { DataAnalysisIcon } from "./DataAnalysisIcon";
 // External service icons
-export { MessengerIcon } from "./MessengerIcon";
 export { OpenAIIcon } from "./OpenAIIcon";

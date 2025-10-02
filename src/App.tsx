@@ -1,12 +1,13 @@
 import { UserProfile, useAuth } from "@clerk/clerk-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Loading } from "./components/shared";
+import { Toaster } from "./components/ui/sonner";
 import { LoadingProvider } from "./contexts/LoadingContext";
-import { Layout } from "./screen/dashboard/Layout.tsx";
 import ClerkProviderWithRoutes from "./screen/auth/ClerkProviderWithRoutes";
 import ProtectedRoute from "./screen/auth/ProtectedRoute";
 import SignInPage from "./screen/auth/SignIn";
 import SignUpPage from "./screen/auth/SignUp";
+import { Layout } from "./screen/dashboard/index.tsx";
 import LandingPage from "./screen/home/index.tsx";
 import { DatasetManagement, FileManagement, General } from "./screen/index.ts";
 
@@ -50,6 +51,8 @@ function App() {
             <Route path="/dashboard/datasets" element={<DatasetManagement />} />
           </Route>
         </Routes>
+        {/* Show the Toaster in the top right corner */}
+        <Toaster position="top-center" closeButton />
       </ClerkProviderWithRoutes>
     </LoadingProvider>
   );

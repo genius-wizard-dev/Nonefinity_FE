@@ -2,19 +2,12 @@ import LogoIcon from "@/assets/Nonefinity_Dark.png";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import {
-  Database,
-  FileText,
-  LayoutDashboard,
-  Menu,
-  User,
-  X,
-} from "lucide-react";
+import { Database, FileText, LayoutDashboard, Menu, X } from "lucide-react";
 import "react";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
-
 export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -42,11 +35,6 @@ export function Layout() {
       href: "/dashboard/datasets",
       icon: Database,
     },
-    {
-      name: "Profile",
-      href: "/dashboard/profile",
-      icon: User,
-    },
   ];
 
   const isActive = (href: string) => {
@@ -54,7 +42,7 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Desktop Sidebar */}
       <aside
         className={`${
@@ -62,8 +50,12 @@ export function Layout() {
         } transition-all duration-300 ease-in-out bg-card shadow-lg border-r hidden lg:flex flex-col`}
         style={{ willChange: "width" }}
       >
-        {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b flex-shrink-0">
+        <div
+          className={cn(
+            "h-16 flex items-center justify-center px-4 border-b flex-shrink-0",
+            sidebarOpen ? "justify-between" : "justify-center"
+          )}
+        >
           <div
             className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${
               sidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0"
@@ -232,13 +224,15 @@ export function Layout() {
       </Sheet>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
           <SignedOut>
             <Navigate to="/sign-in" replace />
           </SignedOut>
           <SignedIn>
-            <Outlet />
+            <div className="p-6">
+              <Outlet />
+            </div>
           </SignedIn>
         </main>
       </div>

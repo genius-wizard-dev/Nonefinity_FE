@@ -21,15 +21,14 @@ export const ENDPOINTS = {
     LIST: "/file/list",
     SEARCH: "/file/search",
     GET: (id: string) => `/files/${id}`,
-    UPLOAD: "/file/upload",
-    DELETE: (id: string) => `/files/${id}`,
-    RENAME: (id: string) => `/files/${id}/rename`,
-    BATCH_DELETE: "/files/batch-delete",
-    STATS: "/file/stats",
-    TYPES: "/file/types",
-    BATCH_DELETE_ALT: "/file/batch/delete",
-    DELETE_ALT: (id: string) => `/file/${id}`,
-    RENAME_ALT: (id: string) => `/file/rename/${id}`,
+    UPLOAD_URL: "/file/upload-url", // Get presigned upload URL
+    UPLOAD: "/file/upload", // Save metadata after upload
+    DELETE: (id: string) => `/file/${id}`, // Delete single file
+    RENAME: (id: string) => `/file/rename/${id}`, // Rename file
+    BATCH_DELETE: "/file/batch/delete", // Batch delete files
+    STATS: "/file/stats", // Get file statistics
+    TYPES: "/file/types", // Get available file types
+    DOWNLOAD: (id: string) => `/file/download/${id}`, // Get download URL
   },
 
   // Auth endpoints
