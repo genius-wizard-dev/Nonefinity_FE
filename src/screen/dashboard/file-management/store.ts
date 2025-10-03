@@ -7,6 +7,14 @@ import type {
   FileStoreState,
 } from "./types";
 
+export interface UploadFile {
+  id: string;
+  file: File;
+  progress: number;
+  status: "uploading" | "completed" | "error";
+  error?: string;
+}
+
 interface FileStore extends FileStoreState, FileStoreActions {}
 
 export const useFileStore = create<FileStore>((set, get) => ({
@@ -18,6 +26,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
   stats: null,
   searchResults: [],
   isSearching: false,
+  searchTimeout: null,
+  uploadFiles: [],
+  isUploading: false,
 
   fetchFiles: async (token: string, force = false) => {
     const { lastFetchTime } = get();
@@ -49,23 +60,81 @@ export const useFileStore = create<FileStore>((set, get) => ({
   },
 
   searchFiles: async (query: string, token: string) => {
-    set({ isSearching: true, error: null });
+    const { searchTimeout } = get();
 
-    try {
-      const files = await FileService.searchFiles(query, token);
+    // Always clear existing timeout first
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      set({ searchTimeout: null });
+    }
+
+    // If query is empty, clear search immediately
+    if (!query || query.trim() === "") {
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔍 Empty query, clearing search");
+      }
       set({
-        searchResults: files,
+        searchResults: [],
         isSearching: false,
+        searchTimeout: null,
         error: null,
       });
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message || "Failed to search files";
-      set({
-        error: errorMessage,
-        isSearching: false,
-      });
+      return;
     }
+
+    // Trim query for consistency
+    const trimmedQuery = query.trim();
+
+    // Set loading state immediately for user feedback
+    set({ isSearching: true, error: null });
+
+    // Create new timeout for debounce
+    const timeoutId = setTimeout(async () => {
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔍 Executing search for:", trimmedQuery);
+      }
+
+      try {
+        const files = await FileService.searchFiles(trimmedQuery, token);
+        if (process.env.NODE_ENV === "development") {
+          console.log("🔍 Search results received:", files.length, "files");
+        }
+
+        // Only update if this is still the current search
+        const currentTimeout = get().searchTimeout;
+        if (currentTimeout === timeoutId) {
+          set({
+            searchResults: files,
+            isSearching: false,
+            searchTimeout: null,
+            error: null,
+          });
+          if (process.env.NODE_ENV === "development") {
+            console.log("🔍 Search completed successfully");
+          }
+        } else {
+          if (process.env.NODE_ENV === "development") {
+            console.log("🔍 Search cancelled, newer search in progress");
+          }
+        }
+      } catch (error: any) {
+        console.error("🔍 Search error:", error);
+        const errorMessage =
+          error?.response?.data?.message || "Failed to search files";
+
+        // Only update error if this is still the current search
+        const currentTimeout = get().searchTimeout;
+        if (currentTimeout === timeoutId) {
+          set({
+            error: errorMessage,
+            isSearching: false,
+            searchTimeout: null,
+          });
+        }
+      }
+    }, 300); // Reduced to 300ms for faster response
+
+    set({ searchTimeout: timeoutId });
   },
 
   fetchFileTypes: async (token?: string) => {
@@ -88,7 +157,8 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
   uploadFile: async (file: File, token: string) => {
     try {
-      set({ isLoading: true, error: null });
+      // Don't set global loading state - use progress modal instead
+      console.log("🔄 Starting upload process for:", file.name);
 
       // Step 1: Get presigned upload URL
       const uploadData = await FileService.getUploadUrl(
@@ -122,22 +192,19 @@ export const useFileStore = create<FileStore>((set, get) => ({
       );
 
       if (uploadedFile) {
-        set((state) => ({
-          files: [uploadedFile, ...state.files],
-          isLoading: false,
-        }));
+        // Don't add to files list here - let fetchFiles handle it
+        // This prevents duplicate files when fetchFiles is called after upload
         return uploadedFile;
       }
 
-      set({ isLoading: false });
       return null;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         "Failed to upload file";
-      set({ error: errorMessage, isLoading: false });
-      return null;
+      console.error("Upload error:", errorMessage);
+      throw error; // Re-throw to be handled by the progress system
     }
   },
 
@@ -246,7 +313,106 @@ export const useFileStore = create<FileStore>((set, get) => ({
     set({ error: null });
   },
 
+  clearSearch: () => {
+    const { searchTimeout } = get();
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔍 Clearing search");
+    }
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔍 Timeout cleared");
+      }
+    }
+    set({
+      searchResults: [],
+      isSearching: false,
+      searchTimeout: null,
+      error: null,
+    });
+  },
+
+  refreshData: async (token: string) => {
+    const { fetchFiles, fetchStats } = get();
+    await Promise.all([
+      fetchFiles(token, true), // Force refresh
+      fetchStats(token),
+    ]);
+  },
+
+  // Upload progress management
+  startUpload: (files: File[]) => {
+    const uploadFiles: UploadFile[] = files.map((file) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      progress: 0,
+      status: "uploading" as const,
+    }));
+
+    set({
+      uploadFiles,
+      isUploading: true,
+      error: null,
+    });
+  },
+
+  updateUploadProgress: (fileId: string, progress: number) => {
+    set((state) => ({
+      uploadFiles: state.uploadFiles.map((uf) =>
+        uf.id === fileId ? { ...uf, progress } : uf
+      ),
+    }));
+  },
+
+  completeUpload: (fileId: string) => {
+    set((state) => {
+      const newUploadFiles = state.uploadFiles.map((uf) =>
+        uf.id === fileId
+          ? { ...uf, status: "completed" as const, progress: 100 }
+          : uf
+      );
+
+      const allCompleted = newUploadFiles.every(
+        (uf) => uf.status === "completed" || uf.status === "error"
+      );
+
+      return {
+        uploadFiles: newUploadFiles,
+        isUploading: !allCompleted,
+        // Don't add files here - let fetchFiles handle it to prevent duplicates
+      };
+    });
+  },
+
+  failUpload: (fileId: string, error: string) => {
+    set((state) => {
+      const newUploadFiles = state.uploadFiles.map((uf) =>
+        uf.id === fileId ? { ...uf, status: "error" as const, error } : uf
+      );
+
+      const allCompleted = newUploadFiles.every(
+        (uf) => uf.status === "completed" || uf.status === "error"
+      );
+
+      return {
+        uploadFiles: newUploadFiles,
+        isUploading: !allCompleted,
+      };
+    });
+  },
+
+  clearUploads: () => {
+    set({
+      uploadFiles: [],
+      isUploading: false,
+    });
+  },
+
   reset: () => {
+    const { searchTimeout } = get();
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
     set({
       files: [],
       isLoading: false,
@@ -256,6 +422,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
       stats: null,
       searchResults: [],
       isSearching: false,
+      searchTimeout: null,
+      uploadFiles: [],
+      isUploading: false,
     });
   },
 }));

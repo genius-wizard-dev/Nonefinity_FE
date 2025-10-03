@@ -1,456 +1,454 @@
-import {
-  AppstoreOutlined,
-  DeleteOutlined,
-  FilterOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  UnorderedListOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
+"use client";
+
 import { useAuth } from "@clerk/clerk-react";
-import {
-  Button,
-  Card,
-  Col,
-  Input,
-  Layout,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Tooltip,
-  Typography,
-} from "antd";
-import React, { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { FileGrid, FileStats, FileUpload } from "./components";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { DeleteConfirmationModal } from "./components/delete-confirmation-modal";
+import { FileGrid } from "./components/file-grid";
+import { FileStats } from "./components/file-stats";
+import { FileToolbar } from "./components/file-toolbar";
+import { KeyboardShortcuts } from "./components/keyboard-shortcuts";
+import { UploadProgress } from "./components/upload-progress";
+import { UploadZone } from "./components/upload-zone";
+import { useBatchDelete } from "./hooks";
 import { useFileStore } from "./store";
-import type { FileItem } from "./types";
-import { getFileExtensionFromFile } from "./utils";
+import type { ViewMode } from "./types";
 
-const { Header, Content } = Layout;
-const { Title, Text } = Typography;
-const { Search } = Input;
-const { Option } = Select;
-
-const FileManagement: React.FC = () => {
+export default function FileManagement() {
   const { getToken } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     files,
     isLoading,
     error,
     stats,
+    searchResults,
+    isSearching,
+    uploadFiles,
+    isUploading,
     fetchFiles,
-    fetchStats,
+    searchFiles,
+    uploadFile,
     deleteFile,
-    deleteFiles,
     renameFile,
     downloadFile,
+    fetchStats,
     clearError,
+    clearSearch,
+    startUpload,
+    completeUpload,
+    failUpload,
+    clearUploads,
   } = useFileStore();
 
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const [showUpload, setShowUpload] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
+  const { deleteBatch, isDeleting, progress } = useBatchDelete();
 
-  // Load files on component mount
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showUploadZone, setShowUploadZone] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
+  const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
+  const [isInSearchMode, setIsInSearchMode] = useState(false);
+
+  // Handle search
+  const handleSearch = useCallback(
+    async (query: string) => {
+      const token = await getToken();
+      if (!token) return;
+
+      if (query.trim()) {
+        setIsInSearchMode(true);
+        await searchFiles(query, token);
+      } else {
+        setIsInSearchMode(false);
+        clearSearch();
+        // Refresh the file list to show all files
+        await fetchFiles(token, true);
+        console.log("🔍 Search cleared - refreshed file list");
+      }
+    },
+    [getToken, searchFiles, clearSearch, fetchFiles]
+  );
+
+  // Initialize search query from URL parameters and trigger search
   useEffect(() => {
-    const loadFiles = async () => {
+    const urlSearchQuery = searchParams.get("search") || "";
+    setSearchQuery(urlSearchQuery);
+    if (urlSearchQuery.trim()) {
+      setIsInSearchMode(true);
+      // Trigger search when URL parameter changes
+      handleSearch(urlSearchQuery);
+    } else {
+      setIsInSearchMode(false);
+      clearSearch();
+    }
+  }, [searchParams, handleSearch, clearSearch]);
+
+  // Load files and stats on component mount
+  useEffect(() => {
+    const loadData = async () => {
       const token = await getToken();
       if (token) {
-        await fetchFiles(token);
-        await fetchStats(token);
+        await Promise.all([fetchFiles(token), fetchStats(token)]);
       }
     };
-    loadFiles();
+    loadData();
   }, [getToken, fetchFiles, fetchStats]);
 
-  // Handle file selection
-  const handleFileSelect = (file: FileItem) => {
-    console.log("Selected file:", file);
-    // You can add file preview logic here
-  };
+  // Use search results if we're in search mode, otherwise use all files
+  const displayFiles = isInSearchMode ? searchResults : files;
 
-  // Handle file deletion
-  const handleFileDelete = async (fileId: string): Promise<void> => {
-    console.log("🗑️ Main: Starting delete for file:", fileId);
-    const token = await getToken();
-    if (!token) {
-      console.log("❌ Main: No token available");
-      toast.error("Authentication required");
-      return;
-    }
+  // Debug logging (only in development and when there are actual changes)
+  if (
+    process.env.NODE_ENV === "development" &&
+    (isSearching || isInSearchMode)
+  ) {
+    console.log("🔍 Search Debug:", {
+      isSearching,
+      isInSearchMode,
+      searchResultsCount: searchResults.length,
+      filesCount: files.length,
+      displayFilesCount: displayFiles.length,
+    });
+  }
 
-    try {
-      console.log("🗑️ Main: Calling deleteFile with token");
-      const success = await deleteFile(fileId, token);
-      console.log("🗑️ Main: Delete result:", success);
+  const handleFileUpload = useCallback(
+    async (filesToUpload: File[]) => {
+      console.log(
+        "🚀 Starting file upload process:",
+        filesToUpload.length,
+        "files"
+      );
 
-      if (success) {
-        // Remove from selected files if it was selected
-        setSelectedFiles((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(fileId);
-          return newSet;
-        });
-        console.log("✅ Main: File deleted successfully");
-        toast.success("File deleted successfully");
-      } else {
-        console.log("❌ Main: Delete failed");
-        toast.error("Failed to delete file");
+      const token = await getToken();
+      if (!token) {
+        console.error("❌ No token available for upload");
+        return;
       }
-    } catch (error) {
-      console.error("❌ Main: Delete error:", error);
-      toast.error("Failed to delete file");
-    }
-  };
 
-  // Handle batch deletion
-  const handleBatchDelete = useCallback(async () => {
-    if (selectedFiles.size === 0) return;
+      // Sort files by size (smallest first) for priority upload
+      const sortedFiles = [...filesToUpload].sort((a, b) => a.size - b.size);
+      console.log(
+        "📊 Files sorted by size (smallest first):",
+        sortedFiles.map((f) => ({ name: f.name, size: f.size }))
+      );
 
-    const token = await getToken();
-    if (!token) {
-      toast.error("Authentication required");
-      return;
-    }
+      // Start upload progress tracking
+      startUpload(sortedFiles);
+      setShowUploadZone(false);
 
-    Modal.confirm({
-      title: "Delete Multiple Files",
-      content: (
-        <div>
-          <p>
-            Are you sure you want to delete {selectedFiles.size} file
-            {selectedFiles.size > 1 ? "s" : ""}?
-          </p>
-          <p style={{ fontSize: "12px", color: "#8c8c8c" }}>
-            This action cannot be undone.
-          </p>
-        </div>
-      ),
-      okText: "Delete All",
-      okType: "danger",
-      cancelText: "Cancel",
-      width: 400,
-      onOk: async () => {
+      // Upload files with progress tracking (smallest files first)
+      for (const file of sortedFiles) {
+        console.log("📁 Processing file:", file.name);
+
+        // Get the upload file item from the store after it's been created
+        const currentUploadFiles = useFileStore.getState().uploadFiles;
+        const uploadFileItem = currentUploadFiles.find(
+          (uf) => uf.file === file
+        );
+
+        if (!uploadFileItem) {
+          console.error("❌ Upload file item not found for:", file.name);
+          continue;
+        }
+
+        console.log("✅ Found upload file item:", uploadFileItem.id);
+
         try {
-          const success = await deleteFiles(Array.from(selectedFiles), token);
-          if (success) {
-            setSelectedFiles(new Set());
-            toast.success("Files deleted successfully");
+          console.log("🔄 Starting upload for:", file.name);
+          const result = await uploadFile(file, token);
+          console.log("📤 Upload result:", result);
+
+          if (result) {
+            console.log("✅ Upload completed successfully for:", file.name);
+            completeUpload(uploadFileItem.id);
+            // Refresh file list to show the new file
+            await fetchFiles(token, true);
           } else {
-            toast.error("Failed to delete files");
+            console.error("❌ Upload failed for:", file.name);
+            failUpload(uploadFileItem.id, "Upload failed");
           }
         } catch (error) {
-          console.error("Batch delete error:", error);
-          toast.error("Failed to delete files");
+          console.error("❌ Upload error for:", file.name, error);
+          failUpload(
+            uploadFileItem.id,
+            error instanceof Error ? error.message : "Upload failed"
+          );
         }
-      },
-    });
-  }, [selectedFiles, getToken, deleteFiles]);
+      }
+    },
+    [getToken, uploadFile, startUpload, completeUpload, failUpload, fetchFiles]
+  );
 
-  // Handle file rename
-  const handleFileRename = async (fileId: string, newName: string) => {
+  const handleDeleteRequest = useCallback((fileIds: string[]) => {
+    setFilesToDelete(fileIds);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
     const token = await getToken();
     if (!token) return;
 
-    try {
+    if (filesToDelete.length === 1) {
+      // Single file delete
+      const success = await deleteFile(filesToDelete[0], token);
+      if (success) {
+        setSelectedFiles([]);
+        // Refresh file list after successful deletion
+        await fetchFiles(token, true);
+      }
+    } else {
+      // Batch delete
+      await deleteBatch(filesToDelete, {
+        onSuccess: () => {
+          setSelectedFiles([]);
+          // Refresh file list after successful batch deletion
+          fetchFiles(token, true);
+        },
+        onError: (error, failedIds) => {
+          console.error("Batch delete error:", error, failedIds);
+        },
+      });
+    }
+
+    setShowDeleteConfirm(false);
+    setFilesToDelete([]);
+  }, [filesToDelete, getToken, deleteFile, deleteBatch, fetchFiles]);
+
+  const handleRename = useCallback(
+    async (fileId: string, newName: string) => {
+      const token = await getToken();
+      if (!token) return;
+
       const success = await renameFile(fileId, newName, token);
       if (success) {
-        toast.success("File renamed successfully");
+        // Refresh file list after successful rename
+        await fetchFiles(token, true);
       } else {
-        toast.error("Failed to rename file");
+        console.error("Rename failed");
       }
-    } catch {
-      toast.error("Failed to rename file");
-    }
-  };
+      setRenamingFileId(null); // Clear renaming state after rename
+    },
+    [getToken, renameFile, fetchFiles]
+  );
 
-  // Handle file download
-  const handleFileDownload = async (file: FileItem) => {
-    const token = await getToken();
-    if (!token) return;
+  const handleStartRename = useCallback((fileId: string) => {
+    setRenamingFileId(fileId);
+  }, []);
 
-    try {
-      const success = await downloadFile(file.id, token);
-      if (success) {
-        toast.success("File downloaded successfully");
-      } else {
-        toast.error("Failed to download file");
+  const handleCancelRename = useCallback(() => {
+    setRenamingFileId(null);
+  }, []);
+
+  const handleDownload = useCallback(
+    async (fileId: string) => {
+      const token = await getToken();
+      if (!token) return;
+
+      const success = await downloadFile(fileId, token);
+      if (!success) {
+        console.error("Download failed");
       }
-    } catch {
-      toast.error("Failed to download file");
-    }
-  };
-
-  // Handle refresh
-  const handleRefresh = async () => {
-    const token = await getToken();
-    if (token) {
-      await fetchFiles(token, true);
-      await fetchStats(token);
-    }
-  };
-
-  // Clear error when component unmounts or error changes
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      clearError();
-    }
-  }, [error, clearError]);
+    },
+    [getToken, downloadFile]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Select All: Cmd+A (macOS) or Ctrl+A (Windows)
+      // Ignore shortcuts when typing in input fields
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "u") {
+        e.preventDefault();
+        // Close all dialogs first
+        setShowShortcuts(false);
+        setShowDeleteConfirm(false);
+        setFilesToDelete([]);
+        // Then show upload zone
+        setShowUploadZone(true);
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === "a") {
         e.preventDefault();
-        const allFileIds = new Set(files.map((file) => file.id));
-        setSelectedFiles(allFileIds);
-        return;
+        if (selectedFiles.length === displayFiles.length) {
+          setSelectedFiles([]);
+        } else {
+          setSelectedFiles(displayFiles.map((f) => f.id));
+        }
       }
 
-      // Delete selected files
-      if (e.key === "Delete" && selectedFiles.size > 0) {
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selectedFiles.length > 0
+      ) {
         e.preventDefault();
-        handleBatchDelete();
-        return;
+        handleDeleteRequest(selectedFiles);
       }
 
-      // Clear selection
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        // Close all dialogs first
+        setShowUploadZone(false);
+        setShowDeleteConfirm(false);
+        setFilesToDelete([]);
+        // Close any open Info dialogs by dispatching a custom event
+        window.dispatchEvent(new CustomEvent("closeAllInfoDialogs"));
+        // Then show shortcuts
+        setShowShortcuts(true);
+      }
+
       if (e.key === "Escape") {
-        setSelectedFiles(new Set());
-        return;
+        if (showUploadZone) {
+          setShowUploadZone(false);
+        } else if (showShortcuts) {
+          setShowShortcuts(false);
+        } else if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+          setFilesToDelete([]);
+        } else if (selectedFiles.length > 0) {
+          setSelectedFiles([]);
+        }
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedFiles, handleBatchDelete, files]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    displayFiles,
+    selectedFiles,
+    showUploadZone,
+    showShortcuts,
+    showDeleteConfirm,
+    handleDeleteRequest,
+  ]);
 
-  // Filter files based on search and type
-  const filteredFiles = files.filter((file) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      file.name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Handle search input changes
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      // Update URL parameters immediately for better UX
+      if (query.trim()) {
+        setSearchParams({ search: query.trim() });
+      } else {
+        setSearchParams({});
+      }
 
-    // Get file extension for filtering
-    const fileExtension = getFileExtensionFromFile(file);
-    const matchesType = filterType === "all" || fileExtension === filterType;
-
-    return matchesSearch && matchesType;
-  });
-
-  // Get unique file types for filter based on actual file extensions
-  const fileTypes = Array.from(
-    new Set(
-      files
-        .map((file) => getFileExtensionFromFile(file))
-        .filter((ext) => ext !== "unknown")
-    )
+      // Trigger search with debounce
+      if (query.trim()) {
+        handleSearch(query);
+      }
+    },
+    [handleSearch, setSearchParams]
   );
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-red-500">Error: {error}</p>
+          <button
+            onClick={clearError}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f5f5f5" }}>
-      <Header
-        style={{
-          background: "#fff",
-          padding: "0 24px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={3} style={{ margin: 0 }}>
-              File Management
-            </Title>
-            <Text type="secondary">Manage your files like Google Drive</Text>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={isLoading}
-              >
-                Refresh
-              </Button>
-              <Button
-                type="primary"
-                icon={<UploadOutlined />}
-                onClick={() => setShowUpload(true)}
-              >
-                Upload Files
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Header>
+    <div className="flex h-screen flex-col bg-background">
+      <FileStats
+        files={displayFiles}
+        selectedCount={selectedFiles.length}
+        stats={stats}
+        isLoading={isLoading}
+        isSearchMode={isInSearchMode}
+      />
 
-      <Content style={{ padding: "24px" }}>
-        {/* File Statistics */}
-        <FileStats stats={stats} files={files} loading={isLoading} />
+      <FileToolbar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        onUploadClick={() => setShowUploadZone(true)}
+        onShowShortcuts={() => setShowShortcuts(true)}
+        selectedCount={selectedFiles.length}
+        onDeleteSelected={() => handleDeleteRequest(selectedFiles)}
+        isLoading={isDeleting}
+      />
 
-        {/* Search and Filter Bar */}
-        <Card style={{ marginBottom: 16 }}>
-          <Row gutter={16} align="middle">
-            <Col flex="auto">
-              <Search
-                placeholder="Search files..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                prefix={<SearchOutlined />}
-                allowClear
-              />
-            </Col>
-            <Col>
-              <Select
-                value={filterType}
-                onChange={setFilterType}
-                style={{ width: 120 }}
-                suffixIcon={<FilterOutlined />}
-              >
-                <Option value="all">All Types</Option>
-                {fileTypes.map((type) => (
-                  <Option key={type} value={type}>
-                    {type.toUpperCase()}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col>
-              <Space>
-                <Tooltip title="Grid View">
-                  <Button
-                    type={viewMode === "grid" ? "primary" : "default"}
-                    icon={<AppstoreOutlined />}
-                    onClick={() => setViewMode("grid")}
-                  />
-                </Tooltip>
-                <Tooltip title="List View">
-                  <Button
-                    type={viewMode === "list" ? "primary" : "default"}
-                    icon={<UnorderedListOutlined />}
-                    onClick={() => setViewMode("list")}
-                  />
-                </Tooltip>
-              </Space>
-            </Col>
-          </Row>
-        </Card>
-
-        {/* Selection Info */}
-        {selectedFiles.size > 0 && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: "12px 16px",
-              background: "#e6f7ff",
-              border: "1px solid #91d5ff",
-              borderRadius: "6px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Space>
-              <Text strong style={{ color: "#1890ff" }}>
-                {selectedFiles.size} file{selectedFiles.size > 1 ? "s" : ""}{" "}
-                selected
-              </Text>
-              <Text type="secondary">
-                Press{" "}
-                <kbd
-                  style={{
-                    background: "#f5f5f5",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "3px",
-                    padding: "2px 6px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Delete
-                </kbd>{" "}
-                to delete,{" "}
-                <kbd
-                  style={{
-                    background: "#f5f5f5",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "3px",
-                    padding: "2px 6px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Esc
-                </kbd>{" "}
-                to clear, or{" "}
-                <kbd
-                  style={{
-                    background: "#f5f5f5",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "3px",
-                    padding: "2px 6px",
-                    fontSize: "12px",
-                  }}
-                >
-                  {navigator.platform.toLowerCase().includes("mac")
-                    ? "Cmd+A"
-                    : "Ctrl+A"}
-                </kbd>{" "}
-                to select all
-              </Text>
-            </Space>
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleBatchDelete}
-            >
-              Delete Selected
-            </Button>
-          </div>
-        )}
-
-        {/* File Display */}
-        <Card>
-          <FileGrid
-            files={filteredFiles}
-            selectedFiles={selectedFiles}
-            onSelectionChange={setSelectedFiles}
-            onFileSelect={handleFileSelect}
-            onFileDelete={handleFileDelete}
-            onFileRename={handleFileRename}
-            onFileDownload={handleFileDownload}
-          />
-        </Card>
-
-        {/* Upload Modal */}
-        <FileUpload
-          visible={showUpload}
-          onClose={() => setShowUpload(false)}
-          onUploadComplete={(files) => {
-            toast.success(`${files.length} files uploaded successfully`);
-            setShowUpload(false);
-            // Refresh files list
-            const refreshFiles = async () => {
-              const token = await getToken();
-              if (token) {
-                await fetchFiles(token, true);
-                await fetchStats(token);
-              }
-            };
-            refreshFiles();
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <FileGrid
+          files={displayFiles}
+          viewMode={viewMode}
+          selectedFiles={selectedFiles}
+          onSelectionChange={(newSelection) => {
+            // Cancel rename if selecting a different file
+            if (renamingFileId && !newSelection.includes(renamingFileId)) {
+              setRenamingFileId(null);
+            }
+            setSelectedFiles(newSelection);
           }}
-          onUploadError={(error) => {
-            toast.error(error);
+          onDelete={handleDeleteRequest}
+          onRename={handleRename}
+          onStartRename={handleStartRename}
+          onCancelRename={handleCancelRename}
+          onDownload={handleDownload}
+          renamingFileId={renamingFileId}
+          isLoading={false}
+        />
+      </div>
+
+      {showUploadZone && (
+        <UploadZone
+          onUpload={handleFileUpload}
+          onClose={() => setShowUploadZone(false)}
+        />
+      )}
+
+      {showShortcuts && (
+        <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
+      )}
+
+      {showDeleteConfirm && (
+        <DeleteConfirmationModal
+          fileCount={filesToDelete.length}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setFilesToDelete([]);
+          }}
+          isDeleting={isDeleting}
+          progress={progress}
+        />
+      )}
+
+      {isUploading && uploadFiles.length > 0 && (
+        <UploadProgress
+          files={uploadFiles}
+          onClose={() => clearUploads()}
+          onRetry={(fileId) => {
+            // Find the file and retry upload
+            const fileToRetry = uploadFiles.find((uf) => uf.id === fileId);
+            if (fileToRetry) {
+              handleFileUpload([fileToRetry.file]);
+            }
           }}
         />
-      </Content>
-    </Layout>
+      )}
+    </div>
   );
-};
-
-export default FileManagement;
+}

@@ -583,7 +583,7 @@ export class FileService {
   }
 
   /**
-   * Download and open file in new tab
+   * Download file directly using anchor tag
    */
   static async downloadAndOpenFile(
     fileId: string,
@@ -597,8 +597,15 @@ export class FileService {
         return false;
       }
 
-      // Open in new tab
-      window.open(downloadUrl, "_blank");
+      // Create anchor element for direct download
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = ""; // This forces download instead of navigation
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+
       console.log("✅ File download initiated");
       return true;
     } catch (error) {
