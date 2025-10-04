@@ -4,7 +4,7 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Loader2, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface SqlEditorProps {
   onExecute: (query: string) => void;
@@ -12,18 +12,8 @@ interface SqlEditorProps {
   selectedTable?: string | null;
 }
 
-export function SqlEditor({
-  onExecute,
-  isExecuting,
-  selectedTable,
-}: SqlEditorProps) {
-  const [query, setQuery] = useState("SELECT * FROM users LIMIT 10;");
-
-  useEffect(() => {
-    if (selectedTable) {
-      setQuery(`SELECT * FROM ${selectedTable} LIMIT 10;`);
-    }
-  }, [selectedTable]);
+export function SqlEditor({ onExecute, isExecuting }: SqlEditorProps) {
+  const [query, setQuery] = useState("");
 
   const handleExecute = () => {
     if (query.trim() && !isExecuting) {

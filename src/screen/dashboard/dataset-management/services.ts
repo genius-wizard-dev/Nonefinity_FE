@@ -5,6 +5,7 @@ import type {
   BackendDataset,
   BackendDatasetData,
   BackendDatasetListResponse,
+  BackendQueryResponse,
   ConvertDatasetRequest,
   Dataset,
   DatasetData,
@@ -161,6 +162,60 @@ export class DatasetService {
   }
 
   /**
+   * Create a new dataset
+   */
+  static async createDataset(
+    datasetName: string,
+    description: string,
+    schema: Array<{
+      column_name: string;
+      column_type: string;
+      desc?: string;
+    }>,
+    token?: string
+  ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
+    try {
+      console.log("🆕 Creating dataset:", { datasetName, description, schema });
+
+      // Convert to URLSearchParams for form data
+      const formData = new URLSearchParams();
+      formData.append("dataset_name", datasetName);
+      if (description) {
+        formData.append("description", description);
+      }
+      formData.append("schema", JSON.stringify(schema));
+
+      const response = await httpClient.post<BackendDataset>(
+        ENDPOINTS.DATASETS.CREATE,
+        formData,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to create dataset:", response.message);
+        console.error("❌ Response details:", {
+          isSuccess: response.isSuccess,
+          message: response.message,
+          error: response.error,
+          statusCode: response.statusCode,
+        });
+        return {
+          success: false,
+          error: response.message || "Failed to create dataset",
+        };
+      }
+
+      const data = response.getData();
+      console.log("📥 Create dataset response:", data);
+
+      return { success: true, data: mapDataset(data) };
+    } catch (error) {
+      console.error("❌ Dataset creation error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  }
+
+  /**
    * Convert file to dataset
    */
   static async convertDataset(
@@ -204,61 +259,83 @@ export class DatasetService {
    */
   static async executeQuery(
     query: string,
-    _token?: string
+    limit: number = 100,
+    token?: string
   ): Promise<QueryResult | null> {
     try {
-      console.log("🔍 Executing SQL query:", query);
+      console.log("🔍 Executing SQL query:", { query, limit });
 
-      // For now, we'll simulate query execution
-      // In a real implementation, this would call a SQL execution endpoint
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const startTime = Date.now();
 
-      // Mock results for demonstration
-      const mockResults: QueryResult = {
-        columns: ["id", "name", "email", "created_at", "status"],
-        rows: [
-          {
-            id: 1,
-            name: "John Doe",
-            email: "john@example.com",
-            created_at: "2024-01-15 10:30:00",
-            status: "active",
-          },
-          {
-            id: 2,
-            name: "Jane Smith",
-            email: "jane@example.com",
-            created_at: "2024-01-16 14:22:00",
-            status: "active",
-          },
-          {
-            id: 3,
-            name: "Bob Johnson",
-            email: "bob@example.com",
-            created_at: "2024-01-17 09:15:00",
-            status: "inactive",
-          },
-          {
-            id: 4,
-            name: "Alice Williams",
-            email: "alice@example.com",
-            created_at: "2024-01-18 16:45:00",
-            status: "active",
-          },
-          {
-            id: 5,
-            name: "Charlie Brown",
-            email: "charlie@example.com",
-            created_at: "2024-01-19 11:20:00",
-            status: "pending",
-          },
-        ],
-        rowCount: 5,
-        executionTime: "127ms",
+      // Convert to URLSearchParams for form data
+      const formData = new URLSearchParams();
+      formData.append("query", query);
+      formData.append("limit", limit.toString());
+
+      const response = await httpClient.post<BackendQueryResponse>(
+        ENDPOINTS.DATASETS.QUERY,
+        formData,
+        token
+      );
+
+      const endTime = Date.now();
+      const executionTime = `${endTime - startTime}ms`;
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to execute query:", response.message);
+        return {
+          columns: [],
+          rows: [],
+          rowCount: 0,
+          executionTime,
+          error: response.message || "Query execution failed",
+        };
+      }
+
+      const responseData = response.getData();
+      console.log("📥 Query response:", responseData);
+      console.log("📥 Response data type:", typeof responseData);
+      console.log("📥 Is array:", Array.isArray(responseData));
+
+      // The responseData should be the data array directly
+      // But let's handle both cases: direct array or nested data property
+      let data: Record<string, unknown>[];
+
+      if (Array.isArray(responseData)) {
+        // Direct array response
+        data = responseData;
+        console.log("📥 Direct array response, data length:", data.length);
+      } else if (
+        responseData &&
+        typeof responseData === "object" &&
+        "data" in responseData
+      ) {
+        // Nested data property
+        data = (responseData as any).data || [];
+        console.log("📥 Nested data response, data length:", data.length);
+      } else {
+        // Fallback
+        data = [];
+        console.log("📥 Fallback: empty data");
+      }
+
+      // Extract columns from the first row if data exists
+      const columns = data.length > 0 ? Object.keys(data[0]) : [];
+      const rowCount = data.length;
+
+      console.log("📥 Columns:", columns);
+      console.log("📥 Row count:", rowCount);
+      console.log("📥 First row sample:", data[0]);
+
+      const result: QueryResult = {
+        columns,
+        rows: data,
+        rowCount,
+        executionTime,
       };
 
-      console.log("✅ Query executed successfully");
-      return mockResults;
+      console.log("✅ Query executed successfully:", result);
+      return result;
     } catch (error) {
       console.error("❌ Query execution error:", error);
       return {
@@ -274,7 +351,7 @@ export class DatasetService {
   /**
    * Get dataset statistics
    */
-  static async getDatasetStats(_token?: string): Promise<{
+  static async getDatasetStats(): Promise<{
     totalDatasets: number;
     totalRows: number;
     averageRows: number;

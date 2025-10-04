@@ -118,10 +118,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    // Try to extract the actual error message from the response body
+    const responseData = error.response?.data as any;
+
+    const actualMessage =
+      responseData?.message ||
+      responseData?.error ||
+      error.response?.statusText ||
+      error.message ||
+      "Unknown error";
+
     const apiError: ApiError = {
       statusCode: error.response?.status || 500,
       success: false,
-      message: error.response?.statusText || error.message || "Unknown error",
+      message: actualMessage,
       error: error.message,
       data: error.response?.data,
     };

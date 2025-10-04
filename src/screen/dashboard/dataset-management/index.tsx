@@ -1,8 +1,6 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@clerk/clerk-react";
-import { AlertCircle, Database } from "lucide-react";
+import { Database } from "lucide-react";
 import { useEffect } from "react";
 import {
   DatasetDetails,
@@ -18,7 +16,6 @@ export default function DatasetManage() {
   const {
     // State
     datasets,
-    error,
     selectedDataset,
     queryResults,
     isExecutingQuery,
@@ -28,7 +25,6 @@ export default function DatasetManage() {
     executeQuery,
     setSelectedDataset,
     setActiveTab,
-    clearError,
   } = useDatasetStore();
 
   // Initialize with mock data and fetch real data
@@ -65,132 +61,142 @@ export default function DatasetManage() {
 
   return (
     <div className="flex h-full w-full bg-background">
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            <h1 className="font-semibold text-foreground">Dataset Manager</h1>
+      {/* Left Sidebar - Datasets */}
+      <aside className="w-80 border-r border-border bg-card/50 backdrop-blur-sm flex flex-col shadow-sm">
+        <div className="p-6 border-b border-border bg-card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Database className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-foreground text-lg">
+                Dataset Manager
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1">
+                {datasets.length} dataset{datasets.length !== 1 ? "s" : ""}{" "}
+                available
+              </p>
+            </div>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            {datasets.length} dataset{datasets.length !== 1 ? "s" : ""} found
-          </div>
-          {/* <div className="mt-2 flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="text-xs"
-            >
-              {isLoading ? "Loading..." : "Refresh"}
-            </Button>
-          </div> */}
         </div>
 
-        {error && (
-          <div className="p-4">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                {error}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearError}
-                  className="ml-2 h-6 px-2 text-xs"
-                >
-                  Dismiss
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        <DatasetList
-          datasets={datasets}
-          selectedDataset={selectedDataset}
-          onSelectDataset={setSelectedDataset}
-          onDeleteDataset={async (datasetId) => {
-            try {
-              const token = await getToken();
-              if (token) {
-                await useDatasetStore
-                  .getState()
-                  .deleteDataset(datasetId, token);
+        <div className="flex-1 overflow-hidden">
+          <DatasetList
+            datasets={datasets}
+            selectedDataset={selectedDataset}
+            onSelectDataset={setSelectedDataset}
+            onDeleteDataset={async (datasetId) => {
+              try {
+                const token = await getToken();
+                if (token) {
+                  await useDatasetStore
+                    .getState()
+                    .deleteDataset(datasetId, token);
+                }
+              } catch (error) {
+                console.error("Delete dataset error:", error);
               }
-            } catch (error) {
-              console.error("Delete dataset error:", error);
-            }
-          }}
-          onViewDataset={(dataset: Dataset) => {
-            setSelectedDataset(dataset);
-            setActiveTab("dataset-info");
-          }}
-        />
+            }}
+            onViewDataset={(dataset: Dataset) => {
+              setSelectedDataset(dataset);
+              setActiveTab("dataset-info");
+            }}
+          />
+        </div>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="flex-1 flex flex-col"
-        >
-          <TabsList className="w-full justify-start rounded-none border-b border-border bg-card px-4 h-12">
-            <TabsTrigger
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        {/* Header with Tabs */}
+        <div className="border-b border-border bg-card/50 backdrop-blur-sm shadow-sm">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="w-full justify-start rounded-none border-0 bg-transparent h-14 px-6">
+              <TabsTrigger
+                value="sql"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all rounded-md px-4 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  SQL Editor
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="dataset-info"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all rounded-md px-4 py-2"
+                disabled={!selectedDataset}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  {selectedDataset
+                    ? `Dataset: ${selectedDataset.name}`
+                    : "Dataset Info"}
+                </div>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="h-full flex flex-col"
+          >
+            <TabsContent
               value="sql"
-              className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              className="flex-1 flex flex-col m-0 overflow-hidden"
             >
-              SQL Editor
-            </TabsTrigger>
-            <TabsTrigger
+              <div className="flex-1 flex flex-col min-h-0 p-6">
+                <div className="flex-1 flex flex-col min-h-0 space-y-4">
+                  <div className="flex-shrink-0">
+                    <SqlEditor
+                      onExecute={handleExecuteQuery}
+                      isExecuting={isExecutingQuery}
+                    />
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <QueryResults results={queryResults} />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent
               value="dataset-info"
-              className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-              disabled={!selectedDataset}
+              className="flex-1 m-0 overflow-hidden"
             >
-              {selectedDataset
-                ? `Dataset: ${selectedDataset.name}`
-                : "Dataset Info"}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent
-            value="sql"
-            className="flex-1 flex flex-col m-0 overflow-hidden"
-          >
-            <div className="flex-1 flex flex-col min-h-0">
-              <SqlEditor
-                onExecute={handleExecuteQuery}
-                isExecuting={isExecutingQuery}
-              />
-              <div className="flex-1 min-h-0">
-                <QueryResults results={queryResults} />
+              <div className="h-full p-6">
+                {selectedDataset ? (
+                  <DatasetDetails
+                    dataset={selectedDataset}
+                    onUpdateDataset={(
+                      datasetId: string,
+                      updates: Partial<Dataset>
+                    ) => {
+                      useDatasetStore
+                        .getState()
+                        .updateDataset(datasetId, updates);
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground text-sm">
+                        Select a dataset to view details
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent
-            value="dataset-info"
-            className="flex-1 m-0 overflow-hidden"
-          >
-            {selectedDataset ? (
-              <DatasetDetails
-                dataset={selectedDataset}
-                onUpdateDataset={(
-                  datasetId: string,
-                  updates: Partial<Dataset>
-                ) => {
-                  useDatasetStore.getState().updateDataset(datasetId, updates);
-                }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground text-sm">
-                  Select a dataset to view details
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

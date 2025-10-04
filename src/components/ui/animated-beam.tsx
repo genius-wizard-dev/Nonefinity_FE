@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { RefObject, useEffect, useId, useState } from "react";
+import { type RefObject, useEffect, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 

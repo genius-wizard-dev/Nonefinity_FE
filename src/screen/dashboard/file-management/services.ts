@@ -413,8 +413,9 @@ export class FileService {
         return true;
       }
 
-      // Check if result is an object with success property or a boolean
-      if (typeof result === "object" && result !== null) {
+      // Check if result is an object and has a 'success' property, or is a boolean
+      if (typeof result === "object" && result !== null && "success" in result) {
+        // @ts-expect-error: We expect 'success' property to exist if present
         return result.success === true;
       }
       return result === true;

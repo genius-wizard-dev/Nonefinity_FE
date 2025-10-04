@@ -137,6 +137,9 @@ export default function FileManager() {
           onSelectionChange={setSelectedFiles}
           onDelete={handleDeleteRequest}
           onRename={handleRename}
+          onStartRename={() => {}}
+          onCancelRename={() => {}}
+          renamingFileId={null}
         />
       </div>
 
