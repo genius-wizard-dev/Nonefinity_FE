@@ -1,4 +1,4 @@
-import { File, FileText, HardDrive, ImageIcon, Loader2 } from "lucide-react";
+import { File, FileText, HardDrive, ImageIcon } from "lucide-react";
 import type { FileItem, FileStats as FileStatsType } from "../types";
 
 interface FileStatsProps {
@@ -58,11 +58,7 @@ export function FileStats({
                 {isSearchMode ? "Search Results" : "Total Files"}
               </p>
               <p className="text-xl font-semibold text-foreground">
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  totalFiles
-                )}
+                {isLoading ? 0 : totalFiles}
               </p>
             </div>
           </div>

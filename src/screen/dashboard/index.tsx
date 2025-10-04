@@ -230,7 +230,7 @@ export function Layout() {
             <Navigate to="/sign-in" replace />
           </SignedOut>
           <SignedIn>
-            <div className="p-6">
+            <div className="h-full">
               <Outlet />
             </div>
           </SignedIn>
