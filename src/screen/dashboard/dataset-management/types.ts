@@ -31,6 +31,7 @@ export interface BackendDataset {
   created_at: string;
   owner_id: string;
   data_schema: DatasetSchema[];
+  row_count: number;
 }
 
 // Dataset list response
@@ -229,6 +230,6 @@ export const mapDataset = (backendDataset: BackendDataset): Dataset => {
     created_at: backendDataset.created_at,
     owner_id: backendDataset.owner_id,
     data_schema: backendDataset.data_schema,
-    rowCount: 0, // Will be populated when needed
+    rowCount: backendDataset.row_count || 0,
   };
 };

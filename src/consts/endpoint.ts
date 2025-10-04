@@ -14,6 +14,7 @@ export const ENDPOINTS = {
     DELETE: (id: string) => `/datasets/${id}`,
     DATA: (id: string) => `/datasets/${id}/data`,
     CONVERT: "/datasets/convert",
+    CREATE: "/datasets/create",
   },
 
   // File endpoints

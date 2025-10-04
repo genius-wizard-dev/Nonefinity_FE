@@ -161,6 +161,60 @@ export class DatasetService {
   }
 
   /**
+   * Create a new dataset
+   */
+  static async createDataset(
+    datasetName: string,
+    description: string,
+    schema: Array<{
+      column_name: string;
+      column_type: string;
+      desc?: string;
+    }>,
+    token?: string
+  ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
+    try {
+      console.log("🆕 Creating dataset:", { datasetName, description, schema });
+
+      // Convert to URLSearchParams for form data
+      const formData = new URLSearchParams();
+      formData.append("dataset_name", datasetName);
+      if (description) {
+        formData.append("description", description);
+      }
+      formData.append("schema", JSON.stringify(schema));
+
+      const response = await httpClient.post<BackendDataset>(
+        ENDPOINTS.DATASETS.CREATE,
+        formData,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to create dataset:", response.message);
+        console.error("❌ Response details:", {
+          isSuccess: response.isSuccess,
+          message: response.message,
+          error: response.error,
+          statusCode: response.statusCode,
+        });
+        return {
+          success: false,
+          error: response.message || "Failed to create dataset",
+        };
+      }
+
+      const data = response.getData();
+      console.log("📥 Create dataset response:", data);
+
+      return { success: true, data: mapDataset(data) };
+    } catch (error) {
+      console.error("❌ Dataset creation error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  }
+
+  /**
    * Convert file to dataset
    */
   static async convertDataset(
@@ -202,10 +256,7 @@ export class DatasetService {
   /**
    * Execute SQL query on dataset
    */
-  static async executeQuery(
-    query: string,
-    _token?: string
-  ): Promise<QueryResult | null> {
+  static async executeQuery(query: string): Promise<QueryResult | null> {
     try {
       console.log("🔍 Executing SQL query:", query);
 
@@ -274,7 +325,7 @@ export class DatasetService {
   /**
    * Get dataset statistics
    */
-  static async getDatasetStats(_token?: string): Promise<{
+  static async getDatasetStats(): Promise<{
     totalDatasets: number;
     totalRows: number;
     averageRows: number;

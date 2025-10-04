@@ -13,12 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { getClerkToken } from "@/consts/endpoint";
 import {
   ChevronDown,
   ChevronRight,
   Database,
   Edit2,
-  FileUp,
   Info,
   MoreVertical,
   Plus,
@@ -26,6 +26,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { DatasetService } from "../services";
 import { useDatasetStore } from "../store";
 import type { Column, Dataset } from "../types";
 
@@ -57,9 +59,8 @@ export function DatasetList({
   );
   const [hoveredDataset, setHoveredDataset] = useState<string | null>(null);
   const [isAddDatasetDialogOpen, setIsAddDatasetDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [createDatasetName, setCreateDatasetName] = useState("");
   const [createDatasetDescription, setCreateDatasetDescription] = useState("");
   const [createColumns, setCreateColumns] = useState<Column[]>([
@@ -71,51 +72,8 @@ export function DatasetList({
       description: "",
     },
   ]);
-  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);  
   const renameInputRef = useRef<HTMLInputElement>(null);
-
-  const availableFiles = [
-    {
-      name: "customers.csv",
-      size: "2.4 MB",
-      type: "CSV",
-      lastModified: "2024-01-20",
-    },
-    {
-      name: "orders.json",
-      size: "1.8 MB",
-      type: "JSON",
-      lastModified: "2024-01-19",
-    },
-    {
-      name: "products.xlsx",
-      size: "856 KB",
-      type: "Excel",
-      lastModified: "2024-01-18",
-    },
-    {
-      name: "inventory.csv",
-      size: "3.2 MB",
-      type: "CSV",
-      lastModified: "2024-01-17",
-    },
-    {
-      name: "transactions.json",
-      size: "5.1 MB",
-      type: "JSON",
-      lastModified: "2024-01-16",
-    },
-    {
-      name: "employees.csv",
-      size: "124 KB",
-      type: "CSV",
-      lastModified: "2024-01-15",
-    },
-  ];
-
-  const filteredFiles = availableFiles.filter((file) =>
-    file.name.toLowerCase().includes(fileSearchQuery.toLowerCase())
-  );
 
   const filteredDatasets = datasets.filter((dataset) =>
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -165,10 +123,13 @@ export function DatasetList({
     if (renamingDataset && newDatasetName.trim()) {
       const dataset = datasets.find((d) => d.id === renamingDataset);
       if (dataset && newDatasetName !== dataset.name) {
-        // Update dataset name through store
         useDatasetStore
           .getState()
           .updateDataset(renamingDataset, { name: newDatasetName.trim() });
+
+        toast.success("Dataset renamed", {
+          description: `Dataset renamed to "${newDatasetName.trim()}".`,
+        });
       }
     }
     setRenamingDataset(null);
@@ -183,6 +144,9 @@ export function DatasetList({
         confirm(`Are you sure you want to delete dataset "${dataset.name}"?`)
       ) {
         onDeleteDataset(contextMenu.datasetId);
+        toast.success("Dataset deleted", {
+          description: `Dataset "${dataset.name}" has been deleted.`,
+        });
       }
     }
     setContextMenu(null);
@@ -221,45 +185,57 @@ export function DatasetList({
     setContextMenu({ x: rect.left, y: rect.bottom + 4, datasetId });
   };
 
-  const handleImportFile = (fileName: string) => {
-    // Handle file import logic here
-    console.log("Importing file:", fileName);
-    setIsImportDialogOpen(false);
-    setIsAddDatasetDialogOpen(false);
-    setFileSearchQuery("");
-  };
-
-  const handleCreateDataset = () => {
+  const handleCreateDataset = async () => {
     if (createDatasetName.trim() && createColumns.length > 0) {
-      // Create new dataset through store
-      const newDataset: Dataset = {
-        id: Date.now().toString(),
-        name: createDatasetName.trim(),
-        description: createDatasetDescription,
-        created_at: new Date().toISOString(),
-        owner_id: "current-user",
-        data_schema: createColumns.map((col) => ({
-          column_name: col.name,
-          column_type: col.type,
-          desc: col.description || null,
-        })),
-        rowCount: 0,
-      };
+      try {
+        const token = await getClerkToken();
 
-      useDatasetStore.getState().addDataset(newDataset);
-      setIsCreateDialogOpen(false);
-      setIsAddDatasetDialogOpen(false);
-      setCreateDatasetName("");
-      setCreateDatasetDescription("");
-      setCreateColumns([
-        {
-          name: "id",
-          type: "INTEGER",
-          nullable: false,
-          primaryKey: false,
-          description: "",
-        },
-      ]);
+        const schema = createColumns.map((col) => ({
+          column_name: col.name,
+          column_type: col.type.toLowerCase(),
+          desc: col.description || undefined,
+        }));
+
+        const result = await DatasetService.createDataset(
+          createDatasetName.trim(),
+          createDatasetDescription,
+          schema,
+          token
+        );
+
+        if (result.success && result.data) {
+          useDatasetStore.getState().addDataset(result.data);
+
+          toast.success("Dataset created successfully!", {
+            description: `Dataset "${createDatasetName.trim()}" has been created.`,
+          });
+
+          setIsCreateDialogOpen(false);
+          setIsAddDatasetDialogOpen(false);
+          setCreateDatasetName("");
+          setCreateDatasetDescription("");
+          setCreateColumns([
+            {
+              name: "id",
+              type: "INTEGER",
+              nullable: false,
+              primaryKey: false,
+              description: "",
+            },
+          ]);
+        } else {
+          console.error("❌ Create dataset failed:", result);
+          toast.error("Failed to create dataset", {
+            description:
+              result.error || "Please check your input and try again.",
+          });
+        }
+      } catch (error) {
+        console.error("Error creating dataset:", error);
+        toast.error("Failed to create dataset", {
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     }
   };
 
@@ -322,27 +298,6 @@ export function DatasetList({
                 <button
                   onClick={() => {
                     setIsAddDatasetDialogOpen(false);
-                    setIsImportDialogOpen(true);
-                  }}
-                  className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <FileUp className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-foreground mb-1">
-                      Import from File
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Convert CSV, JSON, or Excel files into datasets
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsAddDatasetDialogOpen(false);
                     setIsCreateDialogOpen(true);
                   }}
                   className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
@@ -360,59 +315,6 @@ export function DatasetList({
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={isImportDialogOpen}
-            onOpenChange={setIsImportDialogOpen}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Import File as Dataset</DialogTitle>
-                <DialogDescription>
-                  Select a file from your system to convert into a dataset.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search files..."
-                    value={fileSearchQuery}
-                    onChange={(e) => setFileSearchQuery(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <ScrollArea className="h-[300px] rounded-md border border-border">
-                  <div className="p-2 space-y-1">
-                    {filteredFiles.map((file) => (
-                      <button
-                        key={file.name}
-                        onClick={() => handleImportFile(file.name)}
-                        className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-secondary transition-colors group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-semibold text-primary">
-                              {file.type}
-                            </span>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-medium text-sm text-foreground">
-                              {file.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {file.size} • Modified {file.lastModified}
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
               </div>
             </DialogContent>
           </Dialog>
