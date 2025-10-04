@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     DATA: (id: string) => `/datasets/${id}/data`,
     CONVERT: "/datasets/convert",
     CREATE: "/datasets/create",
+    QUERY: "/datasets/query",
   },
 
   // File endpoints

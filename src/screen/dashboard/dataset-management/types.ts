@@ -91,6 +91,7 @@ export interface BackendConvertDatasetResponse {
   owner_id: string;
   created_at: string;
   data_schema: DatasetSchema[];
+  row_count: number;
 }
 
 // SQL Query types
@@ -106,6 +107,13 @@ export interface QueryResult {
   rowCount: number;
   executionTime: string;
   error?: string;
+}
+
+// Backend query response structure
+export interface BackendQueryResponse {
+  success: boolean;
+  message: string;
+  data: Record<string, unknown>[];
 }
 
 // Table management types
@@ -147,7 +155,11 @@ export interface DatasetStoreActions {
     request: ConvertDatasetRequest,
     token: string
   ) => Promise<Dataset | null>;
-  executeQuery: (query: string, token: string) => Promise<QueryResult | null>;
+  executeQuery: (
+    query: string,
+    token: string,
+    limit?: number
+  ) => Promise<QueryResult | null>;
   setSelectedDataset: (dataset: Dataset | null) => void;
   setSelectedTable: (tableName: string | null) => void;
   setActiveTab: (tab: string) => void;

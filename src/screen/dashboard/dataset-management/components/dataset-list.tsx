@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { getClerkToken } from "@/consts/endpoint";
 import {
@@ -22,6 +23,7 @@ import {
   Info,
   MoreVertical,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -46,6 +48,7 @@ export function DatasetList({
   onDeleteDataset,
   onViewDataset,
 }: DatasetListProps) {
+  const { isLoading } = useDatasetStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -72,7 +75,7 @@ export function DatasetList({
       description: "",
     },
   ]);
-  const contextMenuRef = useRef<HTMLDivElement>(null);  
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const filteredDatasets = datasets.filter((dataset) =>
@@ -273,51 +276,75 @@ export function DatasetList({
       <div className="p-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold text-foreground">Datasets</h2>
-          <Dialog
-            open={isAddDatasetDialogOpen}
-            onOpenChange={setIsAddDatasetDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1.5 bg-transparent"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Dataset
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Add Dataset</DialogTitle>
-                <DialogDescription>
-                  Choose how you want to add a new dataset to your database.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 py-4">
-                <button
-                  onClick={() => {
-                    setIsAddDatasetDialogOpen(false);
-                    setIsCreateDialogOpen(true);
-                  }}
-                  className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 bg-transparent"
+              disabled={isLoading}
+              onClick={async () => {
+                try {
+                  const token = await getClerkToken();
+                  if (token) {
+                    await useDatasetStore.getState().fetchDatasets(token, true); // Force refresh
+                    toast.success("Datasets refreshed successfully");
+                  }
+                } catch (error) {
+                  console.error("Failed to refresh datasets:", error);
+                  toast.error("Failed to refresh datasets");
+                }
+              }}
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+              />
+            </Button>
+            <Dialog
+              open={isAddDatasetDialogOpen}
+              onOpenChange={setIsAddDatasetDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 bg-transparent"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Database className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-foreground mb-1">
-                      Create New Dataset
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Dataset
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Add Dataset</DialogTitle>
+                  <DialogDescription>
+                    Choose how you want to add a new dataset to your database.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 py-4">
+                  <button
+                    onClick={() => {
+                      setIsAddDatasetDialogOpen(false);
+                      setIsCreateDialogOpen(true);
+                    }}
+                    className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Database className="h-6 w-6 text-primary" />
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Manually define dataset structure and columns
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-foreground mb-1">
+                        Create New Dataset
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Manually define dataset structure and columns
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </button>
-              </div>
-            </DialogContent>
-          </Dialog>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
           <Dialog
             open={isCreateDialogOpen}
@@ -472,96 +499,115 @@ export function DatasetList({
       <ScrollArea className="flex-1">
         <div className="p-2">
           <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
-            DATASETS ({filteredDatasets.length})
+            DATASETS ({filteredDatasets.length}){" "}
+            {isLoading && datasets.length > 0 && (
+              <span className="text-primary">• Refreshing...</span>
+            )}
           </div>
           <div className="space-y-0.5">
-            {filteredDatasets.map((dataset) => (
-              <div key={dataset.id}>
-                {renamingDataset === dataset.id ? (
-                  <div className="px-2 py-1.5">
-                    <Input
-                      ref={renameInputRef}
-                      value={newDatasetName}
-                      onChange={(e) => setNewDatasetName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") confirmRename();
-                        if (e.key === "Escape") setRenamingDataset(null);
-                      }}
-                      onBlur={confirmRename}
-                      className="h-7 text-sm font-mono"
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className={`flex items-center rounded transition-colors group ${
-                        selectedDataset?.id === dataset.id
-                          ? "bg-primary/10"
-                          : "hover:bg-secondary"
-                      }`}
-                      onMouseEnter={() => setHoveredDataset(dataset.id)}
-                      onMouseLeave={() => setHoveredDataset(null)}
-                      onContextMenu={(e) => handleContextMenu(e, dataset.id)}
-                    >
-                      <button
-                        onClick={() => handleDatasetClick(dataset)}
-                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm transition-colors ${
-                          selectedDataset?.id === dataset.id
-                            ? "text-primary"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {expandedDatasets.has(dataset.id) ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <Database className="h-4 w-4 flex-shrink-0" />
-                        <span className="font-mono flex-1 text-left">
-                          {dataset.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {dataset.rowCount?.toLocaleString() || 0}
-                        </span>
-                      </button>
-
-                      <button
-                        onClick={(e) => handleShowContextMenu(e, dataset.id)}
-                        className={`p-1.5 mr-1 rounded hover:bg-secondary/80 transition-all ${
-                          hoveredDataset === dataset.id ||
-                          contextMenu?.datasetId === dataset.id
-                            ? "opacity-100"
-                            : "opacity-0"
-                        }`}
-                      >
-                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                      </button>
+            {isLoading && datasets.length === 0
+              ? // Skeleton loading when initially loading
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4 rounded" />
+                      <Skeleton className="h-4 w-4 rounded" />
+                      <Skeleton className="h-4 w-24 rounded" />
+                      <Skeleton className="h-4 w-12 rounded ml-auto" />
                     </div>
-
-                    {expandedDatasets.has(dataset.id) && (
-                      <div className="ml-6 mt-1 space-y-0.5">
-                        {dataset.data_schema.map((column) => (
-                          <div
-                            key={column.column_name}
-                            className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-1 h-1 rounded-full bg-muted-foreground" />
-                              <span className="font-mono text-foreground">
-                                {column.column_name}
-                              </span>
-                            </div>
-                            <span className="text-muted-foreground font-mono text-[10px]">
-                              {column.column_type}
-                            </span>
-                          </div>
-                        ))}
+                  </div>
+                ))
+              : filteredDatasets.map((dataset) => (
+                  <div key={dataset.id}>
+                    {renamingDataset === dataset.id ? (
+                      <div className="px-2 py-1.5">
+                        <Input
+                          ref={renameInputRef}
+                          value={newDatasetName}
+                          onChange={(e) => setNewDatasetName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") confirmRename();
+                            if (e.key === "Escape") setRenamingDataset(null);
+                          }}
+                          onBlur={confirmRename}
+                          className="h-7 text-sm font-mono"
+                        />
                       </div>
+                    ) : (
+                      <>
+                        <div
+                          className={`flex items-center rounded transition-colors group ${
+                            selectedDataset?.id === dataset.id
+                              ? "bg-primary/10"
+                              : "hover:bg-secondary"
+                          }`}
+                          onMouseEnter={() => setHoveredDataset(dataset.id)}
+                          onMouseLeave={() => setHoveredDataset(null)}
+                          onContextMenu={(e) =>
+                            handleContextMenu(e, dataset.id)
+                          }
+                        >
+                          <button
+                            onClick={() => handleDatasetClick(dataset)}
+                            className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm transition-colors ${
+                              selectedDataset?.id === dataset.id
+                                ? "text-primary"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {expandedDatasets.has(dataset.id) ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                            <Database className="h-4 w-4 flex-shrink-0" />
+                            <span className="font-mono flex-1 text-left">
+                              {dataset.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {dataset.rowCount?.toLocaleString() || 0}
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={(e) =>
+                              handleShowContextMenu(e, dataset.id)
+                            }
+                            className={`p-1.5 mr-1 rounded hover:bg-secondary/80 transition-all ${
+                              hoveredDataset === dataset.id ||
+                              contextMenu?.datasetId === dataset.id
+                                ? "opacity-100"
+                                : "opacity-0"
+                            }`}
+                          >
+                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+
+                        {expandedDatasets.has(dataset.id) && (
+                          <div className="ml-6 mt-1 space-y-0.5">
+                            {dataset.data_schema.map((column) => (
+                              <div
+                                key={column.column_name}
+                                className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-secondary/50 transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-1 h-1 rounded-full bg-muted-foreground" />
+                                  <span className="font-mono text-foreground">
+                                    {column.column_name}
+                                  </span>
+                                </div>
+                                <span className="text-muted-foreground font-mono text-[10px]">
+                                  {column.column_type}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
-            ))}
+                  </div>
+                ))}
           </div>
         </div>
       </ScrollArea>

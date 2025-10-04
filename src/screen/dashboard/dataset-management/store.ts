@@ -141,12 +141,12 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   },
 
   // Execute SQL query
-  executeQuery: async (query: string, token: string) => {
+  executeQuery: async (query: string, token: string, limit: number = 100) => {
     try {
-      console.log("🔍 Store: Executing query:", query);
+      console.log("🔍 Store: Executing query:", { query, limit });
       set({ isExecutingQuery: true, error: null });
 
-      const result = await DatasetService.executeQuery(query, token);
+      const result = await DatasetService.executeQuery(query, limit, token);
 
       set({
         queryResults: result,

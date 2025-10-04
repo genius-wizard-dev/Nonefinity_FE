@@ -120,7 +120,6 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // Try to extract the actual error message from the response body
     const responseData = error.response?.data as any;
-    console.log("🔍 Axios error response data:", responseData);
 
     const actualMessage =
       responseData?.message ||
@@ -128,8 +127,6 @@ api.interceptors.response.use(
       error.response?.statusText ||
       error.message ||
       "Unknown error";
-
-    console.log("🔍 Extracted error message:", actualMessage);
 
     const apiError: ApiError = {
       statusCode: error.response?.status || 500,
