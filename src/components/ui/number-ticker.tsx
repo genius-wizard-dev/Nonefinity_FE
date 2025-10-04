@@ -1,5 +1,5 @@
 import { useInView, useMotionValue, useSpring } from "framer-motion";
-import { ComponentPropsWithoutRef, useEffect, useRef } from "react";
+import { type ComponentPropsWithoutRef, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 

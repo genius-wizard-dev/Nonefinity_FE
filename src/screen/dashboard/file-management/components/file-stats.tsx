@@ -12,7 +12,6 @@ interface FileStatsProps {
 export function FileStats({
   files,
   selectedCount,
-  stats,
   isLoading,
   isSearchMode = false,
 }: FileStatsProps) {
