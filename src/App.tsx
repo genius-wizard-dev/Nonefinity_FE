@@ -52,7 +52,7 @@ function App() {
           </Route>
         </Routes>
         {/* Show the Toaster in the top right corner */}
-        <Toaster position="top-center" closeButton />
+        <Toaster closeButton />
       </ClerkProviderWithRoutes>
     </LoadingProvider>
   );

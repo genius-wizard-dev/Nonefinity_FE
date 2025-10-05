@@ -10,6 +10,8 @@ import type {
   Dataset,
   DatasetData,
   QueryResult,
+  UpdateDatasetRequest,
+  UpdateDatasetSchemaRequest,
 } from "./types";
 import { mapDataset } from "./types";
 
@@ -345,6 +347,111 @@ export class DatasetService {
         executionTime: "0ms",
         error: "Query execution failed",
       };
+    }
+  }
+
+  /**
+   * Update dataset name and description
+   */
+  static async updateDatasetInfo(
+    datasetId: string,
+    request: UpdateDatasetRequest,
+    token?: string
+  ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
+    try {
+      console.log("📝 Updating dataset info:", { datasetId, request });
+
+      // Prepare JSON body
+      const jsonBody: Record<string, string> = {};
+      if (request.name) {
+        jsonBody.name = request.name;
+      }
+      if (request.description !== undefined) {
+        jsonBody.description = request.description;
+      }
+
+      const response = await httpClient.put<{
+        success: boolean;
+        message: string;
+      }>(ENDPOINTS.DATASETS.UPDATE(datasetId), jsonBody, token);
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to update dataset info:", response.message);
+        return {
+          success: false,
+          error: response.message || "Failed to update dataset",
+        };
+      }
+
+      const data = response.getData();
+      console.log("📥 Update dataset response:", data);
+
+      // Handle the new response format with success and message
+      // The API returns {success: true, message: "..."} directly
+      if (data && data.success) {
+        console.log("✅ Dataset info updated successfully:", data.message);
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: data?.message || "Failed to update dataset info",
+        };
+      }
+    } catch (error) {
+      console.error("❌ Dataset update error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  }
+
+  /**
+   * Update dataset schema descriptions
+   */
+  static async updateDatasetSchema(
+    datasetId: string,
+    request: UpdateDatasetSchemaRequest,
+    token?: string
+  ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
+    try {
+      console.log("📝 Updating dataset schema:", { datasetId, request });
+
+      // Prepare JSON body - try sending descriptions directly
+      const jsonBody = request.descriptions;
+      console.log("📤 Sending JSON body:", jsonBody);
+
+      const response = await httpClient.put<{
+        success: boolean;
+        message: string;
+      }>(ENDPOINTS.DATASETS.UPDATE_SCHEMA(datasetId), jsonBody, token);
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to update dataset schema:", response.message);
+        return {
+          success: false,
+          error: response.message || "Failed to update dataset schema",
+        };
+      }
+
+      const data = response.getData();
+      console.log("📥 Update schema response:", data);
+      console.log("📥 Data type:", typeof data);
+      console.log("📥 Data success:", data?.success);
+      console.log("📥 Data message:", data?.message);
+
+      // Handle the new response format with success and message
+      // The API returns {success: true, message: "..."} directly
+      if (data && data.success) {
+        console.log("✅ Schema updated successfully:", data.message);
+        return { success: true };
+      } else {
+        console.log("❌ Schema update failed:", data);
+        return {
+          success: false,
+          error: data?.message || "Failed to update dataset schema",
+        };
+      }
+    } catch (error) {
+      console.error("❌ Dataset schema update error:", error);
+      return { success: false, error: "An unexpected error occurred" };
     }
   }
 

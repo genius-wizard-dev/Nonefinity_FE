@@ -1,5 +1,3 @@
-import type React from "react";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +7,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,16 +21,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { getClerkToken } from "@/consts/endpoint";
 import {
+  Calendar,
   ChevronDown,
   ChevronRight,
   Database,
+  DollarSign,
   Edit2,
+  FileText,
+  Hash,
+  Hash as HashIcon,
   Info,
   MoreVertical,
   Plus,
   RefreshCw,
   Search,
+  ToggleLeft,
   Trash2,
+  Type,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -33,11 +45,53 @@ import { DatasetService } from "../services";
 import { useDatasetStore } from "../store";
 import type { Column, Dataset } from "../types";
 
+// Function to get icon for data type
+const getDataTypeIcon = (dataType: string) => {
+  const type = dataType.toLowerCase();
+
+  if (
+    type.includes("varchar") ||
+    type.includes("text") ||
+    type.includes("char")
+  ) {
+    return <Type className="h-3 w-3 text-blue-500" />;
+  }
+  if (
+    type.includes("int") ||
+    type.includes("bigint") ||
+    type.includes("integer")
+  ) {
+    return <Hash className="h-3 w-3 text-green-500" />;
+  }
+  if (
+    type.includes("double") ||
+    type.includes("float") ||
+    type.includes("decimal")
+  ) {
+    return <DollarSign className="h-3 w-3 text-purple-500" />;
+  }
+  if (
+    type.includes("date") ||
+    type.includes("timestamp") ||
+    type.includes("time")
+  ) {
+    return <Calendar className="h-3 w-3 text-orange-500" />;
+  }
+  if (type.includes("boolean") || type.includes("bool")) {
+    return <ToggleLeft className="h-3 w-3 text-pink-500" />;
+  }
+  if (type.includes("json") || type.includes("blob")) {
+    return <FileText className="h-3 w-3 text-indigo-500" />;
+  }
+
+  // Default icon for unknown types
+  return <HashIcon className="h-3 w-3 text-gray-500" />;
+};
+
 interface DatasetListProps {
   datasets: Dataset[];
   selectedDataset: Dataset | null;
   onSelectDataset: (dataset: Dataset) => void;
-  onDeleteDataset: (datasetId: string) => void;
   onViewDataset: (dataset: Dataset) => void;
 }
 
@@ -45,16 +99,10 @@ export function DatasetList({
   datasets,
   selectedDataset,
   onSelectDataset,
-  onDeleteDataset,
   onViewDataset,
 }: DatasetListProps) {
   const { isLoading } = useDatasetStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    datasetId: string;
-  } | null>(null);
   const [renamingDataset, setRenamingDataset] = useState<string | null>(null);
   const [newDatasetName, setNewDatasetName] = useState("");
   const [expandedDatasets, setExpandedDatasets] = useState<Set<string>>(
@@ -62,10 +110,15 @@ export function DatasetList({
   );
   const [hoveredDataset, setHoveredDataset] = useState<string | null>(null);
   const [isAddDatasetDialogOpen, setIsAddDatasetDialogOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [datasetToDelete, setDatasetToDelete] = useState<Dataset | null>(null);
+  const [isDeletingDataset, setIsDeletingDataset] = useState(false);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createDatasetName, setCreateDatasetName] = useState("");
   const [createDatasetDescription, setCreateDatasetDescription] = useState("");
+  const [isCreatingDataset, setIsCreatingDataset] = useState(false);
   const [createColumns, setCreateColumns] = useState<Column[]>([
     {
       name: "id",
@@ -75,34 +128,11 @@ export function DatasetList({
       description: "",
     },
   ]);
-  const contextMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const filteredDatasets = datasets.filter((dataset) =>
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleContextMenu = (e: React.MouseEvent, datasetId: string) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, datasetId });
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        contextMenuRef.current &&
-        !contextMenuRef.current.contains(e.target as Node)
-      ) {
-        setContextMenu(null);
-      }
-    };
-
-    if (contextMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [contextMenu]);
 
   useEffect(() => {
     if (renamingDataset && renameInputRef.current) {
@@ -111,58 +141,122 @@ export function DatasetList({
     }
   }, [renamingDataset]);
 
-  const handleRename = () => {
-    if (contextMenu) {
-      const dataset = datasets.find((d) => d.id === contextMenu.datasetId);
-      if (dataset) {
-        setRenamingDataset(contextMenu.datasetId);
-        setNewDatasetName(dataset.name);
-      }
-      setContextMenu(null);
+  const handleRename = (datasetId: string) => {
+    const dataset = datasets.find((d) => d.id === datasetId);
+    if (dataset) {
+      setRenamingDataset(datasetId);
+      setNewDatasetName(dataset.name);
     }
+    setOpenDropdownId(null);
   };
 
-  const confirmRename = () => {
+  const confirmRename = async () => {
     if (renamingDataset && newDatasetName.trim()) {
       const dataset = datasets.find((d) => d.id === renamingDataset);
       if (dataset && newDatasetName !== dataset.name) {
-        useDatasetStore
-          .getState()
-          .updateDataset(renamingDataset, { name: newDatasetName.trim() });
+        const originalName = dataset.name;
 
-        toast.success("Dataset renamed", {
-          description: `Dataset renamed to "${newDatasetName.trim()}".`,
-        });
+        try {
+          // Update local state first for immediate UI feedback
+          useDatasetStore
+            .getState()
+            .updateDataset(renamingDataset, { name: newDatasetName.trim() });
+
+          // Call API to save changes
+          const token = await getClerkToken();
+          if (token) {
+            const { updateDatasetInfo } = useDatasetStore.getState();
+            const success = await updateDatasetInfo(
+              renamingDataset,
+              { name: newDatasetName.trim(), description: dataset.description },
+              token
+            );
+
+            if (success) {
+              toast.success("Dataset renamed successfully", {
+                description: `Dataset renamed to "${newDatasetName.trim()}".`,
+              });
+            } else {
+              toast.error("Failed to rename dataset");
+              // Revert local changes on failure
+              useDatasetStore
+                .getState()
+                .updateDataset(renamingDataset, { name: originalName });
+            }
+          }
+        } catch (error) {
+          console.error("Error renaming dataset:", error);
+          toast.error("Failed to rename dataset");
+          // Revert local changes on error
+          useDatasetStore
+            .getState()
+            .updateDataset(renamingDataset, { name: originalName });
+        }
       }
     }
     setRenamingDataset(null);
     setNewDatasetName("");
   };
 
-  const handleDelete = () => {
-    if (contextMenu) {
-      const dataset = datasets.find((d) => d.id === contextMenu.datasetId);
-      if (
-        dataset &&
-        confirm(`Are you sure you want to delete dataset "${dataset.name}"?`)
-      ) {
-        onDeleteDataset(contextMenu.datasetId);
-        toast.success("Dataset deleted", {
-          description: `Dataset "${dataset.name}" has been deleted.`,
-        });
-      }
+  const handleDelete = (datasetId: string) => {
+    const dataset = datasets.find((d) => d.id === datasetId);
+    if (dataset) {
+      setDatasetToDelete(dataset);
+      setDeleteConfirmOpen(true);
     }
-    setContextMenu(null);
+    setOpenDropdownId(null);
   };
 
-  const handleShowInfo = () => {
-    if (contextMenu) {
-      const dataset = datasets.find((d) => d.id === contextMenu.datasetId);
-      if (dataset) {
-        onViewDataset(dataset);
+  const confirmDelete = async () => {
+    if (!datasetToDelete) return;
+
+    setIsDeletingDataset(true);
+    try {
+      // Call API to delete dataset
+      const token = await getClerkToken();
+      if (token) {
+        const success = await DatasetService.deleteDataset(
+          datasetToDelete.id,
+          token
+        );
+
+        if (success) {
+          // Remove dataset from local state immediately
+          useDatasetStore.getState().removeDataset(datasetToDelete.id);
+
+          toast.success("Dataset deleted successfully", {
+            description: `Dataset "${datasetToDelete.name}" has been deleted.`,
+          });
+
+          setDeleteConfirmOpen(false);
+          setDatasetToDelete(null);
+        } else {
+          toast.error("Failed to delete dataset", {
+            description: "Please try again.",
+          });
+        }
       }
-      setContextMenu(null);
+    } catch (error) {
+      console.error("Error deleting dataset:", error);
+      toast.error("Failed to delete dataset", {
+        description: "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsDeletingDataset(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setDatasetToDelete(null);
+  };
+
+  const handleShowInfo = (datasetId: string) => {
+    const dataset = datasets.find((d) => d.id === datasetId);
+    if (dataset) {
+      onViewDataset(dataset);
+    }
+    setOpenDropdownId(null);
   };
 
   const toggleDatasetExpand = (datasetId: string) => {
@@ -182,14 +276,9 @@ export function DatasetList({
     toggleDatasetExpand(dataset.id);
   };
 
-  const handleShowContextMenu = (e: React.MouseEvent, datasetId: string) => {
-    e.stopPropagation();
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setContextMenu({ x: rect.left, y: rect.bottom + 4, datasetId });
-  };
-
   const handleCreateDataset = async () => {
     if (createDatasetName.trim() && createColumns.length > 0) {
+      setIsCreatingDataset(true);
       try {
         const token = await getClerkToken();
 
@@ -238,6 +327,8 @@ export function DatasetList({
         toast.error("Failed to create dataset", {
           description: "An unexpected error occurred. Please try again.",
         });
+      } finally {
+        setIsCreatingDataset(false);
       }
     }
   };
@@ -357,7 +448,7 @@ export function DatasetList({
                   Define your dataset structure with columns and data types.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4 overflow-y-auto flex-1">
+              <div className="space-y-4 py-4 overflow-y-auto flex-1 px-2">
                 <div className="space-y-2">
                   <Label htmlFor="dataset-name">Dataset Name</Label>
                   <Input
@@ -365,7 +456,7 @@ export function DatasetList({
                     placeholder="e.g., customers, orders, products"
                     value={createDatasetName}
                     onChange={(e) => setCreateDatasetName(e.target.value)}
-                    className="font-mono"
+                    className="font-mono focus:border-primary focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
 
@@ -378,7 +469,7 @@ export function DatasetList({
                     onChange={(e) =>
                       setCreateDatasetDescription(e.target.value)
                     }
-                    className="min-h-[60px] resize-none"
+                    className="min-h-[60px] resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
 
@@ -469,16 +560,26 @@ export function DatasetList({
                 <Button
                   variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
+                  disabled={isCreatingDataset}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateDataset}
                   disabled={
-                    !createDatasetName.trim() || createColumns.length === 0
+                    !createDatasetName.trim() ||
+                    createColumns.length === 0 ||
+                    isCreatingDataset
                   }
                 >
-                  Create Dataset
+                  {isCreatingDataset ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Dataset"
+                  )}
                 </Button>
               </div>
             </DialogContent>
@@ -543,9 +644,6 @@ export function DatasetList({
                           }`}
                           onMouseEnter={() => setHoveredDataset(dataset.id)}
                           onMouseLeave={() => setHoveredDataset(null)}
-                          onContextMenu={(e) =>
-                            handleContextMenu(e, dataset.id)
-                          }
                         >
                           <button
                             onClick={() => handleDatasetClick(dataset)}
@@ -569,19 +667,53 @@ export function DatasetList({
                             </span>
                           </button>
 
-                          <button
-                            onClick={(e) =>
-                              handleShowContextMenu(e, dataset.id)
+                          <DropdownMenu
+                            open={openDropdownId === dataset.id}
+                            onOpenChange={(open) =>
+                              setOpenDropdownId(open ? dataset.id : null)
                             }
-                            className={`p-1.5 mr-1 rounded hover:bg-secondary/80 transition-all ${
-                              hoveredDataset === dataset.id ||
-                              contextMenu?.datasetId === dataset.id
-                                ? "opacity-100"
-                                : "opacity-0"
-                            }`}
                           >
-                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                          </button>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className={`p-1.5 mr-1 rounded hover:bg-secondary/80 transition-all ${
+                                  hoveredDataset === dataset.id ||
+                                  openDropdownId === dataset.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                }`}
+                              >
+                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="start"
+                              className="w-[180px]"
+                            >
+                              <DropdownMenuItem
+                                onClick={() => handleShowInfo(dataset.id)}
+                              >
+                                <Info className="h-4 w-4" />
+                                <span>View Info</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleRename(dataset.id)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                                <span>Rename</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDelete(dataset.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
 
                         {expandedDatasets.has(dataset.id) && (
@@ -592,7 +724,7 @@ export function DatasetList({
                                 className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-secondary/50 transition-colors"
                               >
                                 <div className="flex items-center gap-2">
-                                  <div className="w-1 h-1 rounded-full bg-muted-foreground" />
+                                  {getDataTypeIcon(column.column_type)}
                                   <span className="font-mono text-foreground">
                                     {column.column_name}
                                   </span>
@@ -612,36 +744,60 @@ export function DatasetList({
         </div>
       </ScrollArea>
 
-      {contextMenu && (
-        <div
-          ref={contextMenuRef}
-          className="fixed bg-card border border-border rounded-lg shadow-xl py-1 z-50 min-w-[180px] animate-in fade-in-0 zoom-in-95"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-        >
-          <button
-            onClick={handleShowInfo}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-          >
-            <Info className="h-4 w-4" />
-            <span>View Info</span>
-          </button>
-          <div className="h-px bg-border my-1" />
-          <button
-            onClick={handleRename}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
-          >
-            <Edit2 className="h-4 w-4" />
-            <span>Rename</span>
-          </button>
-          <button
-            onClick={handleDelete}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete</span>
-          </button>
-        </div>
-      )}
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Dataset
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the
+              dataset and all of its data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="rounded-lg bg-muted p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-foreground">
+                  {datasetToDelete?.name}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {datasetToDelete?.rowCount?.toLocaleString() || 0} rows
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={isDeletingDataset}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeletingDataset}
+            >
+              {isDeletingDataset ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Dataset
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

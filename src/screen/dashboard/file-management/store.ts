@@ -155,40 +155,20 @@ export const useFileStore = create<FileStore>((set, get) => ({
     }
   },
 
-  uploadFile: async (file: File, token: string) => {
+  uploadFile: async (
+    file: File,
+    token: string,
+    onProgress?: (progress: number) => void
+  ) => {
     try {
       // Don't set global loading state - use progress modal instead
       console.log("🔄 Starting upload process for:", file.name);
 
-      // Step 1: Get presigned upload URL
-      const uploadData = await FileService.getUploadUrl(
-        file.name,
-        file.size,
-        file.type,
-        token
-      );
-
-      if (!uploadData) {
-        throw new Error("Failed to get upload URL");
-      }
-
-      // Step 2: Upload file directly to MinIO
-      const uploadSuccess = await FileService.uploadToMinIO(
+      // Use the complete upload flow with progress tracking
+      const uploadedFile = await FileService.uploadFile(
         file,
-        uploadData.uploadUrl
-      );
-
-      if (!uploadSuccess) {
-        throw new Error("Failed to upload file to MinIO");
-      }
-
-      // Step 3: Save metadata to database
-      const uploadedFile = await FileService.saveFileMetadata(
-        uploadData.objectName,
-        file.name,
-        file.size,
-        file.type,
-        token
+        token,
+        onProgress
       );
 
       if (uploadedFile) {

@@ -7,6 +7,8 @@ import type {
   DatasetStoreActions,
   DatasetStoreState,
   Table,
+  UpdateDatasetRequest,
+  UpdateDatasetSchemaRequest,
 } from "./types";
 
 interface DatasetStore extends DatasetStoreState, DatasetStoreActions {}
@@ -45,6 +47,8 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         isLoading: false,
         lastFetchTime: now,
         error: null,
+        selectedDataset: null, // Clear selected dataset when fetching
+        activeTab: "sql", // Always switch to SQL tab when fetching datasets
       });
 
       console.log("✅ Store: Datasets fetched successfully:", datasets.length);
@@ -56,6 +60,8 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
       set({
         error: errorMessage,
         isLoading: false,
+        selectedDataset: null, // Clear selected dataset even on error
+        activeTab: "sql", // Switch to SQL tab even on error
       });
     }
   },
@@ -92,10 +98,8 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
           datasets: state.datasets.filter(
             (dataset) => dataset.id !== datasetId
           ),
-          selectedDataset:
-            state.selectedDataset?.id === datasetId
-              ? null
-              : state.selectedDataset,
+          selectedDataset: null, // Always clear selected dataset when deleting
+          activeTab: "sql", // Switch to SQL tab when deleting dataset
         }));
         console.log("✅ Store: Dataset deleted successfully");
       }
@@ -105,7 +109,11 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
       const errorMessage =
         error?.response?.data?.message || "Failed to delete dataset";
       console.error("❌ Store: Delete dataset error:", errorMessage);
-      set({ error: errorMessage });
+      set({
+        error: errorMessage,
+        selectedDataset: null, // Clear selected dataset even on error
+        activeTab: "sql", // Switch to SQL tab even on error
+      });
       return false;
     }
   },
@@ -213,6 +221,91 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
           ? { ...state.selectedDataset, ...updates }
           : state.selectedDataset,
     }));
+  },
+
+  // Update dataset info via API
+  updateDatasetInfo: async (
+    datasetId: string,
+    request: UpdateDatasetRequest,
+    token: string
+  ) => {
+    try {
+      console.log("📝 Store: Updating dataset info:", { datasetId, request });
+      set({ isLoading: true, error: null });
+
+      const result = await DatasetService.updateDatasetInfo(
+        datasetId,
+        request,
+        token
+      );
+
+      if (result.success) {
+        // Since the API only returns success/message, we don't update the store data
+        // The local state changes are already applied via onUpdateDataset
+        set({
+          isLoading: false,
+          error: null,
+        });
+        console.log("✅ Store: Dataset info updated successfully");
+        return true;
+      } else {
+        set({
+          isLoading: false,
+          error: result.error || "Failed to update dataset info",
+        });
+        return false;
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update dataset info";
+      console.error("❌ Store: Update dataset info error:", errorMessage);
+      set({ error: errorMessage, isLoading: false });
+      return false;
+    }
+  },
+
+  // Update dataset schema via API
+  updateDatasetSchema: async (
+    datasetId: string,
+    request: UpdateDatasetSchemaRequest,
+    token: string
+  ) => {
+    try {
+      console.log("📝 Store: Updating dataset schema:", { datasetId, request });
+      set({ isLoading: true, error: null });
+
+      const result = await DatasetService.updateDatasetSchema(
+        datasetId,
+        request,
+        token
+      );
+
+      console.log("📊 Store: Update schema result:", result);
+      console.log("📊 Store: Result success:", result.success);
+
+      if (result.success) {
+        // Since the API only returns success/message, we don't update the store data
+        // The local state changes are already applied via onUpdateDataset
+        set({
+          isLoading: false,
+          error: null,
+        });
+        console.log("✅ Store: Dataset schema updated successfully");
+        return true;
+      } else {
+        set({
+          isLoading: false,
+          error: result.error || "Failed to update dataset schema",
+        });
+        return false;
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update dataset schema";
+      console.error("❌ Store: Update dataset schema error:", errorMessage);
+      set({ error: errorMessage, isLoading: false });
+      return false;
+    }
   },
 
   // Remove dataset from store
