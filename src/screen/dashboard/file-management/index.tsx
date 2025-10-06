@@ -3,12 +3,12 @@
 import { useAuth } from "@clerk/clerk-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { DeleteConfirmationModal } from "./components/delete-confirmation-modal";
 import { FileGrid } from "./components/file-grid";
 import { FileStats } from "./components/file-stats";
 import { FileToolbar } from "./components/file-toolbar";
 import { KeyboardShortcuts } from "./components/keyboard-shortcuts";
-import { UploadProgress } from "./components/upload-progress";
 import { UploadZone } from "./components/upload-zone";
 import { useBatchDelete } from "./hooks";
 import { useFileStore } from "./store";
@@ -24,8 +24,6 @@ export default function FileManagement() {
     stats,
     searchResults,
     isSearching,
-    uploadFiles,
-    isUploading,
     fetchFiles,
     searchFiles,
     uploadFile,
@@ -126,19 +124,21 @@ export default function FileManagement() {
       const token = await getToken();
       if (!token) {
         console.error("❌ No token available for upload");
+        toast.error("Authentication required for upload");
         return;
       }
 
+      // Close upload zone immediately
+      setShowUploadZone(false);
+
       // Sort files by size (smallest first) for priority upload
       const sortedFiles = [...filesToUpload].sort((a, b) => a.size - b.size);
-      console.log(
-        "📊 Files sorted by size (smallest first):",
-        sortedFiles.map((f) => ({ name: f.name, size: f.size }))
-      );
 
       // Start upload progress tracking
       startUpload(sortedFiles);
-      setShowUploadZone(false);
+
+      let completedCount = 0;
+      let errorCount = 0;
 
       // Upload files with progress tracking (smallest files first)
       for (const file of sortedFiles) {
@@ -152,35 +152,239 @@ export default function FileManagement() {
 
         if (!uploadFileItem) {
           console.error("❌ Upload file item not found for:", file.name);
+          errorCount++;
           continue;
         }
 
         console.log("✅ Found upload file item:", uploadFileItem.id);
 
+        // Create individual toast for this file with progress bar
+        const fileToastId = toast.loading(
+          <div className="w-full">
+            <div className="mb-2 text-sm font-medium">
+              Uploading {file.name}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: "0%" }}
+                />
+              </div>
+              <span className="text-xs text-gray-600 font-medium">0%</span>
+            </div>
+          </div>,
+          {
+            duration: Infinity,
+          }
+        );
+
         try {
           console.log("🔄 Starting upload for:", file.name);
-          const result = await uploadFile(file, token);
+          const result = await uploadFile(file, token, (progress) => {
+            // Update progress in the store
+            const { updateUploadProgress } = useFileStore.getState();
+            updateUploadProgress(uploadFileItem.id, progress);
+
+            // Update individual file toast with progress bar
+            toast.loading(
+              <div className="w-full">
+                <div className="mb-2 text-sm font-medium">
+                  Uploading {file.name}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-600 font-medium">
+                    {progress}%
+                  </span>
+                </div>
+              </div>,
+              {
+                id: fileToastId,
+                duration: Infinity,
+              }
+            );
+          });
           console.log("📤 Upload result:", result);
 
           if (result) {
             console.log("✅ Upload completed successfully for:", file.name);
             completeUpload(uploadFileItem.id);
+            completedCount++;
+
+            // Show success toast for this specific file
+            toast.success(
+              <div className="w-full">
+                <div className="mb-2 text-sm font-medium">
+                  {file.name} uploaded successfully
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-600 font-medium">
+                    100%
+                  </span>
+                </div>
+              </div>,
+              {
+                id: fileToastId,
+                duration: 3000,
+              }
+            );
+
             // Refresh file list to show the new file
             await fetchFiles(token, true);
           } else {
-            console.error("❌ Upload failed for:", file.name);
             failUpload(uploadFileItem.id, "Upload failed");
+            errorCount++;
+
+            // Show error toast for this specific file
+            toast.error(
+              <div className="w-full">
+                <div className="mb-2 text-sm font-medium">
+                  Failed to upload {file.name}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-red-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-600 font-medium">
+                    100%
+                  </span>
+                </div>
+              </div>,
+              {
+                id: fileToastId,
+                duration: 4000,
+              }
+            );
           }
         } catch (error) {
-          console.error("❌ Upload error for:", file.name, error);
+          console.error("Upload error for:", file.name, error);
           failUpload(
             uploadFileItem.id,
             error instanceof Error ? error.message : "Upload failed"
           );
+          errorCount++;
+
+          // Show error toast for this specific file
+          toast.error(
+            <div className="w-full">
+              <div className="mb-2 text-sm font-medium">
+                Failed to upload {file.name}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-red-600 h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <span className="text-xs text-gray-600 font-medium">100%</span>
+              </div>
+            </div>,
+            {
+              id: fileToastId,
+              duration: 4000,
+            }
+          );
         }
       }
+
+      // Show summary toast after all uploads are complete
+      setTimeout(() => {
+        if (errorCount === 0) {
+          toast.success(
+            <div className="w-full">
+              <div className="mb-2 text-sm font-medium">
+                All {completedCount} file{completedCount > 1 ? "s" : ""}{" "}
+                uploaded successfully!
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-600 h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <span className="text-xs text-gray-600 font-medium">100%</span>
+              </div>
+            </div>,
+            {
+              duration: 4000,
+            }
+          );
+        } else if (completedCount === 0) {
+          toast.error(
+            <div className="w-full">
+              <div className="mb-2 text-sm font-medium">
+                Failed to upload all {filesToUpload.length} file
+                {filesToUpload.length > 1 ? "s" : ""}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-red-600 h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <span className="text-xs text-gray-600 font-medium">100%</span>
+              </div>
+            </div>,
+            {
+              duration: 4000,
+            }
+          );
+        } else {
+          toast.warning(
+            <div className="w-full">
+              <div className="mb-2 text-sm font-medium">
+                Uploaded {completedCount} file{completedCount > 1 ? "s" : ""},{" "}
+                {errorCount} failed
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-yellow-600 h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <span className="text-xs text-gray-600 font-medium">100%</span>
+              </div>
+            </div>,
+            {
+              duration: 4000,
+            }
+          );
+        }
+      }, 500);
+
+      // Clear uploads from store after a delay
+      setTimeout(() => {
+        clearUploads();
+      }, 2000);
     },
-    [getToken, uploadFile, startUpload, completeUpload, failUpload, fetchFiles]
+    [
+      getToken,
+      uploadFile,
+      startUpload,
+      completeUpload,
+      failUpload,
+      fetchFiles,
+      clearUploads,
+    ]
   );
 
   const handleDeleteRequest = useCallback((fileIds: string[]) => {
@@ -433,20 +637,6 @@ export default function FileManagement() {
           }}
           isDeleting={isDeleting}
           progress={progress}
-        />
-      )}
-
-      {isUploading && uploadFiles.length > 0 && (
-        <UploadProgress
-          files={uploadFiles}
-          onClose={() => clearUploads()}
-          onRetry={(fileId) => {
-            // Find the file and retry upload
-            const fileToRetry = uploadFiles.find((uf) => uf.id === fileId);
-            if (fileToRetry) {
-              handleFileUpload([fileToRetry.file]);
-            }
-          }}
         />
       )}
     </div>

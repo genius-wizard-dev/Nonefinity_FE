@@ -73,6 +73,17 @@ export interface ConvertDatasetRequest {
   description?: string;
 }
 
+// Update dataset request
+export interface UpdateDatasetRequest {
+  name?: string;
+  description?: string;
+}
+
+// Update dataset schema descriptions request
+export interface UpdateDatasetSchemaRequest {
+  descriptions: Record<string, string>;
+}
+
 // Convert dataset response
 export interface ConvertDatasetResponse {
   id: string;
@@ -165,6 +176,16 @@ export interface DatasetStoreActions {
   setActiveTab: (tab: string) => void;
   addDataset: (dataset: Dataset) => void;
   updateDataset: (datasetId: string, updates: Partial<Dataset>) => void;
+  updateDatasetInfo: (
+    datasetId: string,
+    request: UpdateDatasetRequest,
+    token: string
+  ) => Promise<boolean>;
+  updateDatasetSchema: (
+    datasetId: string,
+    request: UpdateDatasetSchemaRequest,
+    token: string
+  ) => Promise<boolean>;
   removeDataset: (datasetId: string) => void;
   clearError: () => void;
   refreshData: (token: string) => Promise<void>;
@@ -194,7 +215,6 @@ export interface DatasetManagerProps {
 
 export interface DatasetListProps {
   onDatasetSelect?: (dataset: Dataset) => void;
-  onDatasetDelete?: (datasetId: string) => void;
   onDatasetConvert?: (fileId: string) => void;
   selectable?: boolean;
   showActions?: boolean;

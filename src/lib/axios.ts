@@ -73,7 +73,7 @@ export class ApiResult<T = unknown> {
       const axiosResponse = response as AxiosResponse<ServerApiResponse<T>>;
       const serverResponse = axiosResponse.data;
 
-      this.data = serverResponse.data;
+      this.data = (serverResponse.data || serverResponse) as T;
       this.statusCode = axiosResponse.status;
       this.isSuccess =
         serverResponse.success &&
@@ -189,7 +189,10 @@ export const httpClient = {
   ): Promise<ApiResult<T>> {
     try {
       const fullEndpoint = endpoint;
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
       const response = await api.put<ServerApiResponse<T>>(fullEndpoint, data, {
         headers,

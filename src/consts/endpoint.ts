@@ -16,6 +16,12 @@ export const ENDPOINTS = {
     CONVERT: "/datasets/convert",
     CREATE: "/datasets/create",
     QUERY: "/datasets/query",
+    UPDATE: (id: string) => `/datasets/${id}`,
+    UPDATE_SCHEMA: (id: string) => `/datasets/${id}/schema`,
+    ALLOW_CONVERT: "/datasets/allow-convert",
+    ALLOW_EXTRACT: "/datasets/allow-extract",
+    INSERT: (datasetId: string, fileId: string) =>
+      `/datasets/${datasetId}/insert/${fileId}`,
   },
 
   // File endpoints

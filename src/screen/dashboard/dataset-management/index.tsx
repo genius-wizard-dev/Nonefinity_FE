@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@clerk/clerk-react";
-import { Database } from "lucide-react";
+import { Code2, Database, Info } from "lucide-react";
 import { useEffect } from "react";
 import {
   DatasetDetails,
@@ -46,6 +46,13 @@ export default function DatasetManage() {
     initializeData();
   }, [getToken, fetchDatasets]);
 
+  // Ensure we're on SQL tab when no dataset is selected
+  useEffect(() => {
+    if (!selectedDataset && activeTab === "dataset-info") {
+      setActiveTab("sql");
+    }
+  }, [selectedDataset, activeTab, setActiveTab]);
+
   const handleExecuteQuery = async (query: string) => {
     try {
       const token = await getToken();
@@ -85,18 +92,6 @@ export default function DatasetManage() {
             datasets={datasets}
             selectedDataset={selectedDataset}
             onSelectDataset={setSelectedDataset}
-            onDeleteDataset={async (datasetId) => {
-              try {
-                const token = await getToken();
-                if (token) {
-                  await useDatasetStore
-                    .getState()
-                    .deleteDataset(datasetId, token);
-                }
-              } catch (error) {
-                console.error("Delete dataset error:", error);
-              }
-            }}
             onViewDataset={(dataset: Dataset) => {
               setSelectedDataset(dataset);
               setActiveTab("dataset-info");
@@ -120,7 +115,7 @@ export default function DatasetManage() {
                 className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all rounded-md px-4 py-2"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <Code2 className="h-4 w-4 text-blue-500" />
                   SQL Editor
                 </div>
               </TabsTrigger>
@@ -130,7 +125,7 @@ export default function DatasetManage() {
                 disabled={!selectedDataset}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <Info className="h-4 w-4 text-green-500" />
                   {selectedDataset
                     ? `Dataset: ${selectedDataset.name}`
                     : "Dataset Info"}

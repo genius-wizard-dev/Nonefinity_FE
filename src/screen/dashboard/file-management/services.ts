@@ -231,7 +231,6 @@ export class FileService {
           if (event.lengthComputable) {
             const progress = Math.round((event.loaded / event.total) * 100);
             onProgress?.(progress);
-            console.log(`📊 Upload progress: ${progress}%`);
           }
         });
 
@@ -240,11 +239,6 @@ export class FileService {
             console.log("✅ MinIO upload completed successfully");
             resolve(true);
           } else {
-            console.error(
-              "❌ MinIO upload failed:",
-              xhr.status,
-              xhr.statusText
-            );
             resolve(false);
           }
         });
@@ -414,7 +408,11 @@ export class FileService {
       }
 
       // Check if result is an object and has a 'success' property, or is a boolean
-      if (typeof result === "object" && result !== null && "success" in result) {
+      if (
+        typeof result === "object" &&
+        result !== null &&
+        "success" in result
+      ) {
         // @ts-expect-error: We expect 'success' property to exist if present
         return result.success === true;
       }
