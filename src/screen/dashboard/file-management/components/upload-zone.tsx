@@ -37,8 +37,6 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
       ".jpg",
       ".jpeg",
       ".png",
-      ".gif",
-      ".webp",
       ".csv",
       ".xlsx",
       ".xls",

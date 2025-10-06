@@ -456,6 +456,47 @@ export class DatasetService {
   }
 
   /**
+   * Insert data from file into dataset
+   */
+  static async insertDataFromFile(
+    datasetId: string,
+    fileId: string,
+    token?: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      console.log("📥 Inserting data from file:", { datasetId, fileId });
+
+      const response = await httpClient.post<{
+        success: boolean;
+        message: string;
+        data?: {
+          dataset_id: string;
+          file_id: string;
+          rows_inserted: number;
+          column_mapping: Record<string, string>;
+          auto_mapped: boolean;
+        };
+      }>(ENDPOINTS.DATASETS.INSERT(datasetId, fileId), {}, token);
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to insert data:", response.message);
+        return {
+          success: false,
+          error: response.message || "Failed to insert data",
+        };
+      }
+
+      const data = response.getData();
+      console.log("📥 Insert data response:", data);
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("❌ Insert data error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    }
+  }
+
+  /**
    * Get dataset statistics
    */
   static async getDatasetStats(): Promise<{
