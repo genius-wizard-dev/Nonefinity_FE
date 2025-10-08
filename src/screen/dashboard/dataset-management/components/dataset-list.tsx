@@ -392,7 +392,7 @@ export function DatasetList({
     try {
       const token = await getClerkToken();
       if (token) {
-        const files = await FileService.getFiles(token);
+        const files = await FileService.getAllowConvertFiles(token);
         // Filter for CSV and Excel files only
         const supportedFiles = files.filter((file) => {
           const fileType = file.type?.toLowerCase() || "";
@@ -696,7 +696,7 @@ export function DatasetList({
                 try {
                   const token = await getClerkToken();
                   if (token) {
-                    await useDatasetStore.getState().fetchDatasets(token, true); // Force refresh
+                    await useDatasetStore.getState().fetchDatasets(token, true); //
                     toast.success("Datasets refreshed successfully");
                   }
                 } catch (error) {

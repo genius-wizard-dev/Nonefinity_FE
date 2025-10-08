@@ -179,17 +179,16 @@ export class DatasetService {
     try {
       console.log("🆕 Creating dataset:", { datasetName, description, schema });
 
-      // Convert to URLSearchParams for form data
-      const formData = new URLSearchParams();
-      formData.append("dataset_name", datasetName);
-      if (description) {
-        formData.append("description", description);
-      }
-      formData.append("schema", JSON.stringify(schema));
+      // Use JSON body instead of form data
+      const jsonBody = {
+        dataset_name: datasetName,
+        description: description || "",
+        schema: schema,
+      };
 
       const response = await httpClient.post<BackendDataset>(
         ENDPOINTS.DATASETS.CREATE,
-        formData,
+        jsonBody,
         token
       );
 
@@ -227,17 +226,16 @@ export class DatasetService {
     try {
       console.log("🔄 Converting dataset:", request);
 
-      // Convert to URLSearchParams for form data
-      const formData = new URLSearchParams();
-      formData.append("file_id", request.file_id);
-      formData.append("dataset_name", request.dataset_name);
-      if (request.description) {
-        formData.append("description", request.description);
-      }
+      // Use JSON body instead of form data
+      const jsonBody = {
+        file_id: request.file_id,
+        dataset_name: request.dataset_name,
+        description: request.description || "",
+      };
 
       const response = await httpClient.post<BackendConvertDatasetResponse>(
         ENDPOINTS.DATASETS.CONVERT,
-        formData,
+        jsonBody,
         token
       );
 
@@ -269,14 +267,15 @@ export class DatasetService {
 
       const startTime = Date.now();
 
-      // Convert to URLSearchParams for form data
-      const formData = new URLSearchParams();
-      formData.append("query", query);
-      formData.append("limit", limit.toString());
+      // Use JSON body instead of form data
+      const jsonBody = {
+        query: query,
+        limit: limit,
+      };
 
       const response = await httpClient.post<BackendQueryResponse>(
         ENDPOINTS.DATASETS.QUERY,
-        formData,
+        jsonBody,
         token
       );
 
