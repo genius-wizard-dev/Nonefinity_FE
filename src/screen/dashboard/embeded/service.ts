@@ -3,41 +3,12 @@ import { httpClient } from "@/lib/axios";
 import type {
   EmbeddingActiveResponse,
   EmbeddingCreateRequest,
-  EmbeddingModel,
   EmbeddingSearchRequest,
   EmbeddingStatusResponse,
   EmbeddingTaskResponse,
 } from "./type";
 
 export class EmbeddingService {
-  /**
-   * Get all available embedding models
-   */
-  static async getModels(token?: string): Promise<EmbeddingModel[]> {
-    try {
-      console.log("🔧 Fetching embedding models");
-
-      const response = await httpClient.get<{ models: EmbeddingModel[] }>(
-        ENDPOINTS.EMBEDDING.MODELS,
-        undefined,
-        token
-      );
-
-      if (!response.isSuccess) {
-        console.error("❌ Failed to fetch embedding models:", response.message);
-        return [];
-      }
-
-      const data = response.getData();
-      console.log("📥 Embedding models response:", data);
-
-      return data.models || [];
-    } catch (error) {
-      console.error("❌ Failed to fetch embedding models:", error);
-      return [];
-    }
-  }
-
   /**
    * Create an embedding task
    */

@@ -163,35 +163,6 @@ export default function EmbeddingPage() {
     }
   };
 
-  // const handleTaskClick = (taskId: string) => {
-  //   setCurrentTask(taskId);
-  //   // Only fetch status if not already successful
-  //   if (!taskStatus || taskStatus.status !== "SUCCESS") {
-  //     getTaskStatus(taskId);
-  //   }
-  // };
-
-  // const getStatusIcon = (status: string) => {
-  //   switch (status) {
-  //     case "SUCCESS":
-  //       return <CheckCircle className="w-4 h-4 text-green-500" />;
-  //     case "FAILURE":
-  //       return <XCircle className="w-4 h-4 text-red-500" />;
-  //     case "PROGRESS":
-  //       return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
-  //     case "STARTED":
-  //       return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
-  //     case "PENDING":
-  //       return <Clock className="w-4 h-4 text-yellow-500" />;
-  //     case "RETRY":
-  //       return <RefreshCw className="w-4 h-4 text-orange-500 animate-spin" />;
-  //     case "REVOKED":
-  //       return <XCircle className="w-4 h-4 text-gray-500" />;
-  //     default:
-  //       return <Clock className="w-4 h-4 text-gray-500" />;
-  //   }
-  // };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "SUCCESS":
@@ -262,7 +233,11 @@ export default function EmbeddingPage() {
             <div className="max-w-4xl mx-auto">
               <TaskStatusCard
                 currentTaskId={currentTaskId}
-                taskStatus={taskStatus}
+                taskStatus={
+                  taskStatus
+                    ? { ...taskStatus, error: taskStatus.error ?? undefined }
+                    : null
+                }
                 loading={loading}
                 onRefreshStatus={() => {
                   // Only refresh if not already successful

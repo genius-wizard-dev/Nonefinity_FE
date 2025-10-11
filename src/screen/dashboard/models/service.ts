@@ -49,16 +49,11 @@ export class ModelService {
     }
   }
 
-  /**
-   * List all models with optional filters
-   */
   static async listModels(
     params: ModelListParams = {},
     token?: string
   ): Promise<ModelListResponse | null> {
     try {
-      console.log("🤖 Fetching models:", params);
-
       const queryParams: Record<string, any> = {};
       if (params.skip !== undefined) queryParams.skip = params.skip;
       if (params.limit !== undefined) queryParams.limit = params.limit;

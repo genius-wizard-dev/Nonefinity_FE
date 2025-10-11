@@ -1,16 +1,4 @@
-// Embedding Model Types
-export interface EmbeddingModel {
-  id: string;
-  name: string;
-  description?: string;
-  dimensions: number;
-  max_tokens: number;
-  provider: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
+import type { Model } from "../models/type";
 // Embedding Task Types
 export interface EmbeddingTask {
   id: string;
@@ -121,7 +109,7 @@ import type { FileItem } from "../file-management/types";
 // Store State Types
 export interface EmbeddingStoreState {
   // State
-  models: EmbeddingModel[];
+  models: Model[];
   // activeTasks: EmbeddingTask[];
   completedTasks: EmbeddingTask[];
   allowExtractFiles: FileItem[];

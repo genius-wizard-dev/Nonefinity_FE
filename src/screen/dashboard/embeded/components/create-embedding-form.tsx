@@ -17,12 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Loader2, Play, Upload } from "lucide-react";
-
-interface Model {
-  id: string;
-  name: string;
-  dimensions: number;
-}
+import type { Model } from "../../models/type";
 
 interface File {
   id: string;
@@ -154,7 +149,7 @@ export function CreateEmbeddingForm({
                     <div className="flex items-center justify-between w-full py-1">
                       <span className="font-medium">{model.name}</span>
                       <Badge variant="secondary" className="ml-2">
-                        {model.dimensions}D
+                        {model.model}
                       </Badge>
                     </div>
                   </SelectItem>

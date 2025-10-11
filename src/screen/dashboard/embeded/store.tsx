@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { FileService } from "../file-management/services";
+import { ModelService } from "../models/service";
 import { EmbeddingService } from "./service";
 import type {
   EmbeddingFormData,
@@ -8,9 +9,7 @@ import type {
 } from "./type";
 
 export const useEmbeddingStore = create<EmbeddingStoreState>((set, get) => ({
-  // Initial state
   models: [],
-  // activeTasks: [],
   completedTasks: [],
   allowExtractFiles: [],
   loading: false,
@@ -24,8 +23,8 @@ export const useEmbeddingStore = create<EmbeddingStoreState>((set, get) => ({
   fetchModels: async () => {
     set({ loading: true, error: null });
     try {
-      const models = await EmbeddingService.getModels();
-      set({ models, loading: false });
+      const models = await ModelService.listModels({ type: "embedding" });
+      set({ models: models?.models || [], loading: false });
     } catch (error) {
       set({
         error:
@@ -34,35 +33,6 @@ export const useEmbeddingStore = create<EmbeddingStoreState>((set, get) => ({
       });
     }
   },
-
-  // Fetch active tasks
-  // fetchActiveTasks: async () => {
-  //   set({ loading: true, error: null });
-  //   try {
-  //     const response = await EmbeddingService.getActiveTasks();
-  //     if (response) {
-  //       // Ensure active_tasks is always an array
-  //       const activeTasks = Array.isArray(response.active_tasks)
-  //         ? response.active_tasks
-  //         : [];
-
-  //       set({
-  //         activeTasks,
-  //         loading: false,
-  //       });
-  //     } else {
-  //       set({ activeTasks: [], loading: false });
-  //     }
-  //   } catch (error) {
-  //     set({
-  //       error:
-  //         error instanceof Error
-  //           ? error.message
-  //           : "Failed to fetch active tasks",
-  //       loading: false,
-  //     });
-  //   }
-  // },
 
   // Fetch allow extract files
   fetchAllowExtractFiles: async (token?: string) => {
