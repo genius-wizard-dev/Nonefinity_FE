@@ -18,8 +18,6 @@ export const ENDPOINTS = {
     QUERY: "/datasets/query",
     UPDATE: (id: string) => `/datasets/${id}`,
     UPDATE_SCHEMA: (id: string) => `/datasets/${id}/schema`,
-    ALLOW_CONVERT: "/datasets/allow-convert",
-    ALLOW_EXTRACT: "/datasets/allow-extract",
     INSERT: (datasetId: string, fileId: string) =>
       `/datasets/${datasetId}/insert/${fileId}`,
   },
@@ -33,6 +31,8 @@ export const ENDPOINTS = {
     UPLOAD: "/file/upload", // Save metadata after upload
     DELETE: (id: string) => `/file/${id}`, // Delete single file
     RENAME: (id: string) => `/file/rename/${id}`, // Rename file
+    ALLOW_CONVERT: "/file/allow-convert",
+    ALLOW_EXTRACT: "/file/allow-extract",
     BATCH_DELETE: "/file/batch/delete", // Batch delete files
     STATS: "/file/stats", // Get file statistics
     TYPES: "/file/types", // Get available file types
@@ -46,6 +46,62 @@ export const ENDPOINTS = {
     REFRESH: "/auth/refresh",
     PROFILE: "/auth/profile",
   },
+
+  // Credentials endpoints
+  CREDENTIALS: {
+    LIST: "/credentials",
+    CREATE: "/credentials",
+    GET: (id: string) => `/credentials/${id}`,
+    UPDATE: (id: string) => `/credentials/${id}`,
+    DELETE: (id: string) => `/credentials/${id}`,
+    LIST_BY_PROVIDER: (providerName: string) =>
+      `/credentials/provider/${providerName}`,
+    ENCRYPTION_HEALTH: "/credentials/encryption/health",
+    GENERATE_ENCRYPTION_KEY: "/credentials/encryption/generate-key",
+  },
+
+  // Provider endpoints
+  PROVIDERS: {
+    LIST: "/providers",
+    LIST_BY_TASK: (taskType: string) => `/providers/task/${taskType}`,
+    GET: (providerName: string) => `/providers/${providerName}`,
+    GET_TASK_CONFIG: (providerName: string, taskType: string) =>
+      `/providers/${providerName}/tasks/${taskType}`,
+  },
+
+  MODELS: {
+    CREATE: "/models",
+    LIST: "/models",
+    STATS: "/models/stats",
+
+    GET_DEFAULT: (modelType: "chat" | "embedding") =>
+      `/models/default/${modelType}`,
+    GET: (modelId: string) => `/models/${modelId}`,
+
+    UPDATE: (modelId: string) => `/models/${modelId}`,
+
+    DELETE: (modelId: string) => `/models/${modelId}`,
+
+    SET_DEFAULT: (modelId: string) => `/models/${modelId}/set-default`,
+
+    BY_CREDENTIAL: (credentialId: string) =>
+      `/models/by-credential/${credentialId}`,
+  },
+
+  // Embedding endpoints
+  EMBEDDING: {
+    CREATE: "/embedding/create",
+
+    SEARCH: "/embedding/search",
+    STATUS: (taskId: string) => `/embedding/status/${taskId}`,
+    CANCEL: (taskId: string) => `/embedding/cancel/${taskId}`,
+    ACTIVE: "/embedding/active",
+  },
+
+  // Task endpoints
+  TASKS: {
+    LIST: "/tasks",
+  },
 } as const;
 
 // Helper function to build full endpoint URL
@@ -57,7 +113,6 @@ export const buildEndpoint = (
   return `${prefix}${endpoint}`;
 };
 
-// Helper function to get auth headers
 export const getAuthHeaders = (token?: string): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };

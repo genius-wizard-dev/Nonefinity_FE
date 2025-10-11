@@ -9,7 +9,14 @@ import SignInPage from "./screen/auth/SignIn";
 import SignUpPage from "./screen/auth/SignUp";
 import { Layout } from "./screen/dashboard/index.tsx";
 import LandingPage from "./screen/home/index.tsx";
-import { DatasetManagement, FileManagement, General } from "./screen/index.ts";
+import {
+  Credentials,
+  DatasetManagement,
+  Embedding,
+  FileManagement,
+  General,
+  Models,
+} from "./screen/index.ts";
 
 // Component để redirect nếu đã login
 function HomePageGuard() {
@@ -49,6 +56,9 @@ function App() {
             <Route path="/dashboard/profile" element={<UserProfile />} />
             <Route path="/dashboard/files" element={<FileManagement />} />
             <Route path="/dashboard/datasets" element={<DatasetManagement />} />
+            <Route path="/dashboard/credentials" element={<Credentials />} />
+            <Route path="/dashboard/models" element={<Models />} />
+            <Route path="/dashboard/embedding" element={<Embedding />} />
           </Route>
         </Routes>
         {/* Show the Toaster in the top right corner */}

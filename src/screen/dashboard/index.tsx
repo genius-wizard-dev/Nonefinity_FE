@@ -4,7 +4,16 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { Database, FileText, LayoutDashboard, Menu, X } from "lucide-react";
+import {
+  Brain,
+  Database,
+  FileText,
+  Key,
+  LayoutDashboard,
+  Menu,
+  X,
+  Sparkles,
+} from "lucide-react";
 import "react";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
@@ -34,6 +43,21 @@ export function Layout() {
       name: "Datasets",
       href: "/dashboard/datasets",
       icon: Database,
+    },
+    {
+      name: "Credentials",
+      href: "/dashboard/credentials",
+      icon: Key,
+    },
+    {
+      name: "Models",
+      href: "/dashboard/models",
+      icon: Brain,
+    },
+    {
+      name: "Embedding",
+      href: "/dashboard/embedding",
+      icon: Sparkles,
     },
   ];
 

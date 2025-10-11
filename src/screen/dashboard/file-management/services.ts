@@ -36,6 +36,46 @@ export class FileService {
       return [];
     }
   }
+  static async getAllowConvertFiles(token: string): Promise<FileItem[]> {
+    try {
+      const response = await httpClient.get<BackendFileItem[]>(
+        ENDPOINTS.FILES.ALLOW_CONVERT,
+        undefined,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to fetch files:", response.message);
+        return [];
+      }
+
+      const files = response.getData();
+      return files.map(mapFileItem);
+    } catch (error) {
+      console.error("Failed to fetch files:", error);
+      return [];
+    }
+  }
+  static async getAllowExtractFiles(token: string): Promise<FileItem[]> {
+    try {
+      const response = await httpClient.get<BackendFileItem[]>(
+        ENDPOINTS.FILES.ALLOW_EXTRACT,
+        undefined,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to fetch files:", response.message);
+        return [];
+      }
+
+      const files = response.getData();
+      return files.map(mapFileItem);
+    } catch (error) {
+      console.error("Failed to fetch files:", error);
+      return [];
+    }
+  }
 
   /**
    * Search files by name - uses the same logic as FileList component
