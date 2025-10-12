@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Check,
   Copy,
@@ -105,12 +106,7 @@ function ManageAICredentials() {
     });
   };
 
-  // Get the selected provider's default base URL
-  const getSelectedProvider = () => {
-    return providers.find((p) => p.id === formData.provider_id);
-  };
-
-  const selectedProvider = getSelectedProvider();
+  // Helper to find selected provider (unused for now)
 
   // Validation for add form
   const isAddFormValid = () => {
@@ -451,13 +447,7 @@ function ManageAICredentials() {
       </div>
 
       <div className="bg-card shadow-sm rounded-lg border overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-            <span>Loading credentials...</span>
-          </div>
-        ) : (
-          <Table>
+        <Table>
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead className="font-semibold text-foreground">
@@ -487,7 +477,46 @@ function ManageAICredentials() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {credentials.length === 0 ? (
+              {loading && credentials.length === 0 ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i} className="border-border/50">
+                    <TableCell className="font-medium text-foreground">
+                      <Skeleton className="h-4 w-40" />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-7 w-7 rounded" />
+                        <Skeleton className="h-7 w-7 rounded" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-6 w-10 rounded-full" />
+                        <Skeleton className="h-3 w-3 rounded-full" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Skeleton className="h-4 w-40" />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Skeleton className="h-4 w-10" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 w-8 rounded" />
+                        <Skeleton className="h-8 w-8 rounded" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : credentials.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={8}
@@ -614,7 +643,6 @@ function ManageAICredentials() {
               )}
             </TableBody>
           </Table>
-        )}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

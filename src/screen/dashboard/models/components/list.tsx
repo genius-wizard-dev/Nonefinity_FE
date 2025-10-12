@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Edit, Loader2, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ModelTableProps {
   models: any[];
@@ -29,12 +30,12 @@ export function ModelTable({
   loading,
   credentials,
   togglingStatus,
-  settingDefault,
+  settingDefault: _settingDefault,
   deletingModelId,
   onEdit,
   onDelete,
   onToggleStatus,
-  onSetDefault,
+  onSetDefault: _onSetDefault,
 }: ModelTableProps) {
   const getCredentialById = (credentialId: string) => {
     return credentials.find((c) => c.id === credentialId);
@@ -75,14 +76,40 @@ export function ModelTable({
         </TableHeader>
         <TableBody>
           {loading && models.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Loading models...</span>
-                </div>
-              </TableCell>
-            </TableRow>
+            Array.from({ length: 6 }).map((_, i) => (
+              <TableRow key={i} className="border-border/50">
+                <TableCell className="font-medium text-foreground">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-56" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 justify-start">
+                    <Skeleton className="h-8 w-8 rounded" />
+                    <Skeleton className="h-8 w-8 rounded" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
           ) : models.length === 0 ? (
             <TableRow>
               <TableCell

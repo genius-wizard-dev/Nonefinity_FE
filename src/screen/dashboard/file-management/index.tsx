@@ -50,6 +50,7 @@ export default function FileManagement() {
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
+  
 
   // Handle search
   const handleSearch = useCallback(
@@ -612,7 +613,7 @@ export default function FileManagement() {
           onCancelRename={handleCancelRename}
           onDownload={handleDownload}
           renamingFileId={renamingFileId}
-          isLoading={false}
+          isLoading={isLoading || isSearching}
         />
       </div>
 

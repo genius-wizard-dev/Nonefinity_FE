@@ -26,7 +26,7 @@ export function Header() {
               Features
             </Link>
             <Link
-              to="/docs"
+              to="https://docs.nonefinity.com/"
               className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
             >
               Documentation
@@ -87,7 +87,7 @@ export function Header() {
                 Features
               </Link>
               <Link
-                to="/docs"
+                to="https://docs.nonefinity.com/"
                 className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
