@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,7 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Search } from "lucide-react";
+import { mapProviderIconWithSize } from "@/utils/map-provider-icon";
+import { Database, MessageSquare, Search } from "lucide-react";
 import type { ModelFilters as Filters } from "../type";
 
 interface ModelFiltersProps {
@@ -28,11 +28,11 @@ export function ModelFilters({
 
     if (filters.type === "chat") {
       return ["openai", "anthropic", "google", "azure_openai"].includes(
-        c.provider_name.toLowerCase()
+        c.provider.toLowerCase()
       );
     } else if (filters.type === "embedding") {
       return ["openai", "azure_openai", "cohere"].includes(
-        c.provider_name.toLowerCase()
+        c.provider.toLowerCase()
       );
     }
     return true;
@@ -70,8 +70,14 @@ export function ModelFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="chat">Chat</SelectItem>
-              <SelectItem value="embedding">Embedding</SelectItem>
+              <SelectItem value="chat" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Chat
+              </SelectItem>
+              <SelectItem value="embedding" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Embedding
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -91,10 +97,20 @@ export function ModelFilters({
               {filteredCredentialsForFilter.map((credential) => (
                 <SelectItem key={credential.id} value={credential.id}>
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const ProviderIcon = mapProviderIconWithSize(
+                        credential.provider.toLowerCase() as any,
+                        "icon",
+                        "light",
+                        true
+                      );
+                      return ProviderIcon ? (
+                        <span className="flex items-center h-4 w-4 flex-shrink-0">
+                          <ProviderIcon />
+                        </span>
+                      ) : null;
+                    })()}
                     <span>{credential.name}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {credential.provider_name}
-                    </Badge>
                   </div>
                 </SelectItem>
               ))}

@@ -58,6 +58,7 @@ export const ENDPOINTS = {
       `/credentials/provider/${providerName}`,
     ENCRYPTION_HEALTH: "/credentials/encryption/health",
     GENERATE_ENCRYPTION_KEY: "/credentials/encryption/generate-key",
+    MODEL_CREDENTIAL: (id: string) => `/credentials/model?id=${id}`,
   },
 
   // Provider endpoints

@@ -5,10 +5,18 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export type ProviderName =
+  | "groq"
+  | "openai"
+  | "huggingface"
+  | "nvidia"
+  | "togetherai"
+  | "openrouter";
+
 // Provider Types
 export interface Provider {
   id: string;
-  provider: string;
+  provider: ProviderName;
   name: string;
   description: string;
   base_url: string;
@@ -40,6 +48,7 @@ export interface Credential {
   id: string;
   name: string;
   provider_id: string;
+  provider: ProviderName;
   provider_name: string;
   base_url?: string;
   additional_headers: Record<string, string>;
@@ -47,7 +56,7 @@ export interface Credential {
   created_at: string;
   updated_at?: string;
   api_key: string;
-  usage_count: number;  
+  usage_count: number;
 }
 
 export interface CredentialListResponse {
@@ -89,4 +98,11 @@ export interface GenerateKeyResponse {
   length: number;
   timestamp: string;
   recommendation: string;
+}
+
+export interface ModelCredential {
+  id: string;
+  object: string;
+  created: string;
+  owned_by?: string;
 }

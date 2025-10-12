@@ -10,6 +10,7 @@ export interface Model {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  dimension?: number;
 }
 
 export interface CreateModelRequest {
@@ -80,4 +81,23 @@ export interface ModelFilters {
   credential_id?: string;
   active_only?: boolean;
   search?: string;
+}
+
+export interface ModelCredential {
+  id: string;
+  object: string;
+  created: string;
+  owned_by?: string;
+}
+
+// Form state for model creation
+export interface ModelFormState {
+  credential_id: string;
+  name: string;
+  model: string;
+  type: "chat" | "embedding";
+  description: string;
+  is_active: boolean;
+  loadingCredentials: boolean;
+  loadingModelCredentials: boolean;
 }
