@@ -3,6 +3,7 @@ import { httpClient } from "@/lib/axios";
 import type {
   CreateModelRequest,
   Model,
+  ModelCredential,
   ModelListParams,
   ModelListResponse,
   ModelStats,
@@ -343,6 +344,36 @@ export class ModelService {
       return data;
     } catch (error) {
       console.error("❌ Failed to fetch models by task type:", error);
+      return null;
+    }
+  }
+
+  static async getModelCredential(
+    credential_id: string,
+    token?: string
+  ): Promise<ModelCredential[] | null> {
+    try {
+      console.log("🤖 Fetching model credentials for credential:", {
+        credential_id,
+      });
+
+      const response = await httpClient.get<ModelCredential[]>(
+        ENDPOINTS.CREDENTIALS.MODEL_CREDENTIAL(credential_id),
+        undefined,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch model credential:", response.message);
+        return null;
+      }
+
+      const data = response.getData();
+      console.log("📥 Model credentials response:", data);
+
+      return data;
+    } catch (error) {
+      console.error("❌ Failed to fetch model credential:", error);
       return null;
     }
   }

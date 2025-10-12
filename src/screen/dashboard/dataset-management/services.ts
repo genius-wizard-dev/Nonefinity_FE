@@ -70,8 +70,6 @@ export class DatasetService {
     token?: string
   ): Promise<Dataset | null> {
     try {
-      console.log("📊 Fetching dataset:", datasetId);
-
       const response = await httpClient.get<BackendDataset>(
         ENDPOINTS.DATASETS.GET(datasetId),
         undefined,
@@ -169,7 +167,7 @@ export class DatasetService {
   static async createDataset(
     datasetName: string,
     description: string,
-    schema: Array<{
+    data_schema: Array<{
       column_name: string;
       column_type: string;
       desc?: string;
@@ -177,13 +175,10 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-      console.log("🆕 Creating dataset:", { datasetName, description, schema });
-
-      // Use JSON body instead of form data
       const jsonBody = {
         dataset_name: datasetName,
         description: description || "",
-        schema: schema,
+        data_schema: data_schema,
       };
 
       const response = await httpClient.post<BackendDataset>(

@@ -306,7 +306,7 @@ export function DatasetList({
       try {
         const token = await getClerkToken();
 
-        const schema = createColumns.map((col) => ({
+        const data_schema = createColumns.map((col) => ({
           column_name: col.name,
           column_type: col.type.toLowerCase(),
           desc: col.description || undefined,
@@ -315,7 +315,7 @@ export function DatasetList({
         const result = await DatasetService.createDataset(
           createDatasetName.trim(),
           createDatasetDescription,
-          schema,
+          data_schema,
           token
         );
 

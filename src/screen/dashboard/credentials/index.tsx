@@ -8,7 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { mapProviderIconWithSize } from "@/utils/map-provider-icon";
 import {
   Check,
   Copy,
@@ -397,16 +397,25 @@ function ManageAICredentials() {
                       <SelectValue placeholder="Select a provider" />
                     </SelectTrigger>
                     <SelectContent>
-                      {providers.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{provider.name}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {provider.provider}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {providers.map((provider) => {
+                        // This uses the same pattern as in @add.tsx, showing the icon if present
+                        const ProviderIcon = mapProviderIconWithSize(
+                          provider.provider as any,
+                          "icon",
+                          "light",
+                          true
+                        );
+                        return (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            <div className="flex items-center gap-2">
+                              {ProviderIcon && (
+                                <ProviderIcon className="w-4 h-4" />
+                              )}
+                              <span>{provider.name}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -448,201 +457,210 @@ function ManageAICredentials() {
 
       <div className="bg-card shadow-sm rounded-lg border overflow-hidden">
         <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead className="font-semibold text-foreground">
-                  Name
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Provider
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  API Key
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Active
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Created
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Base URL
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Usage Count
-                </TableHead>
-                <TableHead className="w-[70px] font-semibold text-foreground">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && credentials.length === 0 ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i} className="border-border/50">
-                    <TableCell className="font-medium text-foreground">
-                      <Skeleton className="h-4 w-40" />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <Skeleton className="h-4 w-28" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-7 w-7 rounded" />
-                        <Skeleton className="h-7 w-7 rounded" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-6 w-10 rounded-full" />
-                        <Skeleton className="h-3 w-3 rounded-full" />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <Skeleton className="h-4 w-40" />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <Skeleton className="h-4 w-10" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Skeleton className="h-8 w-8 rounded" />
-                        <Skeleton className="h-8 w-8 rounded" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : credentials.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    No credentials found. Add your first credential to get
-                    started.
+          <TableHeader>
+            <TableRow className="border-border/50">
+              <TableHead className="font-semibold text-foreground pl-6">
+                Name
+              </TableHead>
+              <TableHead className="font-semibold text-foreground pl-4">
+                Provider
+              </TableHead>
+              <TableHead className="font-semibold text-foreground pl-4">
+                API Key
+              </TableHead>
+              <TableHead className="font-semibold text-foreground pl-4">
+                Active
+              </TableHead>
+              <TableHead className="font-semibold text-foreground pl-4">
+                Created
+              </TableHead>
+
+              <TableHead className="font-semibold text-foreground pl-4">
+                Usage Count
+              </TableHead>
+              <TableHead className="w-[70px] font-semibold text-foreground pl-4 pr-6">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && credentials.length === 0 ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i} className="border-border/50">
+                  <TableCell className="font-medium text-foreground pl-6">
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell className="pl-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-7 w-7 rounded" />
+                      <Skeleton className="h-7 w-7 rounded" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="pl-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-6 w-10 rounded-full" />
+                      <Skeleton className="h-3 w-3 rounded-full" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    <Skeleton className="h-4 w-10" />
+                  </TableCell>
+                  <TableCell className="pl-4 pr-6">
+                    <div className="flex gap-2">
+                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-8 w-8 rounded" />
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                credentials.map((credential) => (
-                  <TableRow
-                    key={credential.id}
-                    className="border-border/50 hover:bg-muted/50 transition-colors"
-                  >
-                    <TableCell className="font-medium text-foreground">
-                      {credential.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {credential.provider_name}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <code className="text-sm font-mono">
-                          {visibleKeys.has(credential.id)
-                            ? "••••••••••••••••"
-                            : maskApiKey(credential.api_key)}
-                        </code>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => toggleKeyVisibility(credential.id)}
-                        >
-                          {visibleKeys.has(credential.id) ? (
-                            <EyeOff className="h-3 w-3" />
-                          ) : (
-                            <Eye className="h-3 w-3" />
-                          )}
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() =>
-                            copyToClipboard(credential.id, credential.api_key)
-                          }
-                        >
-                          {copiedId === credential.id ? (
-                            <Check className="h-3 w-3 text-green-600" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={credential.is_active}
-                          onCheckedChange={() =>
-                            handleToggleStatus(
-                              credential.id,
-                              credential.is_active
-                            )
-                          }
-                          disabled={
-                            togglingStatus === credential.id ||
-                            credential.usage_count > 0
-                          }
-                        />
-                        {togglingStatus === credential.id && (
-                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              ))
+            ) : credentials.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  No credentials found. Add your first credential to get
+                  started.
+                </TableCell>
+              </TableRow>
+            ) : (
+              credentials.map((credential) => (
+                <TableRow
+                  key={credential.id}
+                  className="border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell className="font-medium text-foreground pl-6">
+                    {credential.name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const ProviderIcon = mapProviderIconWithSize(
+                          credential.provider as any,
+                          "icon",
+                          "light",
+                          true
+                        );
+                        return ProviderIcon ? (
+                          <>
+                            <span className="flex items-center h-7 w-7">
+                              <ProviderIcon />
+                            </span>
+                            <span className="text-sm">
+                              {credential.provider_name}
+                            </span>
+                          </>
+                        ) : null;
+                      })()}
+                    </div>
+                  </TableCell>
+                  <TableCell className="pl-4">
+                    <div className="flex items-center gap-2">
+                      <code className="text-sm font-mono">
+                        {visibleKeys.has(credential.id)
+                          ? "••••••••••••••••"
+                          : maskApiKey(credential.api_key)}
+                      </code>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => toggleKeyVisibility(credential.id)}
+                      >
+                        {visibleKeys.has(credential.id) ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(credential.created_at)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <span className="text-sm">
-                        {credential.base_url || (
-                          <span className="text-muted-foreground/60">
-                            Default
-                          </span>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() =>
+                          copyToClipboard(credential.id, credential.api_key)
+                        }
+                      >
+                        {copiedId === credential.id ? (
+                          <Check className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
                         )}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {credential.usage_count}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          onClick={() => openEditDialog(credential)}
-                          aria-label="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-red-600"
-                          onClick={() => handleDirectDelete(credential.id)}
-                          aria-label="Delete"
-                          disabled={
-                            credential.usage_count > 0 ||
-                            deletingCredentialId === credential.id
-                          }
-                        >
-                          {deletingCredentialId === credential.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell className="pl-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={credential.is_active}
+                        onCheckedChange={() =>
+                          handleToggleStatus(
+                            credential.id,
+                            credential.is_active
+                          )
+                        }
+                        disabled={
+                          togglingStatus === credential.id ||
+                          credential.usage_count > 0
+                        }
+                      />
+                      {togglingStatus === credential.id && (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground pl-4">
+                    {formatDate(credential.created_at)}
+                  </TableCell>
+
+                  <TableCell className="text-muted-foreground pl-4">
+                    {credential.usage_count}
+                  </TableCell>
+                  <TableCell className="pl-4 pr-6">
+                    <div className="flex gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => openEditDialog(credential)}
+                        aria-label="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-600"
+                        onClick={() => handleDirectDelete(credential.id)}
+                        aria-label="Delete"
+                        disabled={
+                          credential.usage_count > 0 ||
+                          deletingCredentialId === credential.id
+                        }
+                      >
+                        {deletingCredentialId === credential.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -684,16 +702,23 @@ function ManageAICredentials() {
                   <SelectValue placeholder="Select a provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  {providers.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{provider.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {provider.provider}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {providers.map((provider) => {
+                    const ProviderIcon = mapProviderIconWithSize(
+                      provider.provider as any,
+                      "icon",
+                      "light",
+                      true
+                    );
+
+                    return (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        <div className="flex items-center gap-2 justify-center w-full">
+                          {ProviderIcon && <ProviderIcon className="w-4 h-4" />}
+                          <span>{provider.name}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               {editingCredential?.usage_count > 0 && (
@@ -715,7 +740,7 @@ function ManageAICredentials() {
                 Leave blank to keep current API key
               </p>
             </div>
-            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"

@@ -4,6 +4,7 @@ import { ModelService } from "./service";
 import type {
   CreateModelRequest,
   Model,
+  ModelCredential,
   ModelFilters,
   ModelListParams,
   ModelStats,
@@ -15,7 +16,17 @@ interface ModelState {
   models: Model[];
   selectedModel: Model | null;
   stats: ModelStats | null;
-
+  modelCredentials: ModelCredential[];
+  modelCredentialLoading: boolean;
+  // Form state for model creation
+  formData: {
+    credential_id: string;
+    name: string;
+    model: string;
+    type: "chat" | "embedding";
+    description: string;
+    is_active: boolean;
+  };
   // UI State - separate loading states
   loading: boolean; // for initial fetch
   error: string | null;
@@ -34,9 +45,11 @@ interface ModelState {
   createModel: (data: CreateModelRequest) => Promise<void>;
   updateModel: (modelId: string, data: UpdateModelRequest) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
-  setDefaultModel: (modelId: string) => Promise<void>;
   fetchModelsByCredential: (credentialId: string) => Promise<void>;
-
+  fetchModelCredential: (credentialId: string) => Promise<void>;
+  // Form actions
+  setFormData: (field: string, value: any) => void;
+  resetFormData: () => void;
   // UI actions
   setSelectedModel: (model: Model | null) => void;
   setFilters: (filters: Partial<ModelFilters>) => void;
@@ -67,6 +80,16 @@ const initialState = {
     skip: 0,
     limit: 20,
     total: 0,
+  },
+  modelCredentials: [],
+  modelCredentialLoading: false,
+  formData: {
+    credential_id: "",
+    name: "",
+    model: "",
+    type: "chat" as const,
+    description: "",
+    is_active: true,
   },
 };
 
@@ -172,17 +195,8 @@ export const useModelStore = create<ModelState>()(
         try {
           const result = await ModelService.createModel(data);
           if (result.success) {
-            // Optimistic add - add the new model to the list immediately
-            const newModel = result.data;
-            if (newModel) {
-              set((state) => ({
-                models: [...state.models, newModel],
-              }));
-            } else {
-              // Fallback to refetch if no model data returned
-              await get().fetchModels();
-            }
-            // Refresh stats in background
+            // Refresh the models list and stats
+            await get().fetchModels();
             get().fetchModelStats();
           } else {
             set({
@@ -283,8 +297,6 @@ export const useModelStore = create<ModelState>()(
         }
       },
 
-     
-
       fetchModelsByCredential: async (credentialId: string) => {
         set({ loading: true, error: null });
         try {
@@ -313,6 +325,58 @@ export const useModelStore = create<ModelState>()(
             loading: false,
           });
         }
+      },
+
+      fetchModelCredential: async (credentialId: string) => {
+        set({ modelCredentialLoading: true, error: null });
+        try {
+          const response = await ModelService.getModelCredential(credentialId);
+          if (response) {
+            set({ modelCredentials: response, modelCredentialLoading: false });
+          } else {
+            set({ modelCredentials: [], modelCredentialLoading: false });
+          }
+        } catch (error) {
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch model credential",
+            modelCredentialLoading: false,
+          });
+        }
+      },
+
+      // Form actions
+      setFormData: (field: string, value: any) => {
+        set((state) => ({
+          formData: { ...state.formData, [field]: value },
+        }));
+
+        // If credential_id changes, fetch model credentials and reset model field
+        if (field === "credential_id") {
+          if (value) {
+            get().fetchModelCredential(value);
+          }
+          // Reset model field when credential changes
+          set((state) => ({
+            formData: { ...state.formData, model: "" },
+          }));
+        }
+      },
+
+      resetFormData: () => {
+        set({
+          formData: {
+            credential_id: "",
+            name: "",
+            model: "",
+            type: "chat",
+            description: "",
+            is_active: true,
+          },
+          modelCredentials: [],
+        });
       },
 
       // UI actions
@@ -350,6 +414,9 @@ export const useModelSelectors = () => {
     models: store.models,
     selectedModel: store.selectedModel,
     stats: store.stats,
+    modelCredentials: store.modelCredentials,
+    modelCredentialLoading: store.modelCredentialLoading,
+    formData: store.formData,
 
     // UI selectors
     loading: store.loading,

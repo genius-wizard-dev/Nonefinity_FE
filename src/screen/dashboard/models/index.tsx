@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useCredentialStore } from "@/screen/dashboard/credentials/store";
 import { Brain, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AddModelDialog,
@@ -12,8 +12,8 @@ import {
   ModelTable,
 } from "./components";
 import { ModelService } from "./service";
-import { useModelStore } from "./store";
-import type { CreateModelRequest, UpdateModelRequest } from "./type";
+import { useModelSelectors, useModelStore } from "./store";
+import type { UpdateModelRequest } from "./type";
 
 const ModelManagement = () => {
   const {
@@ -26,9 +26,13 @@ const ModelManagement = () => {
     createModel,
     updateModel,
     deleteModel,
-    setDefaultModel,
     setFilters,
+    setFormData,
+    resetFormData,
   } = useModelStore();
+
+  const { modelCredentials, modelCredentialLoading, formData } =
+    useModelSelectors();
 
   const { credentials, fetchCredentials } = useCredentialStore();
 
@@ -41,16 +45,6 @@ const ModelManagement = () => {
   const [deletingModel, setDeletingModel] = useState(false);
   const [deletingModelId, setDeletingModelId] = useState<string | null>(null);
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
-  const [settingDefault, setSettingDefault] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState<CreateModelRequest>({
-    credential_id: "",
-    name: "",
-    model: "",
-    type: "chat",
-    description: "",
-    is_active: true,
-  });
 
   const [filteredCredentialsForAdd, setFilteredCredentialsForAdd] = useState<
     any[]
@@ -96,12 +90,7 @@ const ModelManagement = () => {
   }, [formData.type, isAddDialogOpen]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => {
-      if (field === "type") {
-        return { ...prev, [field]: value, credential_id: "" };
-      }
-      return { ...prev, [field]: value };
-    });
+    setFormData(field, value);
   };
 
   const handleFilterChange = (field: string, value: any) => {
@@ -112,8 +101,7 @@ const ModelManagement = () => {
     return (
       formData.credential_id !== "" &&
       formData.name.trim() !== "" &&
-      formData.model.trim() !== "" &&
-      formData.type !== "chat"
+      formData.model.trim() !== ""
     );
   };
 
@@ -127,14 +115,7 @@ const ModelManagement = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      credential_id: "",
-      name: "",
-      model: "",
-      type: "chat",
-      description: "",
-      is_active: true,
-    });
+    resetFormData();
   };
 
   const handleAddModel = async () => {
@@ -256,42 +237,14 @@ const ModelManagement = () => {
     }
   };
 
-  const handleSetDefault = async (modelId: string, isDefault: boolean) => {
-    if (isDefault) {
-      toast.info("Already default", {
-        description: "This model is already set as default.",
-      });
-      return;
-    }
-
-    setSettingDefault(modelId);
-    try {
-      await setDefaultModel(modelId);
-      toast.success("Default model updated", {
-        description: "The model has been set as default.",
-      });
-    } catch (error: any) {
-      toast.error("Failed to set default model", {
-        description:
-          error?.response?.data?.message ||
-          error?.message ||
-          "An unexpected error occurred.",
-      });
-    } finally {
-      setSettingDefault(null);
-    }
-  };
-
   const openEditDialog = (model: any) => {
     setEditingModel(model);
-    setFormData({
-      credential_id: model.credential_id,
-      name: model.name,
-      model: model.model,
-      type: model.type,
-      description: model.description || "",
-      is_active: model.is_active,
-    });
+    setFormData("credential_id", model.credential_id);
+    setFormData("name", model.name);
+    setFormData("model", model.model);
+    setFormData("type", model.type);
+    setFormData("description", model.description || "");
+    setFormData("is_active", model.is_active);
     setIsEditDialogOpen(true);
   };
 
@@ -360,12 +313,10 @@ const ModelManagement = () => {
         loading={loading}
         credentials={credentials}
         togglingStatus={togglingStatus}
-        settingDefault={settingDefault}
         deletingModelId={deletingModelId}
         onEdit={openEditDialog}
         onDelete={handleDirectDelete}
         onToggleStatus={handleToggleStatus}
-        onSetDefault={handleSetDefault}
       />
 
       {/* Add Dialog */}
@@ -379,9 +330,20 @@ const ModelManagement = () => {
         onFormChange={handleInputChange}
         credentials={filteredCredentialsForAdd}
         loadingCredentials={loadingCredentials}
+        modelCredentials={modelCredentials}
+        loadingModelCredentials={modelCredentialLoading}
         onSubmit={handleAddModel}
         isSubmitting={addingModel}
         isFormValid={isAddFormValid()}
+        onTypeChange={useCallback(
+          (type: "chat" | "embedding") => {
+            setFormData("type", type);
+            // Reset credential and model when type changes
+            setFormData("credential_id", "");
+            setFormData("model", "");
+          },
+          [setFormData]
+        )}
       />
 
       {/* Edit Dialog */}
