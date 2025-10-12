@@ -25,7 +25,7 @@ const footerSections = [
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "/docs", icon: Book },
+      { label: "Documentation", href: "https://docs.nonefinity.com/", icon: Book },
       { label: "API Reference", href: "/api" },
       { label: "Tutorials", href: "/tutorials" },
       { label: "Examples", href: "/examples" },
