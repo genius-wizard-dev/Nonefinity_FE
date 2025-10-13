@@ -15,6 +15,8 @@ import {
   Embedding,
   FileManagement,
   General,
+  KnowledgeStoreDetail,
+  KnowledgeStores,
   Models,
 } from "./screen/index.ts";
 
@@ -56,6 +58,14 @@ function App() {
             <Route path="/dashboard/profile" element={<UserProfile />} />
             <Route path="/dashboard/files" element={<FileManagement />} />
             <Route path="/dashboard/datasets" element={<DatasetManagement />} />
+            <Route
+              path="/dashboard/knowledge-stores"
+              element={<KnowledgeStores />}
+            />
+            <Route
+              path="/dashboard/knowledge-stores/:id"
+              element={<KnowledgeStoreDetail />}
+            />
             <Route path="/dashboard/credentials" element={<Credentials />} />
             <Route path="/dashboard/models" element={<Models />} />
             <Route path="/dashboard/embedding" element={<Embedding />} />
