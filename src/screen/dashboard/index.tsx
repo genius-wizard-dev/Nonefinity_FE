@@ -5,14 +5,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import {
+  BookOpen,
   Brain,
   Database,
   FileText,
   Key,
   LayoutDashboard,
   Menu,
-  X,
   Sparkles,
+  X,
 } from "lucide-react";
 import "react";
 import { useEffect, useState } from "react";
@@ -43,6 +44,11 @@ export function Layout() {
       name: "Datasets",
       href: "/dashboard/datasets",
       icon: Database,
+    },
+    {
+      name: "Knowledge Stores",
+      href: "/dashboard/knowledge-stores",
+      icon: BookOpen,
     },
     {
       name: "Credentials",

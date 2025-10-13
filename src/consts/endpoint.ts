@@ -103,6 +103,18 @@ export const ENDPOINTS = {
   TASKS: {
     LIST: "/tasks",
   },
+
+  // Knowledge Store endpoints
+  KNOWLEDGE_STORE: {
+    LIST: "/knowledge-stores",
+    CREATE: "/knowledge-stores",
+    GET: (id: string) => `/knowledge-stores/${id}`,
+    UPDATE: (id: string) => `/knowledge-stores/${id}`,
+    DELETE: (id: string) => `/knowledge-stores/${id}`,
+    CHECK_NAME: (name: string) => `/knowledge-stores/check-name/${name}`,
+    INFO: (id: string) => `/knowledge-stores/${id}/info`,
+    SCROLL_DATA: (id: string) => `/knowledge-stores/${id}/scroll-data`,
+  },
 } as const;
 
 // Helper function to build full endpoint URL

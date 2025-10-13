@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "./error-boundary";
 import { Loading } from "./loading";
 
-export { Loading };
+export { ErrorBoundary, Loading };
