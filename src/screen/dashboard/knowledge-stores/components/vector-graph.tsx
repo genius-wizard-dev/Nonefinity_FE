@@ -24,7 +24,7 @@ import "reactflow/dist/style.css";
 export type VectorPoint = {
   id: string;
   vector: number[];
-  payload: Record<string, any>;
+  text: string;
   score?: number;
   timestamp: string;
 };
@@ -202,6 +202,7 @@ export default function VectorFlowGraph({
   return (
     <div className="w-full h-full">
       <ReactFlow
+        proOptions={{ hideAttribution: true }}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -280,34 +281,28 @@ export default function VectorFlowGraph({
                 {/* Tabs for View Options */}
                 <Tabs defaultValue="payload" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="payload">View Payload</TabsTrigger>
+                    <TabsTrigger value="payload">View Text</TabsTrigger>
                     <TabsTrigger value="vector">View Vector</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="payload" className="mt-4">
-                    {Object.keys(selectedVector.payload).length > 0 ? (
+                    {selectedVector.text ? (
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">
-                          Payload Data
+                          Text Content
                         </p>
                         <div className="max-h-64 overflow-y-auto">
-                          <CodeBlock
-                            code={JSON.stringify(
-                              selectedVector.payload,
-                              null,
-                              2
-                            )}
-                            language="json"
-                            className="border-0 shadow-none whitespace-pre-wrap"
-                          >
-                            <CodeBlockCopyButton />
-                          </CodeBlock>
+                          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                              {selectedVector.text}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ) : (
                       <div className="text-center py-8">
                         <p className="text-sm text-gray-500">
-                          No payload data available
+                          No text data available
                         </p>
                       </div>
                     )}

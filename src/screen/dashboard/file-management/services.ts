@@ -105,33 +105,6 @@ export class FileService {
   }
 
   /**
-   * Get a specific file by ID
-   */
-  static async getFileById(
-    id: string,
-    token?: string
-  ): Promise<FileItem | null> {
-    try {
-      const response = await httpClient.get<BackendFileItem>(
-        ENDPOINTS.FILES.GET(id),
-        undefined,
-        token
-      );
-
-      if (!response.isSuccess) {
-        console.error("Failed to fetch file by ID:", response.message);
-        return null;
-      }
-
-      const fileData = response.getData();
-      return mapFileItem(fileData);
-    } catch (error) {
-      console.error("Failed to fetch file by ID:", error);
-      return null;
-    }
-  }
-
-  /**
    * Get available file types
    */
   static async getFileTypes(token?: string): Promise<string[]> {

@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import React, { useState } from "react";
 import { useKnowledgeStoreStore } from "../store";
 import type { KnowledgeStore } from "../types";
@@ -60,7 +61,7 @@ export const DeleteKnowledgeStoreDialog: React.FC<
           <DialogDescription>
             This action cannot be undone. This will permanently delete the
             knowledge store and all its data from the database and Qdrant
-            collection.
+            collection. All related embedding tasks will also be deleted.
           </DialogDescription>
         </DialogHeader>
 
@@ -73,6 +74,7 @@ export const DeleteKnowledgeStoreDialog: React.FC<
                 <li>Knowledge store "{knowledgeStore.name}"</li>
                 <li>All vectors in the Qdrant collection</li>
                 <li>All associated metadata</li>
+                <li>All related embedding tasks</li>
               </ul>
               <p className="mt-2 font-medium">
                 This action cannot be reversed!
@@ -126,7 +128,9 @@ export const DeleteKnowledgeStoreDialog: React.FC<
             onClick={handleDelete}
             disabled={isDeleting}
           >
-            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isDeleting && (
+              <LogoSpinner size="sm" className="mr-2" variant="light" />
+            )}
             Delete Permanently
           </Button>
         </DialogFooter>

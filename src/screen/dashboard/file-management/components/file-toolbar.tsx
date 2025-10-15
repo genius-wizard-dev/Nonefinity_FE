@@ -4,11 +4,11 @@ import {
   Grid3x3,
   Keyboard,
   List,
-  Loader2,
   Search,
   Trash2,
   Upload,
 } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import type { ViewMode } from "../types";
 
 interface FileToolbarProps {
@@ -97,7 +97,7 @@ export function FileToolbar({
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LogoSpinner size="sm" />
               ) : (
                 <Upload className="h-4 w-4" />
               )}

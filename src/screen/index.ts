@@ -1,6 +1,6 @@
 import Credentials from "./dashboard/credentials";
 import DatasetManagement from "./dashboard/dataset-management";
-import Embedding from "./dashboard/embeded";
+import Embedding from "./dashboard/embedding";
 import FileManagement from "./dashboard/file-management";
 import General from "./dashboard/general";
 import KnowledgeStores from "./dashboard/knowledge-stores";

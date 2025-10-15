@@ -12,8 +12,8 @@ import {
   Key,
   LayoutDashboard,
   Menu,
-  Sparkles,
   X,
+  Zap,
 } from "lucide-react";
 import "react";
 import { useEffect, useState } from "react";
@@ -51,6 +51,11 @@ export function Layout() {
       icon: BookOpen,
     },
     {
+      name: "Embedding",
+      href: "/dashboard/embedding",
+      icon: Zap,
+    },
+    {
       name: "Credentials",
       href: "/dashboard/credentials",
       icon: Key,
@@ -59,11 +64,6 @@ export function Layout() {
       name: "Models",
       href: "/dashboard/models",
       icon: Brain,
-    },
-    {
-      name: "Embedding",
-      href: "/dashboard/embedding",
-      icon: Sparkles,
     },
   ];
 

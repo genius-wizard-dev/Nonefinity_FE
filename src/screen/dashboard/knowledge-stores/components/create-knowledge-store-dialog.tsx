@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import React, { useEffect, useState } from "react";
 import { useKnowledgeStoreStore } from "../store";
 import type { KnowledgeStoreCreateRequest } from "../types";
@@ -126,7 +127,7 @@ export const CreateKnowledgeStoreDialog: React.FC<
                 disabled={isSubmitting}
               />
               {nameValidation.isChecking && (
-                <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-400" />
+                <LogoSpinner size="sm" className="absolute right-3 top-3 text-gray-400" />
               )}
               {nameValidation.isAvailable === true && (
                 <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
@@ -231,7 +232,7 @@ export const CreateKnowledgeStoreDialog: React.FC<
               }
             >
               {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LogoSpinner size="sm" className="mr-2" />
               )}
               Create Knowledge Store
             </Button>

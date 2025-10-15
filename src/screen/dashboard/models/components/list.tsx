@@ -13,10 +13,10 @@ import {
   Copy,
   Database,
   Edit,
-  Loader2,
   MessageSquare,
   Trash2,
 } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import { toast } from "sonner";
 
 interface ModelTableProps {
@@ -191,7 +191,7 @@ export function ModelTable({
                       disabled={togglingStatus === model.id}
                     />
                     {togglingStatus === model.id && (
-                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      <LogoSpinner size="sm" className="text-muted-foreground" />
                     )}
                   </div>
                 </TableCell>
@@ -219,7 +219,7 @@ export function ModelTable({
                       disabled={deletingModelId === model.id}
                     >
                       {deletingModelId === model.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <LogoSpinner size="sm" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}

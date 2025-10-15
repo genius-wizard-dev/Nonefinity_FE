@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Loading } from "./components/shared";
 import { Toaster } from "./components/ui/sonner";
 import { LoadingProvider } from "./contexts/LoadingContext";
+import { useTheme } from "./hooks/useTheme";
 import ClerkProviderWithRoutes from "./screen/auth/ClerkProviderWithRoutes";
 import ProtectedRoute from "./screen/auth/ProtectedRoute";
 import SignInPage from "./screen/auth/SignIn";
@@ -36,6 +37,9 @@ function HomePageGuard() {
 }
 
 function App() {
+  // Initialize theme hook to handle favicon and theme detection
+  useTheme();
+
   return (
     <LoadingProvider>
       <ClerkProviderWithRoutes>
@@ -67,8 +71,8 @@ function App() {
               element={<KnowledgeStoreDetail />}
             />
             <Route path="/dashboard/credentials" element={<Credentials />} />
-            <Route path="/dashboard/models" element={<Models />} />
             <Route path="/dashboard/embedding" element={<Embedding />} />
+            <Route path="/dashboard/models" element={<Models />} />
           </Route>
         </Routes>
         {/* Show the Toaster in the top right corner */}

@@ -1,5 +1,4 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,13 +8,14 @@ import {
   AlertCircle,
   ArrowLeft,
   Database,
-  Filter,
   RefreshCw,
   Search,
   Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { deleteVectors } from "../services";
 import { useKnowledgeStoreStore } from "../store";
 import type { KnowledgeStore, ScrollDataPoint } from "../types";
 
@@ -23,7 +23,7 @@ import type { KnowledgeStore, ScrollDataPoint } from "../types";
 type VectorPoint = {
   id: string;
   vector: number[];
-  payload: Record<string, any>;
+  text: string;
   score?: number;
   timestamp: string;
 };
@@ -34,6 +34,8 @@ interface VectorStoreManagerWithDataProps {
   hasMore: boolean;
   onLoadMore: () => void;
   loading: boolean;
+  knowledgeStoreId: string;
+  onVectorsDeleted: () => void;
 }
 
 const VectorStoreManagerWithData: React.FC<VectorStoreManagerWithDataProps> = ({
@@ -41,6 +43,8 @@ const VectorStoreManagerWithData: React.FC<VectorStoreManagerWithDataProps> = ({
   hasMore,
   onLoadMore,
   loading,
+  knowledgeStoreId,
+  onVectorsDeleted,
 }) => {
   const [selectedVector, setSelectedVector] = useState<VectorPoint | null>(
     null
@@ -50,10 +54,26 @@ const VectorStoreManagerWithData: React.FC<VectorStoreManagerWithDataProps> = ({
   const filteredVectors = vectors.filter(
     (v) =>
       v.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      JSON.stringify(v.payload)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+      v.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDeleteVector = async (id: string) => {
+    try {
+      await deleteVectors(knowledgeStoreId, [id]);
+      toast.success("Vector deleted successfully");
+      onVectorsDeleted();
+    } catch (error) {
+      console.error("Failed to delete vector:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete vector"
+      );
+    }
+  };
+
+  const handleDeleteVectors = async (ids: string[]) => {
+    await deleteVectors(knowledgeStoreId, ids);
+    onVectorsDeleted();
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -71,28 +91,13 @@ const VectorStoreManagerWithData: React.FC<VectorStoreManagerWithDataProps> = ({
                 className="pl-9 bg-background"
               />
             </div>
-            <div className="flex items-center gap-2 mt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs bg-transparent"
-              >
-                <Filter className="w-3 h-3 mr-1" />
-                Filter
-              </Button>
-              <Badge variant="outline" className="text-xs">
-                All Categories
-              </Badge>
-            </div>
           </div>
           <VectorList
             vectors={filteredVectors}
             selectedVector={selectedVector}
             onSelectVector={setSelectedVector}
-            onDeleteVector={(id) => {
-              // TODO: Implement delete functionality with API
-              console.log("Delete vector:", id);
-            }}
+            onDeleteVector={handleDeleteVector}
+            onDeleteVectors={handleDeleteVectors}
             hasMore={hasMore}
             onLoadMore={onLoadMore}
             isLoadingMore={loading}
@@ -142,7 +147,7 @@ export const KnowledgeStoreDetail: React.FC<KnowledgeStoreDetailProps> = ({
     if (knowledgeStore?.id) {
       setVectorDataLoading(true);
       fetchScrollData(knowledgeStore.id, {
-        limit: 5,
+        limit: 50,
         scroll_id: null,
       }).finally(() => {
         setVectorDataLoading(false);
@@ -173,13 +178,14 @@ export const KnowledgeStoreDetail: React.FC<KnowledgeStoreDetailProps> = ({
     return scrollData.map((point) => ({
       id: point.id,
       vector: point.vector,
-      payload: point.payload,
+      text: point.text,
       score: point.score,
       timestamp: new Date().toISOString(), // Use current timestamp as we don't have it from API
     }));
   };
 
-  if (loading) {
+  // Only show full page skeleton on initial load (when no knowledge store data)
+  if (loading && !knowledgeStore) {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-6">
@@ -266,20 +272,33 @@ export const KnowledgeStoreDetail: React.FC<KnowledgeStoreDetailProps> = ({
 
       {/* Vector Store Manager with Real Data */}
       <div className="flex-1 overflow-hidden">
-        {scrollData && scrollData.length > 0 ? (
+        {vectorDataLoading && (!scrollData || scrollData.length === 0) ? (
+          // Show skeleton only when loading and no data yet
+          <div className="flex h-full">
+            {/* Left Panel Skeleton */}
+            <div className="w-96 border-r border-border bg-card p-4 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-6 w-32" />
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Skeleton key={index} className="h-32 w-full" />
+                ))}
+              </div>
+            </div>
+            {/* Right Panel Skeleton */}
+            <div className="flex-1 bg-background p-6 space-y-4">
+              <Skeleton className="h-full w-full" />
+            </div>
+          </div>
+        ) : scrollData && scrollData.length > 0 ? (
           <VectorStoreManagerWithData
             vectors={convertScrollDataToVectorPoints(scrollData)}
             hasMore={hasMore}
             onLoadMore={loadMore}
             loading={vectorDataLoading}
+            knowledgeStoreId={knowledgeStore.id}
+            onVectorsDeleted={refreshData}
           />
-        ) : vectorDataLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Loading vector data...</p>
-            </div>
-          </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -290,8 +309,16 @@ export const KnowledgeStoreDetail: React.FC<KnowledgeStoreDetailProps> = ({
               <p className="text-muted-foreground mb-4">
                 This knowledge store doesn't contain any vector data yet.
               </p>
-              <Button onClick={refreshData} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button
+                onClick={refreshData}
+                variant="outline"
+                disabled={vectorDataLoading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${
+                    vectorDataLoading ? "animate-spin" : ""
+                  }`}
+                />
                 Refresh
               </Button>
             </div>

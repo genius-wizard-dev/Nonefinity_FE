@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import type { CreateModelRequest } from "../type";
 
 interface EditModelDialogProps {
@@ -95,7 +95,7 @@ export function EditModelDialog({
             Cancel
           </Button>
           <Button onClick={onSubmit} disabled={isSubmitting || !hasChanges}>
-            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isSubmitting && <LogoSpinner size="sm" className="mr-2" />}
             {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>

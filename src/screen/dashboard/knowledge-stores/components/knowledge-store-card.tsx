@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Edit, MoreVertical, Search, Trash2 } from "lucide-react";
+import { Edit, MoreVertical, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { KnowledgeStore } from "../types";
 
@@ -119,10 +119,7 @@ export function KnowledgeStoreCard({
                 <Search className="w-4 h-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-popover-foreground">
-                <Download className="w-4 h-4 mr-2" />
-                Export Data
-              </DropdownMenuItem>
+
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"

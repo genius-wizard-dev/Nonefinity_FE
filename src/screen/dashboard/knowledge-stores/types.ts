@@ -91,7 +91,7 @@ export interface KnowledgeStorePagination {
 export interface ScrollDataPoint {
   id: string;
   vector: number[];
-  payload: Record<string, any>;
+  text: string;
   score?: number;
 }
 
