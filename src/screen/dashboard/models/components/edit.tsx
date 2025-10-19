@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogoSpinner } from "@/components/shared";
 import type { CreateModelRequest } from "../type";
 
 interface EditModelDialogProps {
@@ -37,7 +37,7 @@ export function EditModelDialog({
   hasChanges,
 }: EditModelDialogProps) {
   const getCredentialById = (credentialId: string) => {
-    return credentials.find((c) => c.id === credentialId);
+    return (credentials || []).find((c) => c.id === credentialId);
   };
 
   return (

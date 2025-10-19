@@ -1,4 +1,6 @@
-import LogoImage from "@/assets/Nonefinity_Dark.png";
+import LogoDark from "@/assets/Nonefinity_Dark.png";
+import LogoLight from "@/assets/Nonefinity_Light.png";
+import { useTheme } from "@/hooks/useTheme";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface LoadingProps {
@@ -7,6 +9,9 @@ interface LoadingProps {
 }
 
 export function Loading({ isOpen = true, text }: LoadingProps) {
+  const { theme } = useTheme();
+  const logoImage = theme === "dark" ? LogoLight : LogoDark;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -36,7 +41,7 @@ export function Loading({ isOpen = true, text }: LoadingProps) {
                 }}
               >
                 <img
-                  src={LogoImage}
+                  src={logoImage}
                   alt="Loading"
                   className="h-16 w-16 opacity-70"
                 />
@@ -44,7 +49,7 @@ export function Loading({ isOpen = true, text }: LoadingProps) {
 
               {/* Main logo */}
               <motion.img
-                src={LogoImage}
+                src={logoImage}
                 alt="Loading"
                 className="h-16 w-16"
                 animate={{

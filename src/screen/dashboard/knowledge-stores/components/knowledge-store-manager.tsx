@@ -51,31 +51,31 @@ export function KnowledgeStoreManager() {
   }, [fetchKnowledgeStores]);
 
   // Filter knowledge stores based on search query
-  const filteredKnowledgeStores = knowledgeStores.filter(
+  const filteredKnowledgeStores = (knowledgeStores || []).filter(
     (store) =>
       store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       store.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalStores = knowledgeStores.length;
-  const activeStores = knowledgeStores.filter(
+  const totalStores = (knowledgeStores || []).length;
+  const activeStores = (knowledgeStores || []).filter(
     (store) => store.status === "green"
   ).length;
 
   // Calculate total vectors from all knowledge stores
-  const totalVectors = knowledgeStores.reduce((sum, store) => {
+  const totalVectors = (knowledgeStores || []).reduce((sum, store) => {
     // Assuming each knowledge store has a points_count or vectors_count
     return sum + (store.points_count || 0);
   }, 0);
 
   // Calculate average dimensions
   const avgDimensions =
-    knowledgeStores.length > 0
+    (knowledgeStores || []).length > 0
       ? Math.round(
-          knowledgeStores.reduce(
+          (knowledgeStores || []).reduce(
             (sum, store) => sum + (store.dimension || 0),
             0
-          ) / knowledgeStores.length
+          ) / (knowledgeStores || []).length
         )
       : 0;
 
@@ -220,7 +220,7 @@ export function KnowledgeStoreManager() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && knowledgeStores.length === 0 && (
+        {!loading && !error && (knowledgeStores || []).length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
               <Plus className="h-12 w-12 text-muted-foreground" />
@@ -252,7 +252,7 @@ export function KnowledgeStoreManager() {
         {/* No Results */}
         {!loading &&
           !error &&
-          knowledgeStores.length > 0 &&
+          (knowledgeStores || []).length > 0 &&
           filteredKnowledgeStores.length === 0 && (
             <div className="text-center py-12">
               <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

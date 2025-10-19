@@ -425,7 +425,7 @@ export const useModelSelectors = () => {
     pagination: store.pagination,
 
     // Computed selectors
-    filteredModels: store.models.filter((model) => {
+    filteredModels: (store.models || []).filter((model) => {
       const { type, credential_id, active_only, search } = store.filters;
 
       if (type !== "all" && model.type !== type) return false;
@@ -441,8 +441,10 @@ export const useModelSelectors = () => {
       return true;
     }),
 
-    chatModels: store.models.filter((model) => model.type === "chat"),
-    embeddingModels: store.models.filter((model) => model.type === "embedding"),
-    activeModels: store.models.filter((model) => model.is_active),
+    chatModels: (store.models || []).filter((model) => model.type === "chat"),
+    embeddingModels: (store.models || []).filter(
+      (model) => model.type === "embedding"
+    ),
+    activeModels: (store.models || []).filter((model) => model.is_active),
   };
 };

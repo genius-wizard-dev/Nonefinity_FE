@@ -23,7 +23,7 @@ export function ModelFilters({
   credentials,
   onFilterChange,
 }: ModelFiltersProps) {
-  const filteredCredentialsForFilter = credentials.filter((c) => {
+  const filteredCredentialsForFilter = (credentials || []).filter((c) => {
     if (!filters.type || filters.type === "all") return true;
 
     if (filters.type === "chat") {

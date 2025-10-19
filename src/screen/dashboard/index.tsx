@@ -1,7 +1,9 @@
-import LogoIcon from "@/assets/Nonefinity_Dark.png";
+import LogoDark from "@/assets/Nonefinity_Dark.png";
+import LogoLight from "@/assets/Nonefinity_Light.png";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import {
@@ -12,6 +14,7 @@ import {
   Key,
   LayoutDashboard,
   Menu,
+  MessageSquare,
   X,
   Zap,
 } from "lucide-react";
@@ -20,6 +23,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 export function Layout() {
   const location = useLocation();
+  const { theme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const saved = localStorage.getItem("sidebarOpen");
     return saved ? JSON.parse(saved) : false;
@@ -34,6 +38,11 @@ export function Layout() {
       name: "General",
       href: "/dashboard/general",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Chats",
+      href: "/dashboard/chats",
+      icon: MessageSquare,
     },
     {
       name: "Files",
@@ -91,7 +100,11 @@ export function Layout() {
               sidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0"
             }`}
           >
-            <img src={LogoIcon} alt="Logo" className="w-5 h-5 flex-shrink-0" />
+            <img
+              src={theme === "dark" ? LogoLight : LogoDark}
+              alt="Logo"
+              className="w-5 h-5 flex-shrink-0"
+            />
             <span className="text-lg font-semibold text-foreground whitespace-nowrap">
               Nonefinity
             </span>
@@ -197,7 +210,7 @@ export function Layout() {
             {/* Header */}
             <div className="h-16 flex items-center gap-2 px-6 border-b flex-shrink-0">
               <img
-                src={LogoIcon}
+                src={theme === "dark" ? LogoLight : LogoDark}
                 alt="Logo"
                 className="w-5 h-5 flex-shrink-0"
               />

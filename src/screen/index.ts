@@ -1,3 +1,4 @@
+import Chats from "./dashboard/chats";
 import Credentials from "./dashboard/credentials";
 import DatasetManagement from "./dashboard/dataset-management";
 import Embedding from "./dashboard/embedding";
@@ -9,6 +10,7 @@ import Models from "./dashboard/models";
 import Home from "./home";
 
 export {
+  Chats,
   Credentials,
   DatasetManagement,
   Embedding,

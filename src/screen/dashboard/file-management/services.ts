@@ -30,7 +30,7 @@ export class FileService {
       }
 
       const files = response.getData();
-      return files.map(mapFileItem);
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
     } catch (error) {
       console.error("Failed to fetch files:", error);
       return [];
@@ -50,7 +50,7 @@ export class FileService {
       }
 
       const files = response.getData();
-      return files.map(mapFileItem);
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
     } catch (error) {
       console.error("Failed to fetch files:", error);
       return [];
@@ -70,7 +70,7 @@ export class FileService {
       }
 
       const files = response.getData();
-      return files.map(mapFileItem);
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
     } catch (error) {
       console.error("Failed to fetch files:", error);
       return [];
@@ -97,7 +97,7 @@ export class FileService {
       }
 
       const files = response.getData();
-      return files.map(mapFileItem);
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
     } catch (error) {
       console.error("Failed to search files:", error);
       return [];
@@ -678,7 +678,7 @@ export class FileService {
       }
 
       const files = response.getData();
-      return files.map(mapFileItem);
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
     } catch (error) {
       console.error("Failed to search files:", error);
       return [];

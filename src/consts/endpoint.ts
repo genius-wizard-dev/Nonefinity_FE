@@ -108,6 +108,21 @@ export const ENDPOINTS = {
     GET_KNOWLEDGE_BY_DIMENSION: (dimension: number) =>
       `/knowledge-stores/dimension/${dimension}`,
   },
+
+  // Chat endpoints
+  CHATS: {
+    LIST: "/chats",
+    CREATE: "/chats",
+    GET: (id: string) => `/chats/${id}`,
+    UPDATE: (id: string) => `/chats/${id}`,
+    DELETE: (id: string) => `/chats/${id}`,
+    CONFIG: (id: string) => `/chats/${id}/config`,
+    MESSAGES: {
+      LIST: (id: string) => `/chats/${id}/messages`,
+      CREATE: (id: string) => `/chats/${id}/messages`,
+      DELETE: (id: string) => `/chats/${id}/messages`,
+    },
+  },
 } as const;
 
 // Helper function to build full endpoint URL

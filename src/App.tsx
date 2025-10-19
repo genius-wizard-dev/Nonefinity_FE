@@ -11,6 +11,7 @@ import SignUpPage from "./screen/auth/SignUp";
 import { Layout } from "./screen/dashboard/index.tsx";
 import LandingPage from "./screen/home/index.tsx";
 import {
+  Chats,
   Credentials,
   DatasetManagement,
   Embedding,
@@ -59,6 +60,7 @@ function App() {
               element={<Navigate to="/dashboard/general" replace />}
             />
             <Route path="/dashboard/general" element={<General />} />
+            <Route path="/dashboard/chats" element={<Chats />} />
             <Route path="/dashboard/profile" element={<UserProfile />} />
             <Route path="/dashboard/files" element={<FileManagement />} />
             <Route path="/dashboard/datasets" element={<DatasetManagement />} />
