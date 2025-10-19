@@ -91,9 +91,9 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   deleteDataset: async (datasetId: string, token: string) => {
     try {
       console.log("🗑️ Store: Deleting dataset:", datasetId);
-      const success = await DatasetService.deleteDataset(datasetId, token);
+      const result = await DatasetService.deleteDataset(datasetId, token);
 
-      if (success) {
+      if (result.success) {
         set((state) => ({
           datasets: state.datasets.filter(
             (dataset) => dataset.id !== datasetId
@@ -104,7 +104,7 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         console.log("✅ Store: Dataset deleted successfully");
       }
 
-      return success;
+      return result.success;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to delete dataset";
@@ -239,13 +239,19 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         token
       );
 
-      if (result.success) {
-        // Since the API only returns success/message, we don't update the store data
-        // The local state changes are already applied via onUpdateDataset
-        set({
+      if (result.success && result.data) {
+        // Update store with the returned dataset data
+        set((state) => ({
+          datasets: state.datasets.map((dataset) =>
+            dataset.id === datasetId ? result.data! : dataset
+          ),
+          selectedDataset:
+            state.selectedDataset?.id === datasetId
+              ? result.data!
+              : state.selectedDataset,
           isLoading: false,
           error: null,
-        });
+        }));
         console.log("✅ Store: Dataset info updated successfully");
         return true;
       } else {

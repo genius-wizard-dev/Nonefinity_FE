@@ -388,6 +388,12 @@ export const useFileStore = create<FileStore>((set, get) => ({
     });
   },
 
+  addFile: (fileData: FileItem) => {
+    set((state) => ({
+      files: [fileData, ...state.files],
+    }));
+  },
+
   reset: () => {
     const { searchTimeout } = get();
     if (searchTimeout) {

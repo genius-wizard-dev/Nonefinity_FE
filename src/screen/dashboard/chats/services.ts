@@ -165,14 +165,14 @@ export class ChatService {
     }
   }
 
-  static async clearMessages(chatId: string): Promise<boolean> {
+  static async clearMessages(chatId: string): Promise<Chat | null> {
     try {
-      const response = await httpClient.delete(
+      const response = await httpClient.delete<Chat>(
         ENDPOINTS.CHATS.MESSAGES.DELETE(chatId)
       );
 
-      if (response.isSuccess) {
-        return true;
+      if (response.isSuccess && response.data) {
+        return response.data;
       }
 
       throw new Error(response.message || "Failed to clear messages");

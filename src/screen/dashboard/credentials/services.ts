@@ -219,7 +219,7 @@ export class CredentialService {
   static async createCredential(
     data: CredentialFormData,
     token?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
       console.log("🔑 Creating credential:", {
         name: data.name,
@@ -236,10 +236,11 @@ export class CredentialService {
         body.base_url = data.base_url;
       }
 
-      const response = await httpClient.post<{
-        success: boolean;
-        message: string;
-      }>(ENDPOINTS.CREDENTIALS.CREATE, body, token);
+      const response = await httpClient.post<Credential>(
+        ENDPOINTS.CREDENTIALS.CREATE,
+        body,
+        token
+      );
 
       if (!response.isSuccess) {
         console.error("❌ Failed to create credential:", response.message);
@@ -249,10 +250,12 @@ export class CredentialService {
         };
       }
 
-      const responseData = response.getData();
-      console.log("📥 Create credential response:", responseData);
-
-      return { success: true };
+      const createdCredential = response.getData();
+      console.log("✅ Credential created successfully");
+      return {
+        success: true,
+        data: createdCredential,
+      };
     } catch (error) {
       console.error("❌ Credential creation error:", error);
       return { success: false, error: "An unexpected error occurred" };
@@ -266,7 +269,7 @@ export class CredentialService {
     id: string,
     data: CredentialUpdateData,
     token?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
       // Prepare JSON body, only including defined fields
       const body: Record<string, any> = {};
@@ -280,10 +283,11 @@ export class CredentialService {
         body.is_active = data.is_active;
       }
 
-      const response = await httpClient.put<{
-        success: boolean;
-        message: string;
-      }>(ENDPOINTS.CREDENTIALS.UPDATE(id), body, token);
+      const response = await httpClient.put<Credential>(
+        ENDPOINTS.CREDENTIALS.UPDATE(id),
+        body,
+        token
+      );
 
       if (!response.isSuccess) {
         console.error("❌ Failed to update credential:", response.message);
@@ -293,10 +297,12 @@ export class CredentialService {
         };
       }
 
-      const responseData = response.getData();
-      console.log("📥 Update credential response:", responseData);
-
-      return { success: true };
+      const updatedCredential = response.getData();
+      console.log("✅ Credential updated successfully");
+      return {
+        success: true,
+        data: updatedCredential,
+      };
     } catch (error) {
       console.error("❌ Credential update error:", error);
       return { success: false, error: "An unexpected error occurred" };
@@ -309,14 +315,15 @@ export class CredentialService {
   static async deleteCredential(
     id: string,
     token?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
       console.log("🔑 Deleting credential:", { id });
 
-      const response = await httpClient.delete<{
-        success: boolean;
-        message: string;
-      }>(ENDPOINTS.CREDENTIALS.DELETE(id), undefined, token);
+      const response = await httpClient.delete<Credential>(
+        ENDPOINTS.CREDENTIALS.DELETE(id),
+        undefined,
+        token
+      );
 
       if (!response.isSuccess) {
         console.error("❌ Failed to delete credential:", response.message);
@@ -326,10 +333,12 @@ export class CredentialService {
         };
       }
 
-      const data = response.getData();
-      console.log("📥 Delete credential response:", data);
-
-      return { success: true };
+      const deletedCredential = response.getData();
+      console.log("✅ Credential deleted successfully");
+      return {
+        success: true,
+        data: deletedCredential,
+      };
     } catch (error) {
       console.error("❌ Credential deletion error:", error);
       return { success: false, error: "An unexpected error occurred" };

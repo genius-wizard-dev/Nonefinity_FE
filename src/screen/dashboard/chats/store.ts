@@ -161,15 +161,15 @@ export const useChatStore = create<ChatStore>()(
               description: `"${chat.name}" has been updated`,
             });
 
-            // Refresh the chats list to get updated data from backend
-            await get().getChats();
-
             // Update current chat if it's the one being edited
             set((state) => ({
               currentChat:
                 state.currentChat?.id === id ? chat : state.currentChat,
               isUpdating: false,
             }));
+
+            // Refresh the chats list to get updated data from backend
+            await get().getChats();
 
             return chat;
           }
@@ -196,11 +196,9 @@ export const useChatStore = create<ChatStore>()(
           if (success) {
             toast.success("Chat deleted successfully");
 
-            // Refresh the chats list to get updated data from backend
-            await get().getChats();
-
-            // Clear current chat and messages if it's the one being deleted
+            // Remove chat from chats list and update current chat state
             set((state) => ({
+              chats: state.chats.filter((chat) => chat.id !== id),
               currentChat:
                 state.currentChat?.id === id ? null : state.currentChat,
               selectedChatId:
@@ -284,15 +282,30 @@ export const useChatStore = create<ChatStore>()(
         set({ isUpdating: true });
 
         try {
-          const success = await ChatService.clearMessages(chatId);
+          const updatedChat = await ChatService.clearMessages(chatId);
 
-          if (success) {
+          if (updatedChat) {
             set({
               messages: [],
               isUpdating: false,
             });
-            toast.success("Messages cleared successfully");
 
+            // Update current chat if it's the one being cleared
+            set((state) => ({
+              currentChat:
+                state.currentChat?.id === chatId
+                  ? updatedChat
+                  : state.currentChat,
+            }));
+
+            // Update chat in chats list
+            set((state) => ({
+              chats: state.chats.map((chat) =>
+                chat.id === chatId ? updatedChat : chat
+              ),
+            }));
+
+            toast.success("Messages cleared successfully");
             return true;
           }
 
