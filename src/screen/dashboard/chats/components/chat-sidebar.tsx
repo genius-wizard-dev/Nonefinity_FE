@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useState } from "react";
 import { useChatStore } from "../store";
 import { ChatList } from "./chat-list";
@@ -20,7 +20,7 @@ export default function ChatSidebar() {
           onClick={() => setSidebarOpen(true)}
           className="mb-4"
         >
-          <Plus className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5" />
         </Button>
       </div>
     );
@@ -32,7 +32,16 @@ export default function ChatSidebar() {
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Chats</h2>
-          <CreateChatDialog />
+          <div className="flex items-center gap-2">
+            <CreateChatDialog />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -51,18 +60,6 @@ export default function ChatSidebar() {
       <ScrollArea className="flex-1">
         <ChatList searchQuery={searchQuery} />
       </ScrollArea>
-
-      {/* Footer */}
-      <div className="p-4 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSidebarOpen(false)}
-          className="w-full"
-        >
-          Collapse Sidebar
-        </Button>
-      </div>
     </div>
   );
 }

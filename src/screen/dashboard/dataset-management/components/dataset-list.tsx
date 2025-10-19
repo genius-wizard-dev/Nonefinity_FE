@@ -239,15 +239,10 @@ export function DatasetList({
       // Call API to delete dataset
       const token = await getClerkToken();
       if (token) {
-        const success = await DatasetService.deleteDataset(
-          datasetToDelete.id,
-          token
-        );
+        const { deleteDataset } = useDatasetStore.getState();
+        const success = await deleteDataset(datasetToDelete.id, token);
 
         if (success) {
-          // Remove dataset from local state immediately
-          useDatasetStore.getState().removeDataset(datasetToDelete.id);
-
           toast.success("Dataset deleted successfully", {
             description: `Dataset "${datasetToDelete.name}" has been deleted.`,
           });
@@ -682,21 +677,28 @@ export function DatasetList({
   );
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="p-3 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-foreground">Datasets</h2>
+    <div className="flex flex-col flex-1 overflow-hidden bg-background">
+      {/* Header Section */}
+      <div className="p-4 border-b border-border bg-card">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Datasets</h2>
+            <span className="text-sm text-muted-foreground">
+              ({filteredDatasets.length})
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 bg-transparent"
+              variant="ghost"
+              className="h-8 w-8 p-0 hover:bg-secondary"
               disabled={isLoading}
               onClick={async () => {
                 try {
                   const token = await getClerkToken();
                   if (token) {
-                    await useDatasetStore.getState().fetchDatasets(token, true); //
+                    await useDatasetStore.getState().fetchDatasets(token, true);
                     toast.success("Datasets refreshed successfully");
                   }
                 } catch (error) {
@@ -706,7 +708,7 @@ export function DatasetList({
               }}
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
               />
             </Button>
             <Dialog
@@ -716,40 +718,39 @@ export function DatasetList({
               <DialogTrigger asChild>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="h-7 gap-1.5 bg-transparent"
+                  className="h-8 gap-2 bg-primary hover:bg-primary/90"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   Add Dataset
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
-                  <DialogTitle>Add Dataset</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-xl">Add Dataset</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
                     Choose how you want to add a new dataset to your database.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-3 py-4">
+                <div className="grid gap-4 py-6">
                   <button
                     onClick={() => {
                       setIsAddDatasetDialogOpen(false);
                       setIsCreateDialogOpen(true);
                     }}
-                    className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
+                    className="flex items-center gap-4 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all duration-200 group hover:shadow-sm"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Database className="h-6 w-6 text-primary" />
+                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Database className="h-7 w-7 text-primary" />
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold text-foreground mb-1">
+                      <div className="font-semibold text-foreground mb-2 text-base">
                         Create New Dataset
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground leading-relaxed">
                         Manually define dataset structure and columns
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </button>
 
                   <button
@@ -758,20 +759,20 @@ export function DatasetList({
                       setIsImportDialogOpen(true);
                       loadAvailableFiles();
                     }}
-                    className="flex items-center gap-4 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group"
+                    className="flex items-center gap-4 p-5 rounded-xl border-2 border-border hover:border-green-500 hover:bg-green-500/5 transition-all duration-200 group hover:shadow-sm"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                      <Upload className="h-6 w-6 text-green-500" />
+                    <div className="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                      <Upload className="h-7 w-7 text-green-500" />
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold text-foreground mb-1">
+                      <div className="font-semibold text-foreground mb-2 text-base">
                         Import from File
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground leading-relaxed">
                         Convert CSV or Excel files to datasets
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-green-500 transition-colors" />
                   </button>
                 </div>
               </DialogContent>
@@ -1254,42 +1255,53 @@ export function DatasetList({
           </Dialog>
         </div>
 
+        {/* Search Section */}
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search datasets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-8 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+            className="pl-10 h-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
       </div>
 
+      {/* Dataset List */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
-          <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
-            DATASETS ({filteredDatasets.length}){" "}
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-medium text-muted-foreground">
+              {filteredDatasets.length} dataset
+              {filteredDatasets.length !== 1 ? "s" : ""}
+            </div>
             {isLoading && datasets.length > 0 && (
-              <span className="text-primary">• Refreshing...</span>
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Refreshing...
+              </div>
             )}
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {isLoading && datasets.length === 0
               ? // Skeleton loading when initially loading
                 Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-4 w-24 rounded" />
-                      <Skeleton className="h-4 w-12 rounded ml-auto" />
+                  <div
+                    key={index}
+                    className="p-3 rounded-lg border border-border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <Skeleton className="h-4 w-32 rounded" />
+                      <Skeleton className="h-4 w-16 rounded ml-auto" />
                     </div>
                   </div>
                 ))
               : filteredDatasets.map((dataset) => (
                   <div key={dataset.id}>
                     {renamingDataset === dataset.id ? (
-                      <div className="px-2 py-1.5">
+                      <div className="p-3 rounded-lg border border-border bg-card">
                         <Input
                           ref={renameInputRef}
                           value={newDatasetName}
@@ -1299,23 +1311,23 @@ export function DatasetList({
                             if (e.key === "Escape") setRenamingDataset(null);
                           }}
                           onBlur={confirmRename}
-                          className="h-7 text-sm font-mono"
+                          className="h-8 text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         />
                       </div>
                     ) : (
                       <>
                         <div
-                          className={`flex items-center rounded transition-colors group ${
+                          className={`flex items-center rounded-lg border transition-all duration-200 group ${
                             selectedDataset?.id === dataset.id
-                              ? "bg-primary/10"
-                              : "hover:bg-secondary"
+                              ? "bg-primary/5 border-primary/20 shadow-sm"
+                              : "bg-card border-border hover:border-primary/30 hover:shadow-sm"
                           }`}
                           onMouseEnter={() => setHoveredDataset(dataset.id)}
                           onMouseLeave={() => setHoveredDataset(null)}
                         >
                           <button
                             onClick={() => handleDatasetClick(dataset)}
-                            className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm transition-colors ${
+                            className={`flex-1 flex items-center gap-3 p-3 text-sm transition-colors ${
                               selectedDataset?.id === dataset.id
                                 ? "text-primary"
                                 : "text-foreground"
@@ -1326,13 +1338,13 @@ export function DatasetList({
                             ) : (
                               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             )}
-                            <Database className="h-4 w-4 flex-shrink-0" />
-                            <span className="font-mono flex-1 text-left">
-                              {dataset.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {dataset.rowCount?.toLocaleString() || 0}
-                            </span>
+                            <Database className="h-5 w-5 flex-shrink-0 text-primary" />
+                            <div className="flex-1 text-left">
+                              <div className="font-medium">{dataset.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {dataset.rowCount?.toLocaleString() || 0} rows
+                              </div>
+                            </div>
                           </button>
 
                           <DropdownMenu
@@ -1346,7 +1358,7 @@ export function DatasetList({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                 }}
-                                className={`p-1.5 mr-1 rounded hover:bg-secondary/80 transition-all ${
+                                className={`p-2 mr-2 rounded-md hover:bg-secondary/80 transition-all ${
                                   hoveredDataset === dataset.id ||
                                   openDropdownId === dataset.id
                                     ? "opacity-100"
@@ -1358,7 +1370,7 @@ export function DatasetList({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="start"
-                              className="w-[180px]"
+                              className="w-[200px]"
                             >
                               <DropdownMenuItem
                                 onClick={() => handleShowInfo(dataset.id)}
@@ -1391,19 +1403,19 @@ export function DatasetList({
                         </div>
 
                         {expandedDatasets.has(dataset.id) && (
-                          <div className="ml-6 mt-1 space-y-0.5">
+                          <div className="ml-8 mt-2 space-y-1 border-l border-border/50 pl-4">
                             {dataset.data_schema.map((column) => (
                               <div
                                 key={column.column_name}
-                                className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-secondary/50 transition-colors"
+                                className="flex items-center justify-between px-3 py-2 text-xs rounded-md hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50"
                               >
                                 <div className="flex items-center gap-2">
                                   {getDataTypeIcon(column.column_type)}
-                                  <span className="font-mono text-foreground">
+                                  <span className="font-medium text-foreground">
                                     {column.column_name}
                                   </span>
                                 </div>
-                                <span className="text-muted-foreground font-mono text-[10px]">
+                                <span className="text-muted-foreground font-mono text-[11px] bg-secondary/30 px-2 py-0.5 rounded">
                                   {column.column_type}
                                 </span>
                               </div>

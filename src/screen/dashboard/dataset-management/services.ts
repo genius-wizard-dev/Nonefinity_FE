@@ -97,11 +97,11 @@ export class DatasetService {
   static async deleteDataset(
     datasetId: string,
     token?: string
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
       console.log("🗑️ Deleting dataset:", datasetId);
 
-      const response = await httpClient.delete<boolean>(
+      const response = await httpClient.delete<Dataset>(
         ENDPOINTS.DATASETS.DELETE(datasetId),
         undefined,
         token
@@ -112,14 +112,25 @@ export class DatasetService {
 
       if (!response.isSuccess) {
         console.error("❌ Failed to delete dataset:", response.message);
-        return false;
+        return {
+          success: false,
+          error: response.message || "Failed to delete dataset",
+        };
       }
 
+      const deletedDataset = response.getData();
       console.log("✅ Dataset deleted successfully:", datasetId);
-      return true;
+      return {
+        success: true,
+        data: deletedDataset ? mapDataset(deletedDataset) : undefined,
+      };
     } catch (error) {
       console.error("❌ Failed to delete dataset:", error);
-      return false;
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to delete dataset",
+      };
     }
   }
 
@@ -364,10 +375,11 @@ export class DatasetService {
         jsonBody.description = request.description;
       }
 
-      const response = await httpClient.put<{
-        success: boolean;
-        message: string;
-      }>(ENDPOINTS.DATASETS.UPDATE(datasetId), jsonBody, token);
+      const response = await httpClient.put<Dataset>(
+        ENDPOINTS.DATASETS.UPDATE(datasetId),
+        jsonBody,
+        token
+      );
 
       if (!response.isSuccess) {
         console.error("❌ Failed to update dataset info:", response.message);
@@ -377,20 +389,12 @@ export class DatasetService {
         };
       }
 
-      const data = response.getData();
-      console.log("📥 Update dataset response:", data);
-
-      // Handle the new response format with success and message
-      // The API returns {success: true, message: "..."} directly
-      if (data && data.success) {
-        console.log("✅ Dataset info updated successfully:", data.message);
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          error: data?.message || "Failed to update dataset info",
-        };
-      }
+      const updatedDataset = response.getData();
+      console.log("✅ Dataset updated successfully:", datasetId);
+      return {
+        success: true,
+        data: updatedDataset ? mapDataset(updatedDataset) : undefined,
+      };
     } catch (error) {
       console.error("❌ Dataset update error:", error);
       return { success: false, error: "An unexpected error occurred" };

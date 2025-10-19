@@ -74,12 +74,11 @@ export const useCredentialStore = create<CredentialStore>((set) => ({
     set({ error: null });
     try {
       const result = await CredentialService.createCredential(data);
-      if (result.success) {
-        // Refetch credentials to get the updated list with the new credential
-        const response = await CredentialService.getCredentials();
-        if (response) {
-          set({ credentials: response.credentials });
-        }
+      if (result.success && result.data) {
+        // Add new credential to the list
+        set((state) => ({
+          credentials: [...state.credentials, result.data!],
+        }));
       } else {
         set({
           error: result.error || "Failed to create credential",
@@ -100,35 +99,23 @@ export const useCredentialStore = create<CredentialStore>((set) => ({
   updateCredential: async (id: string, data: Partial<CredentialFormData>) => {
     set({ error: null });
 
-    // Optimistic update
-    set((state) => ({
-      credentials: state.credentials.map((cred) =>
-        cred.id === id ? { ...cred, ...data } : cred
-      ),
-    }));
-
     try {
       const result = await CredentialService.updateCredential(id, data);
-      if (result.success) {
-        // Refetch credentials to get the updated list
-        const response = await CredentialService.getCredentials();
-        if (response) {
-          set({ credentials: response.credentials });
-        }
+      if (result.success && result.data) {
+        // Update credential in the list with returned data
+        set((state) => ({
+          credentials: state.credentials.map((cred) =>
+            cred.id === id ? result.data! : cred
+          ),
+        }));
       } else {
-        // Revert on error
-        const credentials = await CredentialService.getCredentials();
         set({
-          credentials: credentials?.credentials || [],
           error: result.error || "Failed to update credential",
         });
         throw new Error(result.error || "Failed to update credential");
       }
     } catch (error) {
-      // Revert on error
-      const credentials = await CredentialService.getCredentials();
       set({
-        credentials: credentials?.credentials || [],
         error:
           error instanceof Error
             ? error.message
@@ -144,11 +131,10 @@ export const useCredentialStore = create<CredentialStore>((set) => ({
     try {
       const result = await CredentialService.deleteCredential(id);
       if (result.success) {
-        // Refetch credentials to get the updated list after successful deletion
-        const response = await CredentialService.getCredentials();
-        if (response) {
-          set({ credentials: response.credentials });
-        }
+        // Remove credential from the list
+        set((state) => ({
+          credentials: state.credentials.filter((cred) => cred.id !== id),
+        }));
       } else {
         set({
           error: result.error || "Failed to delete credential",

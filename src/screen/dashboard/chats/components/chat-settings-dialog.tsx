@@ -121,7 +121,14 @@ export default function ChatSettingsDialog({
   useEffect(() => {
     if (open) {
       loadData();
-      // Reset form data when dialog opens
+      // Note: We don't need to refresh chat data here as it's already passed as prop
+      // The parent component should handle refreshing the chat data
+    }
+  }, [open]);
+
+  // Update form data when chat data changes
+  useEffect(() => {
+    if (chat) {
       setFormData({
         name: chat.name,
         chat_model_id: chat.chat_model_id,
@@ -134,7 +141,7 @@ export default function ChatSettingsDialog({
         instruction_prompt: chat.instruction_prompt,
       });
     }
-  }, [open, chat]);
+  }, [chat]);
 
   const loadData = async () => {
     setLoading(true);

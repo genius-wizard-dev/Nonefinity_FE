@@ -50,7 +50,6 @@ export default function FileManagement() {
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
-  
 
   // Handle search
   const handleSearch = useCallback(
@@ -242,8 +241,8 @@ export default function FileManagement() {
               }
             );
 
-            // Refresh file list to show the new file
-            await fetchFiles(token, true);
+            // Add new file to store using API response data
+            useFileStore.getState().addFile(result);
           } else {
             failUpload(uploadFileItem.id, "Upload failed");
             errorCount++;
@@ -402,16 +401,14 @@ export default function FileManagement() {
       const success = await deleteFile(filesToDelete[0], token);
       if (success) {
         setSelectedFiles([]);
-        // Refresh file list after successful deletion
-        await fetchFiles(token, true);
+        // No need to refresh - store already updated
       }
     } else {
       // Batch delete
       await deleteBatch(filesToDelete, {
         onSuccess: () => {
           setSelectedFiles([]);
-          // Refresh file list after successful batch deletion
-          fetchFiles(token, true);
+          // No need to refresh - store already updated
         },
         onError: (error, failedIds) => {
           console.error("Batch delete error:", error, failedIds);
@@ -430,8 +427,7 @@ export default function FileManagement() {
 
       const success = await renameFile(fileId, newName, token);
       if (success) {
-        // Refresh file list after successful rename
-        await fetchFiles(token, true);
+        // No need to refresh - store already updated
       } else {
         console.error("Rename failed");
       }

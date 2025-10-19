@@ -116,7 +116,6 @@ export const ENDPOINTS = {
     GET: (id: string) => `/chats/${id}`,
     UPDATE: (id: string) => `/chats/${id}`,
     DELETE: (id: string) => `/chats/${id}`,
-    CONFIG: (id: string) => `/chats/${id}/config`,
     MESSAGES: {
       LIST: (id: string) => `/chats/${id}/messages`,
       CREATE: (id: string) => `/chats/${id}/messages`,
