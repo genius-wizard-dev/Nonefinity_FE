@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useKnowledgeStoreStore } from "../store";
 import type { KnowledgeStore, KnowledgeStoreUpdateRequest } from "../types";
@@ -130,7 +131,10 @@ export const EditKnowledgeStoreDialog: React.FC<
                 disabled={isSubmitting}
               />
               {isNameChanged && nameValidation.isChecking && (
-                <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-400" />
+                <LogoSpinner
+                  size="sm"
+                  className="absolute right-3 top-3 text-gray-400"
+                />
               )}
               {isNameChanged && nameValidation.isAvailable === true && (
                 <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
@@ -210,9 +214,7 @@ export const EditKnowledgeStoreDialog: React.FC<
                 (isNameChanged && nameValidation.isChecking)
               }
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSubmitting && <LogoSpinner size="sm" className="mr-2" />}
               Update Knowledge Store
             </Button>
           </DialogFooter>

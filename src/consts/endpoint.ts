@@ -26,7 +26,6 @@ export const ENDPOINTS = {
   FILES: {
     LIST: "/file/list",
     SEARCH: "/file/search",
-    GET: (id: string) => `/files/${id}`,
     UPLOAD_URL: "/file/upload-url", // Get presigned upload URL
     UPLOAD: "/file/upload", // Save metadata after upload
     DELETE: (id: string) => `/file/${id}`, // Delete single file
@@ -39,14 +38,6 @@ export const ENDPOINTS = {
     DOWNLOAD: (id: string) => `/file/download/${id}`, // Get download URL
   },
 
-  // Auth endpoints
-  AUTH: {
-    LOGIN: "/auth/login",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
-    PROFILE: "/auth/profile",
-  },
-
   // Credentials endpoints
   CREDENTIALS: {
     LIST: "/credentials",
@@ -56,8 +47,6 @@ export const ENDPOINTS = {
     DELETE: (id: string) => `/credentials/${id}`,
     LIST_BY_PROVIDER: (providerName: string) =>
       `/credentials/provider/${providerName}`,
-    ENCRYPTION_HEALTH: "/credentials/encryption/health",
-    GENERATE_ENCRYPTION_KEY: "/credentials/encryption/generate-key",
     MODEL_CREDENTIAL: (id: string) => `/credentials/model?id=${id}`,
   },
 
@@ -89,19 +78,20 @@ export const ENDPOINTS = {
       `/models/by-credential/${credentialId}`,
   },
 
-  // Embedding endpoints
-  EMBEDDING: {
-    CREATE: "/embedding/create",
-
-    SEARCH: "/embedding/search",
-    STATUS: (taskId: string) => `/embedding/status/${taskId}`,
-    CANCEL: (taskId: string) => `/embedding/cancel/${taskId}`,
-    ACTIVE: "/embedding/active",
-  },
-
   // Task endpoints
   TASKS: {
     LIST: "/tasks",
+    DELETE: (taskId: string) => `/tasks/${taskId}`,
+    CLEAR: (clearType: string) => `/tasks?clear_type=${clearType}`,
+  },
+
+  // Embedding endpoints
+  EMBEDDING: {
+    CREATE: "/embedding/create",
+    TEXT: "/embedding/text",
+    SEARCH: "/embedding/search",
+    STATUS: (taskId: string) => `/embedding/status/${taskId}`,
+    CANCEL: (taskId: string) => `/embedding/cancel/${taskId}`,
   },
 
   // Knowledge Store endpoints
@@ -114,6 +104,24 @@ export const ENDPOINTS = {
     CHECK_NAME: (name: string) => `/knowledge-stores/check-name/${name}`,
     INFO: (id: string) => `/knowledge-stores/${id}/info`,
     SCROLL_DATA: (id: string) => `/knowledge-stores/${id}/scroll-data`,
+    DELETE_VECTORS: (id: string) => `/knowledge-stores/${id}/delete-vectors`,
+    GET_KNOWLEDGE_BY_DIMENSION: (dimension: number) =>
+      `/knowledge-stores/dimension/${dimension}`,
+  },
+
+  // Chat endpoints
+  CHATS: {
+    LIST: "/chats",
+    CREATE: "/chats",
+    GET: (id: string) => `/chats/${id}`,
+    UPDATE: (id: string) => `/chats/${id}`,
+    DELETE: (id: string) => `/chats/${id}`,
+    CONFIG: (id: string) => `/chats/${id}/config`,
+    MESSAGES: {
+      LIST: (id: string) => `/chats/${id}/messages`,
+      CREATE: (id: string) => `/chats/${id}/messages`,
+      DELETE: (id: string) => `/chats/${id}/messages`,
+    },
   },
 } as const;
 

@@ -3,7 +3,8 @@
 import type React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Loader2, Play } from "lucide-react";
+import { Play } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import { useState } from "react";
 
 interface SqlEditorProps {
@@ -45,7 +46,7 @@ export function SqlEditor({ onExecute, isExecuting }: SqlEditorProps) {
         >
           {isExecuting ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <LogoSpinner size="sm" className="mr-2" />
               Executing...
             </>
           ) : (

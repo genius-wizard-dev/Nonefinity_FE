@@ -1,6 +1,7 @@
+import { LogoSpinner } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Brain, Loader2 } from "lucide-react";
+import { Brain } from "lucide-react";
 
 interface EmbeddingToastProps {
   status: string;
@@ -22,21 +23,21 @@ export function EmbeddingToast({
           title: "Embedding in Progress",
           subtitle:
             "Your file is being processed. This may take a few minutes...",
-          icon: <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />,
+          icon: <LogoSpinner className="w-5 h-5" />,
           badgeColor: "bg-yellow-100 text-yellow-800",
         };
       case "STARTED":
         return {
           title: "Embedding Started",
           subtitle: "Processing your file for embedding generation...",
-          icon: <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />,
+          icon: <LogoSpinner className="w-5 h-5" />,
           badgeColor: "bg-blue-100 text-blue-800",
         };
       case "PROGRESS":
         return {
           title: "Embedding in Progress",
           subtitle: "Generating embeddings from your file content...",
-          icon: <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />,
+          icon: <LogoSpinner className="w-5 h-5" />,
           badgeColor: "bg-blue-100 text-blue-800",
         };
       case "SUCCESS":
@@ -58,7 +59,7 @@ export function EmbeddingToast({
           title: "Embedding in Progress",
           subtitle:
             "Your file is being processed. This may take a few minutes...",
-          icon: <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />,
+          icon: <LogoSpinner className="w-5 h-5" />,
           badgeColor: "bg-blue-100 text-blue-800",
         };
     }

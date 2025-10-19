@@ -152,12 +152,27 @@ export const httpClient = {
       const fullEndpoint = endpoint;
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      console.log(
+        "🌐 httpClient.get - Calling:",
+        fullEndpoint,
+        "with params:",
+        params
+      );
+
       const response = await api.get<ServerApiResponse<T>>(fullEndpoint, {
         params,
         headers,
       });
-      return new ApiResult<T>(response);
+
+      console.log("📥 httpClient.get - Raw axios response:", response);
+      console.log("📦 httpClient.get - response.data:", response.data);
+
+      const result = new ApiResult<T>(response);
+      console.log("✨ httpClient.get - ApiResult:", result);
+
+      return result;
     } catch (error) {
+      console.error("❌ httpClient.get - Error:", error);
       return new ApiResult<T>(error as ApiError);
     }
   },

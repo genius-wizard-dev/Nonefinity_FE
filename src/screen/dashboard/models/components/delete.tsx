@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2 } from "lucide-react";
 
 interface DeleteModelDialogProps {
   open: boolean;
@@ -42,7 +42,9 @@ export function DeleteModelDialog({
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isDeleting && (
+              <LogoSpinner size="sm" className="mr-2" variant="light" />
+            )}
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

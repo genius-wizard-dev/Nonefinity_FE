@@ -83,23 +83,6 @@ export interface CredentialUpdateData {
   is_active?: boolean;
 }
 
-// Encryption Types
-export interface EncryptionHealthResponse {
-  encryption_healthy: boolean;
-  test_passed: boolean;
-  encryption_algorithm: string;
-  kdf_iterations: number;
-  timestamp: string;
-  error?: string;
-}
-
-export interface GenerateKeyResponse {
-  secure_key: string;
-  length: number;
-  timestamp: string;
-  recommendation: string;
-}
-
 export interface ModelCredential {
   id: string;
   object: string;

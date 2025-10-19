@@ -1,5 +1,10 @@
+import { getClerkToken } from "@/consts/endpoint";
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import { devtools, subscribeWithSelector } from "zustand/middleware";
+import { FileService } from "../file-management/services";
+import type { FileItem } from "../file-management/types";
+import { ModelService } from "../models/service";
+import type { Model } from "../models/type";
 import { KnowledgeStoreService } from "./services";
 import type {
   KnowledgeStore,
@@ -15,6 +20,9 @@ import type {
 interface KnowledgeStoreState {
   // Data
   knowledgeStores: KnowledgeStore[];
+  models: Model[];
+  embeddingModels: Model[];
+  availableFiles: FileItem[];
   selectedKnowledgeStore: KnowledgeStore | null;
   collectionInfo: KnowledgeStoreInfoResponse | null;
 
@@ -70,6 +78,13 @@ interface KnowledgeStoreState {
 
   checkNameAvailability: (name: string) => Promise<void>;
 
+  fetchKnowledgeByDimension: (dimension: number) => Promise<void>;
+
+  // New actions for create data dialog
+  fetchEmbeddingModels: () => Promise<void>;
+  fetchAvailableFiles: () => Promise<void>;
+  fetchStoresByDimension: (dimension: number) => Promise<void>;
+
   // Scroll data actions
   fetchScrollData: (id: string, data: ScrollDataRequest) => Promise<void>;
   loadMoreScrollData: (id: string) => Promise<void>;
@@ -94,6 +109,9 @@ interface KnowledgeStoreState {
 
 const initialState = {
   knowledgeStores: [],
+  models: [] as Model[],
+  embeddingModels: [] as Model[],
+  availableFiles: [] as FileItem[],
   selectedKnowledgeStore: null,
   collectionInfo: null,
   scrollData: [],
@@ -123,16 +141,18 @@ const initialState = {
 
 export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
   devtools(
-    (set, get) => ({
+    subscribeWithSelector((set, get) => ({
       ...initialState,
 
       // Fetch knowledge stores with pagination and filters
       fetchKnowledgeStores: async (params = {}) => {
+        const currentState = get();
+        if (currentState.loading) return; // Prevent concurrent calls
+
         set({ loading: true, error: null });
 
         try {
           const { pagination = {}, filters = {} } = params;
-          const currentState = get();
 
           const paginationParams = {
             skip: pagination.skip ?? currentState.pagination.skip,
@@ -224,6 +244,22 @@ export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
           });
         }
       },
+      fetchModels: async () => {
+        set({ loading: true, error: null });
+        try {
+          const models = await ModelService.listModels({
+            type: "embedding",
+            active_only: true, // ✨ Only fetch active models
+          });
+          set({ models: models?.models || [], loading: false });
+        } catch (error) {
+          set({
+            error:
+              error instanceof Error ? error.message : "Failed to fetch models",
+            loading: false,
+          });
+        }
+      },
 
       // Update knowledge store
       updateKnowledgeStore: async (
@@ -269,6 +305,7 @@ export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
         set({ loading: true, error: null });
 
         try {
+          // Delete the knowledge store (backend will automatically delete related tasks)
           await KnowledgeStoreService.delete(id);
 
           // Remove from the list
@@ -425,6 +462,107 @@ export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
         });
       },
 
+      // Fetch knowledge by dimension
+      fetchKnowledgeByDimension: async (dimension: number) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await KnowledgeStoreService.getKnowledgeByDimension(
+            dimension
+          );
+          set({
+            knowledgeStores: response, // response is already an array
+            loading: false,
+            error: null,
+          });
+        } catch (error) {
+          set({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch knowledge by dimension",
+          });
+        }
+      },
+
+      // Fetch embedding models
+      fetchEmbeddingModels: async () => {
+        const currentState = get();
+        if (currentState.embeddingModels.length > 0) return; // Don't fetch if already loaded
+
+        set({ loading: true, error: null });
+        try {
+          const response = await ModelService.listModels({
+            type: "embedding",
+            active_only: true, // ✨ Only fetch active models
+          });
+          set({
+            embeddingModels: response?.models || [],
+            loading: false,
+            error: null,
+          });
+        } catch (error) {
+          set({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch embedding models",
+          });
+        }
+      },
+
+      // Fetch available files
+      fetchAvailableFiles: async () => {
+        const currentState = get();
+        if (currentState.availableFiles.length > 0) return; // Don't fetch if already loaded
+
+        set({ loading: true, error: null });
+        try {
+          const token = await getClerkToken();
+          if (!token) {
+            throw new Error("No authentication token available");
+          }
+          const files = await FileService.getAllowExtractFiles(token);
+          set({
+            availableFiles: files,
+            loading: false,
+            error: null,
+          });
+        } catch (error) {
+          set({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch available files",
+          });
+        }
+      },
+
+      // Fetch stores by dimension
+      fetchStoresByDimension: async (dimension: number) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await KnowledgeStoreService.getKnowledgeByDimension(
+            dimension
+          );
+          set({
+            knowledgeStores: response, // response is already an array
+            loading: false,
+            error: null,
+          });
+        } catch (error) {
+          set({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch stores by dimension",
+          });
+        }
+      },
+
       // Form actions
       setFormData: (data) => {
         set((state) => ({
@@ -468,9 +606,53 @@ export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
       resetState: () => {
         set(initialState);
       },
-    }),
+    })),
     {
       name: "knowledge-store-store",
     }
   )
 );
+
+// Selectors to prevent unnecessary re-renders
+export const useKnowledgeStores = () =>
+  useKnowledgeStoreStore((state) => state.knowledgeStores);
+export const useEmbeddingModels = () =>
+  useKnowledgeStoreStore((state) => state.embeddingModels);
+export const useAvailableFiles = () =>
+  useKnowledgeStoreStore((state) => state.availableFiles);
+export const useLoading = () =>
+  useKnowledgeStoreStore((state) => state.loading);
+export const useError = () => useKnowledgeStoreStore((state) => state.error);
+export const useSelectedKnowledgeStore = () =>
+  useKnowledgeStoreStore((state) => state.selectedKnowledgeStore);
+
+// Individual action selectors to prevent infinite loops
+export const useFetchKnowledgeStores = () =>
+  useKnowledgeStoreStore((state) => state.fetchKnowledgeStores);
+export const useFetchEmbeddingModels = () =>
+  useKnowledgeStoreStore((state) => state.fetchEmbeddingModels);
+export const useFetchAvailableFiles = () =>
+  useKnowledgeStoreStore((state) => state.fetchAvailableFiles);
+export const useFetchStoresByDimension = () =>
+  useKnowledgeStoreStore((state) => state.fetchStoresByDimension);
+export const useSetSelectedKnowledgeStore = () =>
+  useKnowledgeStoreStore((state) => state.setSelectedKnowledgeStore);
+export const useSetLoading = () =>
+  useKnowledgeStoreStore((state) => state.setLoading);
+export const useSetError = () =>
+  useKnowledgeStoreStore((state) => state.setError);
+export const useResetState = () =>
+  useKnowledgeStoreStore((state) => state.resetState);
+
+// Memoized action selectors for better performance
+export const useKnowledgeStoreActions = () =>
+  useKnowledgeStoreStore((state) => ({
+    fetchKnowledgeStores: state.fetchKnowledgeStores,
+    fetchEmbeddingModels: state.fetchEmbeddingModels,
+    fetchAvailableFiles: state.fetchAvailableFiles,
+    fetchStoresByDimension: state.fetchStoresByDimension,
+    setSelectedKnowledgeStore: state.setSelectedKnowledgeStore,
+    setLoading: state.setLoading,
+    setError: state.setError,
+    resetState: state.resetState,
+  }));

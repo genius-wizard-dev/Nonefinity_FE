@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import { useEffect } from "react";
 
 interface DeleteConfirmationModalProps {
@@ -75,7 +76,7 @@ export function DeleteConfirmationModal({
           >
             {isDeleting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LogoSpinner size="sm" className="mr-2" variant="light" />
                 Deleting...
               </>
             ) : (

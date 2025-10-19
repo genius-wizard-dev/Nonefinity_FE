@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { mapProviderIconWithSize } from "@/utils/map-provider-icon";
-import { Database, Loader2, MessageSquare, RefreshCw } from "lucide-react";
+import { Database, MessageSquare, RefreshCw } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import { useEffect } from "react";
 import type { CreateModelRequest, ModelCredential } from "../type";
 
@@ -116,7 +117,7 @@ export function AddModelDialog({
                 <div className="flex items-center gap-2">
                   {loadingCredentials && (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <LogoSpinner size="sm" className="text-muted-foreground" />
                     </>
                   )}
                   <SelectValue
@@ -131,7 +132,7 @@ export function AddModelDialog({
               <SelectContent className="w-full">
                 {loadingCredentials ? (
                   <div className="flex items-center gap-2 p-4 text-left">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <LogoSpinner size="sm" className="text-primary" />
                     <span className="text-sm text-muted-foreground">
                       Loading credentials...
                     </span>
@@ -202,7 +203,7 @@ export function AddModelDialog({
                 <div className="flex items-center gap-2">
                   {loadingModelCredentials && (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <LogoSpinner size="sm" className="text-muted-foreground" />
                     </>
                   )}
                   <SelectValue
@@ -296,7 +297,7 @@ export function AddModelDialog({
               className="h-10 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
             >
               {isSubmitting && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <LogoSpinner size="sm" className="mr-2" variant="light" />
               )}
               {isSubmitting ? "Adding Model..." : "Add Model"}
             </Button>

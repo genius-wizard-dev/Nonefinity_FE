@@ -16,24 +16,34 @@ import {
   Layers,
   Plus,
   Search,
+  Upload,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useKnowledgeStoreStore } from "../store";
+import {
+  useError,
+  useFetchKnowledgeStores,
+  useKnowledgeStores,
+  useLoading,
+} from "../store";
 import type { KnowledgeStore } from "../types";
+import { CreateKnowledgeDataDialog } from "./create-knowledge-data-dialog";
 import { CreateKnowledgeStoreDialog } from "./create-knowledge-store-dialog";
 import { DeleteKnowledgeStoreDialog } from "./delete-knowledge-store-dialog";
 import { EditKnowledgeStoreDialog } from "./edit-knowledge-store-dialog";
 import { KnowledgeStoreCard } from "./knowledge-store-card";
-
 export function KnowledgeStoreManager() {
-  const { knowledgeStores, loading, error, fetchKnowledgeStores } =
-    useKnowledgeStoreStore();
+  // Use selectors to prevent unnecessary re-renders
+  const knowledgeStores = useKnowledgeStores();
+  const loading = useLoading();
+  const error = useError();
+  const fetchKnowledgeStores = useFetchKnowledgeStores();
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedKnowledgeStore, setSelectedKnowledgeStore] =
     useState<KnowledgeStore | null>(null);
+  const [createDataDialogOpen, setCreateDataDialogOpen] = useState(false);
 
   // Fetch knowledge stores on component mount
   useEffect(() => {
@@ -41,29 +51,31 @@ export function KnowledgeStoreManager() {
   }, [fetchKnowledgeStores]);
 
   // Filter knowledge stores based on search query
-  const filteredKnowledgeStores = knowledgeStores.filter(
+  const filteredKnowledgeStores = (knowledgeStores || []).filter(
     (store) =>
-      store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       store.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalStores = knowledgeStores.length;
-  const activeStores = knowledgeStores.filter(
+  const totalStores = (knowledgeStores || []).length;
+  const activeStores = (knowledgeStores || []).filter(
     (store) => store.status === "green"
   ).length;
 
   // Calculate total vectors from all knowledge stores
-  const totalVectors = knowledgeStores.reduce((sum, store) => {
+  const totalVectors = (knowledgeStores || []).reduce((sum, store) => {
     // Assuming each knowledge store has a points_count or vectors_count
     return sum + (store.points_count || 0);
   }, 0);
 
   // Calculate average dimensions
   const avgDimensions =
-    knowledgeStores.length > 0
+    (knowledgeStores || []).length > 0
       ? Math.round(
-          knowledgeStores.reduce((sum, store) => sum + store.dimension, 0) /
-            knowledgeStores.length
+          (knowledgeStores || []).reduce(
+            (sum, store) => sum + (store.dimension || 0),
+            0
+          ) / (knowledgeStores || []).length
         )
       : 0;
 
@@ -98,12 +110,10 @@ export function KnowledgeStoreManager() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Knowledge Store
-              </Button>
-            </div>
+            <Button size="sm" onClick={() => setCreateDataDialogOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Create Data
+            </Button>
           </div>
         </div>
       </header>
@@ -164,15 +174,27 @@ export function KnowledgeStoreManager() {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex items-stretch gap-4 mb-6">
+          <div className="relative flex-1 max-w-md flex items-stretch">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search knowledge stores..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card border-border text-foreground"
+              className="pl-10 bg-card border border-border text-foreground h-full"
+              autoComplete="off"
+              spellCheck={false}
             />
+          </div>
+          <div className="flex items-stretch">
+            <Button
+              size="sm"
+              className="h-full"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Knowledge Store
+            </Button>
           </div>
         </div>
 
@@ -198,7 +220,7 @@ export function KnowledgeStoreManager() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && knowledgeStores.length === 0 && (
+        {!loading && !error && (knowledgeStores || []).length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
               <Plus className="h-12 w-12 text-muted-foreground" />
@@ -210,10 +232,6 @@ export function KnowledgeStoreManager() {
               Create your first knowledge store to start managing your vector
               data.
             </p>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Knowledge Store
-            </Button>
           </div>
         )}
 
@@ -234,7 +252,7 @@ export function KnowledgeStoreManager() {
         {/* No Results */}
         {!loading &&
           !error &&
-          knowledgeStores.length > 0 &&
+          (knowledgeStores || []).length > 0 &&
           filteredKnowledgeStores.length === 0 && (
             <div className="text-center py-12">
               <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -263,6 +281,10 @@ export function KnowledgeStoreManager() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         knowledgeStore={selectedKnowledgeStore}
+      />
+      <CreateKnowledgeDataDialog
+        open={createDataDialogOpen}
+        onOpenChange={setCreateDataDialogOpen}
       />
     </div>
   );

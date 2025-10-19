@@ -5,8 +5,6 @@ import type {
   CredentialFormData,
   CredentialListResponse,
   CredentialUpdateData,
-  EncryptionHealthResponse,
-  GenerateKeyResponse,
   Provider,
   ProviderListResponse,
 } from "./type";
@@ -369,79 +367,6 @@ export class CredentialService {
     } catch (error) {
       console.error("❌ Failed to fetch credentials by provider:", error);
       return null;
-    }
-  }
-
-  /**
-   * Check encryption health
-   */
-  static async checkEncryptionHealth(
-    token?: string
-  ): Promise<EncryptionHealthResponse | null> {
-    try {
-      console.log("🔐 Checking encryption health");
-
-      const response = await httpClient.get<EncryptionHealthResponse>(
-        ENDPOINTS.CREDENTIALS.ENCRYPTION_HEALTH,
-        undefined,
-        token
-      );
-
-      if (!response.isSuccess) {
-        console.error(
-          "❌ Failed to check encryption health:",
-          response.message
-        );
-        return null;
-      }
-
-      const data = response.getData();
-      console.log("📥 Encryption health response:", data);
-
-      return data;
-    } catch (error) {
-      console.error("❌ Failed to check encryption health:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Generate encryption key
-   */
-  static async generateEncryptionKey(
-    length: number = 32,
-    token?: string
-  ): Promise<{ success: boolean; data?: GenerateKeyResponse; error?: string }> {
-    try {
-      console.log("🔐 Generating encryption key:", { length });
-
-      // Use JSON body instead of form data
-      const jsonBody = { length };
-
-      const response = await httpClient.post<GenerateKeyResponse>(
-        ENDPOINTS.CREDENTIALS.GENERATE_ENCRYPTION_KEY,
-        jsonBody,
-        token
-      );
-
-      if (!response.isSuccess) {
-        console.error(
-          "❌ Failed to generate encryption key:",
-          response.message
-        );
-        return {
-          success: false,
-          error: response.message || "Failed to generate encryption key",
-        };
-      }
-
-      const responseData = response.getData();
-      console.log("📥 Generate encryption key response:", responseData);
-
-      return { success: true, data: responseData };
-    } catch (error) {
-      console.error("❌ Encryption key generation error:", error);
-      return { success: false, error: "An unexpected error occurred" };
     }
   }
 }

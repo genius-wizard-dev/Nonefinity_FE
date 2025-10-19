@@ -142,6 +142,42 @@ export class KnowledgeStoreService {
 
     return result.getData();
   }
+
+  // Get knowledge by dimension
+  static async getKnowledgeByDimension(
+    dimension: number
+  ): Promise<KnowledgeStore[]> {
+    const result = await httpClient.get<KnowledgeStore[]>(
+      ENDPOINTS.KNOWLEDGE_STORE.GET_KNOWLEDGE_BY_DIMENSION(dimension)
+    );
+
+    if (!result.isSuccess) {
+      throw new Error(
+        result.message || "Failed to fetch knowledge by dimension"
+      );
+    }
+
+    return result.getData();
+  }
+
+  // Delete vectors from knowledge store
+  static async deleteVectors(
+    knowledgeStoreId: string,
+    pointIds: string[]
+  ): Promise<{ deleted_count: number; point_ids: string[] }> {
+    const result = await httpClient.post<{
+      deleted_count: number;
+      point_ids: string[];
+    }>(ENDPOINTS.KNOWLEDGE_STORE.DELETE_VECTORS(knowledgeStoreId), {
+      point_ids: pointIds,
+    });
+
+    if (!result.isSuccess) {
+      throw new Error(result.message || "Failed to delete vectors");
+    }
+
+    return result.getData();
+  }
 }
 
 // Export individual functions for convenience
@@ -154,4 +190,6 @@ export const {
   delete: deleteKnowledgeStore,
   getInfo,
   scrollData,
+  getKnowledgeByDimension,
+  deleteVectors,
 } = KnowledgeStoreService;

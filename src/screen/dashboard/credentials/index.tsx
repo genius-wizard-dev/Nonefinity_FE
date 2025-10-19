@@ -45,10 +45,10 @@ import {
   Eye,
   EyeOff,
   Key,
-  Loader2,
   Plus,
   Trash2,
 } from "lucide-react";
+import { LogoSpinner } from "@/components/shared";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCredentialStore } from "./store";
@@ -445,7 +445,7 @@ function ManageAICredentials() {
                   disabled={addingCredential || !isAddFormValid()}
                 >
                   {addingCredential && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <LogoSpinner size="sm" className="mr-2" />
                   )}
                   Add Credential
                 </Button>
@@ -615,7 +615,7 @@ function ManageAICredentials() {
                         }
                       />
                       {togglingStatus === credential.id && (
-                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        <LogoSpinner size="sm" className="text-muted-foreground" />
                       )}
                     </div>
                   </TableCell>
@@ -649,7 +649,7 @@ function ManageAICredentials() {
                         }
                       >
                         {deletingCredentialId === credential.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <LogoSpinner size="sm" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}
@@ -754,7 +754,7 @@ function ManageAICredentials() {
               disabled={editingCredentialLoading || !hasEditChanges()}
             >
               {editingCredentialLoading && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <LogoSpinner size="sm" className="mr-2" />
               )}
               Save Changes
             </Button>
@@ -783,7 +783,7 @@ function ManageAICredentials() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deletingCredential && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <LogoSpinner size="sm" className="mr-2" />
               )}
               Delete
             </AlertDialogAction>
