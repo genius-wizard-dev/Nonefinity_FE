@@ -183,13 +183,10 @@ export interface ChatResponse {
   data: Chat;
 }
 
-export interface MessageListResponse {
-    data: ChatMessage[];
-}
+// API returns array directly
+export type MessageListResponse = ChatMessage[];
 
-export interface MessageResponse {
-    data: ChatMessage;
-}
+export type MessageResponse = ChatMessage;
 
 // Chat Types
 export const ChatType = {

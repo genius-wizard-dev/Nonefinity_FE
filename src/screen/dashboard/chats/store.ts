@@ -331,11 +331,12 @@ export const useChatStore = create<ChatStore>()(
                     limit
                   );
                   if (resp) {
+                    // API returns array directly
                     set((s) => ({
                       messagesCache: {
                         ...s.messagesCache,
                         [chatId]: {
-                          data: resp.data,
+                          data: resp,
                           lastFetchTime: Date.now(),
                         },
                       },
@@ -343,7 +344,7 @@ export const useChatStore = create<ChatStore>()(
                     // Only update visible messages if still on same chat
                     const cur = get();
                     if (cur.currentChat?.id === chatId) {
-                      set({ messages: resp.data });
+                      set({ messages: resp });
                     }
                   }
                 } catch (e) {
@@ -356,13 +357,14 @@ export const useChatStore = create<ChatStore>()(
             const response = await ChatService.getMessages(chatId, skip, limit);
 
             if (response) {
+              // API returns array directly
               set({
-                messages: response.data,
+                messages: response,
                 isLoadingMessages: false,
                 messagesCache: {
                   ...state.messagesCache,
                   [chatId]: {
-                    data: response.data,
+                    data: response,
                     lastFetchTime: Date.now(),
                   },
                 },
@@ -380,9 +382,9 @@ export const useChatStore = create<ChatStore>()(
             });
             set({ isLoadingMessages: false });
           }
-         },
+        },
 
-         clearMessages: async (chatId: string) => {
+        clearMessages: async (chatId: string) => {
           set({ isUpdating: true });
 
           try {
