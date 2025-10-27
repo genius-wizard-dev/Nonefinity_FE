@@ -55,9 +55,12 @@ export default function DatasetManage() {
 
   const handleExecuteQuery = async (query: string) => {
     try {
+      console.log("🔍 Executing query from UI:", query);
       const token = await getToken();
       if (token) {
-        await executeQuery(query, token);
+        const result = await executeQuery(query, token);
+        console.log("📊 Query result received:", result);
+        console.log("📊 Current queryResults state:", queryResults);
       } else {
         console.warn("No token available for query execution");
       }

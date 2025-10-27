@@ -1,138 +1,157 @@
 // Chat Message Types
 export interface ChatMessage {
-  id: string;
-  chat_id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  message_order: number;
-  created_at: string;
+    id: string;
+    chat_id: string;
+    role: "user" | "assistant" | "system";
+    content: string;
+    message_order: number;
+    created_at: string;
 }
 
 // Chat Types - Match API response exactly
 export interface Chat {
-  id: string;
-  name: string;
-  owner_id: string;
-  chat_model_id: string;
-  embedding_model_id: string | null;
-  temperature: number;
-  max_tokens: number;
-  top_p: number;
-  dataset_ids: string[];
-  knowledge_store_id: string | null;
-  instruction_prompt: string;
-  message_count: number;
-  created_at: string;
-  updated_at?: string | null;
+    id: string;
+    name: string;
+    owner_id: string;
+    chat_model_id: string;
+    embedding_model_id: string | null;
+    temperature: number;
+    max_tokens: number;
+    top_p: number;
+    dataset_ids: string[];
+    knowledge_store_id: string | null;
+    instruction_prompt: string;
+    message_count: number;
+    created_at: string;
+    updated_at?: string | null;
 }
 
 // API Request Types
 export interface CreateChatRequest {
-  name: string;
-  chat_model_id: string;
-  embedding_model_id?: string | null;
-  temperature?: number;
-  max_tokens?: number;
-  top_p?: number;
-  dataset_ids?: string[];
-  knowledge_store_id?: string | null;
-  instruction_prompt?: string;
+    name: string;
+    chat_model_id: string;
+    embedding_model_id?: string | null;
+    temperature?: number;
+    max_tokens?: number;
+    top_p?: number;
+    dataset_ids?: string[];
+    knowledge_store_id?: string | null;
+    instruction_prompt?: string;
 }
 
 export interface UpdateChatRequest {
-  name?: string;
-  chat_model_id?: string;
-  embedding_model_id?: string | null;
-  temperature?: number;
-  max_tokens?: number;
-  top_p?: number;
-  dataset_ids?: string[];
-  knowledge_store_id?: string | null;
-  instruction_prompt?: string;
+    name?: string;
+    chat_model_id?: string;
+    embedding_model_id?: string | null;
+    temperature?: number;
+    max_tokens?: number;
+    top_p?: number;
+    dataset_ids?: string[];
+    knowledge_store_id?: string | null;
+    instruction_prompt?: string;
 }
 
 export interface CreateMessageRequest {
-  role: "user" | "assistant" | "system";
-  content: string;
+    role: "user" | "assistant" | "system";
+    content: string;
 }
 
 // API Response Types
 export interface ChatListResponse {
-  chats: Chat[];
-  total: number;
-  skip: number;
-  limit: number;
+    chats: Chat[];
+    total: number;
+    skip: number;
+    limit: number;
 }
 
 export interface ChatResponse {
-  data: Chat;
+    data: Chat;
 }
 
 export interface MessageListResponse {
-  data: ChatMessage[];
+    data: ChatMessage[];
 }
 
 export interface MessageResponse {
-  data: ChatMessage;
+    data: ChatMessage;
 }
 
 // Chat Types
 export const ChatType = {
-  AI_ONLY: "ai_only",
-  KNOWLEDGE_BASE: "knowledge_base",
-  DATASET: "dataset",
-  FULL_FEATURED: "full_featured",
+    AI_ONLY: "ai_only",
+    KNOWLEDGE_BASE: "knowledge_base",
+    DATASET: "dataset",
+    FULL_FEATURED: "full_featured",
 } as const;
 
 export type ChatType = (typeof ChatType)[keyof typeof ChatType];
 
 // Store State Types
 export interface ChatState {
-  // Data
-  chats: Chat[];
-  currentChat: Chat | null;
-  messages: ChatMessage[];
+    // Data
+    chats: Chat[];
+    currentChat: Chat | null;
+    messages: ChatMessage[];
+    // Caching
+    lastFetchTime: number; // chats list last fetch time (epoch ms)
+    messagesCache: Record<
+        string,
+        { data: ChatMessage[]; lastFetchTime: number }
+    >; // per-chat cache
 
-  // Loading states
-  isLoading: boolean;
-  isCreating: boolean;
-  isUpdating: boolean;
-  isDeleting: boolean;
-  isSendingMessage: boolean;
-  isLoadingMessages: boolean;
+    // Loading states
+    isLoading: boolean;
+    isCreating: boolean;
+    isUpdating: boolean;
+    isDeleting: boolean;
+    isSendingMessage: boolean;
+    isLoadingMessages: boolean;
 
-  // Pagination
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+    // Pagination
+    pagination: {
+        page: number;
+        pageSize: number;
+        total: number;
+        totalPages: number;
+    };
 
-  // UI state
-  sidebarOpen: boolean;
-  selectedChatId: string | null;
+    // UI state
+    sidebarOpen: boolean;
+    selectedChatId: string | null;
 }
 
 // Store Actions Types
 export interface ChatActions {
-  // Chat CRUD
-  createChat: (data: CreateChatRequest) => Promise<Chat | null>;
-  getChats: (skip?: number, limit?: number) => Promise<void>;
-  getChat: (id: string) => Promise<Chat | null>;
-  updateChat: (id: string, data: UpdateChatRequest) => Promise<Chat | null>;
-  deleteChat: (id: string) => Promise<boolean>;
+    // Chat CRUD
+    createChat: (data: CreateChatRequest) => Promise<Chat | null>;
+    getChats: (skip?: number, limit?: number) => Promise<void>;
+    getChat: (id: string) => Promise<Chat | null>;
+    updateChat: (id: string, data: UpdateChatRequest) => Promise<Chat | null>;
+    deleteChat: (id: string) => Promise<boolean>;
 
-  // Messages
-  getMessages: (chatId: string, skip?: number, limit?: number) => Promise<void>;
-  sendMessage: (chatId: string, content: string) => Promise<ChatMessage | null>;
-  clearMessages: (chatId: string) => Promise<boolean>;
+    // Messages
+    getMessages: (
+        chatId: string,
+        skip?: number,
+        limit?: number
+    ) => Promise<void>;
+    sendMessage: (
+        chatId: string,
+        content: string
+    ) => Promise<ChatMessage | null>;
+    clearMessages: (chatId: string) => Promise<boolean>;
 
-  // UI Actions
-  setCurrentChat: (chat: Chat | null) => void;
-  setSelectedChatId: (id: string | null) => void;
-  setSidebarOpen: (open: boolean) => void;
-  reset: () => void;
+    // UI Actions
+    setCurrentChat: (chat: Chat | null) => void;
+    setSelectedChatId: (id: string | null) => void;
+    setSidebarOpen: (open: boolean) => void;
+    reset: () => void;
+    
+    // Persistence
+    _hasHydrated: boolean;
+    
+    // Request deduplication
+    _pendingRequests?: Map<string, Promise<any>>;
 }
 
 // Combined Store Type

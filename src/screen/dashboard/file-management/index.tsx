@@ -85,12 +85,15 @@ export default function FileManagement() {
     }
   }, [searchParams, handleSearch, clearSearch]);
 
-  // Load files and stats on component mount
+  // Load files and stats on component mount with progressive loading
   useEffect(() => {
     const loadData = async () => {
       const token = await getToken();
       if (token) {
-        await Promise.all([fetchFiles(token), fetchStats(token)]);
+        // Load files first (most important), then stats)
+        await fetchFiles(token);
+        // Load stats in background (less critical)
+        fetchStats(token).catch(console.warn);
       }
     };
     loadData();
