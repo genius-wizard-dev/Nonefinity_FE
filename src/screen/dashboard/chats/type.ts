@@ -1,11 +1,123 @@
 // Chat Message Types
+export type MessageRole = "user" | "assistant" | "system" | "tool";
+export type MessageType =
+  | "text"
+  | "tool_call"
+  | "tool_result"
+  | "thinking"
+  | "approval_request";
+
 export interface ChatMessage {
   id: string;
   chat_id: string;
-  role: "user" | "assistant" | "system";
+  role: MessageRole;
   content: string;
   message_order: number;
+  message_type: MessageType;
+  metadata?: {
+    tool_name?: string;
+    args?: Record<string, unknown>;
+    result?: string;
+    status?: string;
+    error?: string;
+    [key: string]: unknown;
+  };
+  parent_message_id?: string | null;
   created_at: string;
+}
+
+// SSE Event Types
+export interface SSEStartEvent {
+  event: "start";
+  data: {
+    message: string;
+  };
+}
+
+export interface SSEEndEvent {
+  event: "end";
+  data: {
+    message: string;
+  };
+}
+
+export interface SSEContentEvent {
+  event: "content";
+  data: {
+    id: string;
+    step: string;
+    content:
+      | string
+      | Array<{
+          type: string;
+          text: string;
+          extras?: Record<string, unknown>;
+        }>;
+    role: string;
+  };
+}
+
+export interface SSEToolCallEvent {
+  event: "tool_call";
+  data: {
+    id: string;
+    step: string;
+    tool_name: string;
+    args: Record<string, unknown>;
+    status: string;
+  };
+}
+
+export interface SSEToolResultEvent {
+  event: "tool_result";
+  data: {
+    id: string;
+    step: string;
+    tool_name: string;
+    result: string;
+    status: string;
+  };
+}
+
+export interface SSEApprovalRequestEvent {
+  event: "approval_request";
+  data: {
+    id: string;
+    step: string;
+    tool_name: string;
+    args: Record<string, unknown>;
+    description: string;
+    allowed_decisions: string[];
+  };
+}
+
+export interface SSEErrorEvent {
+  event: "error";
+  data: {
+    message: string;
+  };
+}
+
+export type SSEEvent =
+  | SSEStartEvent
+  | SSEEndEvent
+  | SSEContentEvent
+  | SSEToolCallEvent
+  | SSEToolResultEvent
+  | SSEApprovalRequestEvent
+  | SSEErrorEvent;
+
+// Approval Decision Types
+export interface ApprovalDecision {
+  type: "approve" | "reject" | "edit";
+  edited_action?: {
+    name: string;
+    args: Record<string, unknown>;
+  };
+}
+
+export interface ResumeData {
+  decisions: Array<ApprovalDecision>;
 }
 
 // Chat Types - Match API response exactly
@@ -52,8 +164,11 @@ export interface UpdateChatRequest {
 }
 
 export interface CreateMessageRequest {
-  role: "user" | "assistant" | "system";
+  role: MessageRole;
   content: string;
+  message_type?: MessageType;
+  metadata?: Record<string, unknown>;
+  parent_message_id?: string | null;
 }
 
 // API Response Types
@@ -68,13 +183,10 @@ export interface ChatResponse {
   data: Chat;
 }
 
-export interface MessageListResponse {
-  data: ChatMessage[];
-}
+// Backend returns array directly in data field
+export type MessageListResponse = ChatMessage[];
 
-export interface MessageResponse {
-  data: ChatMessage;
-}
+export type MessageResponse = ChatMessage;
 
 // Chat Types
 export const ChatType = {
@@ -125,7 +237,7 @@ export interface ChatActions {
 
   // Messages
   getMessages: (chatId: string, skip?: number, limit?: number) => Promise<void>;
-  sendMessage: (chatId: string, content: string) => Promise<ChatMessage | null>;
+  // NOTE: sendMessage removed - use useChatStreaming hook for real-time streaming
   clearMessages: (chatId: string) => Promise<boolean>;
 
   // UI Actions

@@ -3,11 +3,8 @@ import { httpClient } from "@/lib/axios";
 import type {
   Chat,
   ChatListResponse,
-  ChatMessage,
   CreateChatRequest,
-  CreateMessageRequest,
   MessageListResponse,
-  MessageResponse,
   UpdateChatRequest,
 } from "./type";
 
@@ -139,31 +136,33 @@ export class ChatService {
     }
   }
 
-  static async sendMessage(
-    chatId: string,
-    content: string
-  ): Promise<ChatMessage | null> {
-    try {
-      const data: CreateMessageRequest = {
-        role: "user",
-        content,
-      };
-
-      const response = await httpClient.post<MessageResponse>(
-        ENDPOINTS.CHATS.MESSAGES.CREATE(chatId),
-        data
-      );
-
-      if (response.isSuccess && response.data) {
-        return response.data.data;
-      }
-
-      throw new Error(response.message || "Failed to send message");
-    } catch (error) {
-      console.error("Error sending message:", error);
-      throw error;
-    }
-  }
+  // DEPRECATED: Use useChatStreaming hook for real-time streaming instead
+  // This method is kept for backward compatibility but should not be used
+  // static async sendMessage(
+  //   chatId: string,
+  //   content: string
+  // ): Promise<ChatMessage | null> {
+  //   try {
+  //     const data: CreateMessageRequest = {
+  //       role: "user",
+  //       content,
+  //     };
+  //
+  //     const response = await httpClient.post<MessageResponse>(
+  //       ENDPOINTS.CHATS.MESSAGES.CREATE(chatId),
+  //       data
+  //     );
+  //
+  //     if (response.isSuccess && response.data) {
+  //       return response.data.data;
+  //     }
+  //
+  //     throw new Error(response.message || "Failed to send message");
+  //   } catch (error) {
+  //     console.error("Error sending message:", error);
+  //     throw error;
+  //   }
+  // }
 
   static async clearMessages(chatId: string): Promise<Chat | null> {
     try {

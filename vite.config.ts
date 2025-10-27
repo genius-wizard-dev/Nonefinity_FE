@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "refractor/lib/core": "refractor/core.js",
+      "refractor/lib/all": "refractor/all.js",
+      "refractor/lang": "refractor/lang",
     },
   },
 });

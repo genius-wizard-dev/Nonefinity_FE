@@ -234,9 +234,12 @@ export const useChatStore = create<ChatStore>()(
         try {
           const response = await ChatService.getMessages(chatId, skip, limit);
 
+          console.log("📥 Store - getMessages response:", response);
+
           if (response) {
+            // Response is already the array of messages
             set({
-              messages: response.data,
+              messages: response,
               isLoadingMessages: false,
             });
           }
@@ -250,33 +253,8 @@ export const useChatStore = create<ChatStore>()(
         }
       },
 
-      sendMessage: async (chatId: string, content: string) => {
-        set({ isSendingMessage: true });
-
-        try {
-          const message = await ChatService.sendMessage(chatId, content);
-
-          if (message) {
-            set((state) => ({
-              messages: [...state.messages, message],
-              isSendingMessage: false,
-            }));
-
-            return message;
-          }
-
-          set({ isSendingMessage: false });
-          return null;
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Failed to send message";
-          toast.error("Failed to send message", {
-            description: errorMessage,
-          });
-          set({ isSendingMessage: false });
-          return null;
-        }
-      },
+      // NOTE: sendMessage is deprecated - use useChatStreaming hook instead for real-time streaming
+      // Messages are automatically saved after streaming completes
 
       clearMessages: async (chatId: string) => {
         set({ isUpdating: true });

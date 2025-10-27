@@ -121,6 +121,9 @@ export const ENDPOINTS = {
       CREATE: (id: string) => `/chats/${id}/messages`,
       DELETE: (id: string) => `/chats/${id}/messages`,
     },
+    STREAM: (id: string) => `/chats/${id}/stream`,
+    APPROVE: (id: string) => `/chats/${id}/approve`,
+    SAVE_CONVERSATION: (id: string) => `/chats/${id}/save-conversation`,
   },
 } as const;
 
