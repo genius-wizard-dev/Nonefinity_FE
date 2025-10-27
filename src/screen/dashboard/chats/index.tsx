@@ -5,12 +5,22 @@ import ChatSidebar from "./components/chat-sidebar";
 import { useChatStore } from "./store";
 
 export default function ChatsPage() {
-  const { getChats, isLoading } = useChatStore();
+  const { getChats, isLoading, selectedChatId, setSelectedChatId, chats, _hasHydrated } = useChatStore();
 
   useEffect(() => {
     // Load chats on component mount
     getChats();
   }, [getChats]);
+
+  // Restore selected chat when returning to the page (only after hydration)
+  useEffect(() => {
+    if (_hasHydrated && selectedChatId && chats.length > 0) {
+      const chat = chats.find(c => c.id === selectedChatId);
+      if (chat) {
+        setSelectedChatId(selectedChatId);
+      }
+    }
+  }, [_hasHydrated, selectedChatId, chats, setSelectedChatId]);
 
   if (isLoading) {
     return (

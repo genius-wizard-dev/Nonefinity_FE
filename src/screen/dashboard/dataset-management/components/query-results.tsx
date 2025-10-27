@@ -6,7 +6,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle2, Database, XCircle } from "lucide-react";
+import { CheckCircle2, Database, XCircle, Maximize2, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 interface QueryResultsProps {
   results: {
@@ -19,7 +24,14 @@ interface QueryResultsProps {
 }
 
 export function QueryResults({ results }: QueryResultsProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  console.log("📊 QueryResults component received results:", results);
+  console.log("📊 Results type:", typeof results);
+  console.log("📊 Has results:", !!results);
+  
   if (!results) {
+    console.log("📊 No results to display");
     return (
       <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center">
@@ -34,6 +46,101 @@ export function QueryResults({ results }: QueryResultsProps) {
 
   const hasError = results.error;
   const hasData = results.rows && results.rows.length > 0;
+  
+  console.log("📊 Has error:", hasError);
+  console.log("📊 Has data:", hasData);
+  console.log("📊 Row count:", results.rows?.length);
+
+  const exportToCSV = () => {
+    try {
+      // Create CSV content
+      const csvContent = [
+        // Header row
+        results.columns.join(","),
+        // Data rows
+        ...results.rows.map((row) =>
+          results.columns
+            .map((col) => {
+              const value = row[col];
+              // Handle null/undefined
+              if (value === null || value === undefined) return "";
+              // Escape quotes and wrap in quotes if contains comma
+              const stringValue = String(value);
+              if (stringValue.includes(",") || stringValue.includes('"')) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+              }
+              return stringValue;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `query_results_${Date.now()}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("CSV exported successfully");
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast.error("Failed to export CSV");
+    }
+  };
+
+  const ResultsTable = ({ fullScreen = false }: { fullScreen?: boolean }) => (
+    <div className={fullScreen ? "w-full h-full overflow-hidden" : "flex-1 overflow-hidden min-h-0"}>
+      <ScrollArea className="h-full w-full">
+        <div className="min-w-max">
+          <table className="w-full caption-bottom text-sm min-w-full">
+            <TableHeader className="sticky top-0 z-10 bg-card backdrop-blur-sm">
+              <TableRow className="border-b border-border">
+                {results.columns.map((column) => (
+                  <TableHead
+                    key={column}
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4 text-left whitespace-nowrap"
+                  >
+                    {column}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.rows.map((row, rowIndex) => (
+                <TableRow
+                  key={rowIndex}
+                  className="hover:bg-muted/30 transition-colors border-b border-border/50"
+                >
+                  {results.columns.map((column) => (
+                    <TableCell
+                      key={column}
+                      className="font-mono text-sm px-6 py-4 whitespace-nowrap"
+                    >
+                      {row[column] !== null && row[column] !== undefined ? (
+                        <span className="text-foreground">
+                          {String(row[column])}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground italic">
+                          null
+                        </span>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </table>
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col bg-background rounded-lg border border-border shadow-sm">
@@ -55,12 +162,25 @@ export function QueryResults({ results }: QueryResultsProps) {
               : "Query executed successfully"}
           </span>
         </div>
-        {!hasError && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-            <span className="font-medium">{results.rowCount} rows</span>
-            <span>{results.executionTime}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {!hasError && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              <span className="font-medium">{results.rowCount} rows</span>
+              <span>{results.executionTime}</span>
+            </div>
+          )}
+          {hasData && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExpanded(true)}
+              className="flex items-center gap-2"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Expand
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Error display */}
@@ -76,51 +196,7 @@ export function QueryResults({ results }: QueryResultsProps) {
       )}
 
       {/* Data table */}
-      {hasData && (
-        <div className="flex-1 overflow-auto min-h-0">
-          <div className="relative w-full h-full">
-            <table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm">
-                <TableRow className="border-b border-border">
-                  {results.columns.map((column) => (
-                    <TableHead
-                      key={column}
-                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4 text-left"
-                    >
-                      {column}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.rows.map((row, rowIndex) => (
-                  <TableRow
-                    key={rowIndex}
-                    className="hover:bg-muted/30 transition-colors border-b border-border/50"
-                  >
-                    {results.columns.map((column) => (
-                      <TableCell
-                        key={column}
-                        className="font-mono text-sm px-6 py-4"
-                      >
-                        {row[column] !== null && row[column] !== undefined ? (
-                          <span className="text-foreground">
-                            {String(row[column])}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground italic">
-                            null
-                          </span>
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </table>
-          </div>
-        </div>
-      )}
+      {hasData && <ResultsTable />}
 
       {/* No data message when no error but no data */}
       {!hasError && !hasData && (
@@ -131,6 +207,45 @@ export function QueryResults({ results }: QueryResultsProps) {
           </div>
         </div>
       )}
+
+      {/* Expanded View Dialog */}
+      <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
+        <DialogContent className="max-w-[98vw] sm:!max-w-[98vw] w-[98vw] max-h-[95vh] h-[95vh] flex flex-col p-0" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="px-6 py-5 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between w-full gap-6 pr-12">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="p-1.5 rounded-full bg-green-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-lg font-semibold mb-1.5">
+                    Query Results
+                  </DialogTitle>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="font-medium">{results.rowCount} rows</span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span>{results.executionTime}</span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span>{results.columns.length} columns</span>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="default"
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 mr-2"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 pt-4">
+            {hasData && <ResultsTable fullScreen />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

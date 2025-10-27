@@ -200,3 +200,32 @@
   word-wrap: break-word !important;
   overflow-wrap: break-word !important;
 }
+
+/* Performance optimizations */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Optimize animations for better performance */
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-shimmer {
+    animation: none;
+  }
+}
+
+/* Optimize skeleton loading */
+.skeleton-optimized {
+  will-change: opacity;
+  transform: translateZ(0);
+}
