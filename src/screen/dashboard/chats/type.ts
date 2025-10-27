@@ -183,10 +183,13 @@ export interface ChatResponse {
   data: Chat;
 }
 
-// Backend returns array directly in data field
-export type MessageListResponse = ChatMessage[];
+export interface MessageListResponse {
+    data: ChatMessage[];
+}
 
-export type MessageResponse = ChatMessage;
+export interface MessageResponse {
+    data: ChatMessage;
+}
 
 // Chat Types
 export const ChatType = {

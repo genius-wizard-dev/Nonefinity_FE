@@ -380,37 +380,9 @@ export const useChatStore = create<ChatStore>()(
             });
             set({ isLoadingMessages: false });
           }
-        },
+         },
 
-        sendMessage: async (chatId: string, content: string) => {
-          set({ isSendingMessage: true });
-
-          try {
-            const message = await ChatService.sendMessage(chatId, content);
-
-            if (message) {
-              set((state) => ({
-                messages: [...state.messages, message],
-                isSendingMessage: false,
-              }));
-
-              return message;
-            }
-
-            set({ isSendingMessage: false });
-            return null;
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to send message";
-            toast.error("Failed to send message", {
-              description: errorMessage,
-            });
-            set({ isSendingMessage: false });
-            return null;
-          }
-        },
-
-        clearMessages: async (chatId: string) => {
+         clearMessages: async (chatId: string) => {
           set({ isUpdating: true });
 
           try {
