@@ -1,488 +1,233 @@
-import { toast } from "sonner";
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
 import { ChatService } from "./services";
 import type {
-  Chat,
+  ChatConfig,
+  ChatConfigCreate,
   ChatMessage,
-  ChatStore,
-  CreateChatRequest,
-  UpdateChatRequest,
-} from "./type";
+  ChatSession,
+  ChatSessionCreate,
+} from "./types";
+
+interface ChatState {
+  // Chat Configs
+  configs: ChatConfig[];
+  selectedConfig: ChatConfig | null;
+  configsLoading: boolean;
+  configsError: string | null;
+
+  // Chat Sessions
+  sessions: ChatSession[];
+  selectedSession: ChatSession | null;
+  sessionsLoading: boolean;
+  sessionsError: string | null;
+
+  // Messages
+  messages: ChatMessage[];
+  messagesLoading: boolean;
+
+  // Actions
+  fetchConfigs: () => Promise<void>;
+  createConfig: (data: ChatConfigCreate) => Promise<ChatConfig | null>;
+  selectConfig: (config: ChatConfig | null) => void;
+  deleteConfig: (id: string) => Promise<void>;
+
+  fetchSessions: (configId?: string) => Promise<void>;
+  createSession: (data: ChatSessionCreate) => Promise<ChatSession | null>;
+  selectSession: (session: ChatSession | null) => void;
+  deleteSession: (id: string) => Promise<void>;
+
+  fetchSessionMessages: (sessionId: string) => Promise<void>;
+  addMessage: (message: ChatMessage) => void;
+  clearMessages: () => void;
+
+  reset: () => void;
+}
 
 const initialState = {
-  // Data
-  chats: [],
-  currentChat: null,
+  configs: [],
+  selectedConfig: null,
+  configsLoading: false,
+  configsError: null,
+  sessions: [],
+  selectedSession: null,
+  sessionsLoading: false,
+  sessionsError: null,
   messages: [],
-  // Caching
-  lastFetchTime: 0,
-  messagesCache: {} as Record<
-    string,
-    { data: ChatMessage[]; lastFetchTime: number }
-  >,
-
-  // Loading states
-  isLoading: false,
-  isCreating: false,
-  isUpdating: false,
-  isDeleting: false,
-  isSendingMessage: false,
-  isLoadingMessages: false,
-
-  // Pagination
-  pagination: {
-    page: 1,
-    pageSize: 100,
-    total: 0,
-    totalPages: 0,
-  },
-
-  // UI state
-  sidebarOpen: true,
-  selectedChatId: null,
+  messagesLoading: false,
 };
 
-export const useChatStore = create<ChatStore>()(
-  devtools(
-    persist(
-      (set, get) => ({
-        ...initialState,
+export const useChatStore = create<ChatState>((set, get) => ({
+  ...initialState,
 
-        // Chat CRUD Actions
-        createChat: async (data: CreateChatRequest) => {
-          set({ isCreating: true });
-
-          try {
-            console.log("🚀 Creating chat with data:", data);
-            const chat = await ChatService.createChat(data);
-            console.log("✅ Chat created successfully:", chat);
-
-            if (chat) {
-              // Show success toast
-              toast.success("Chat created successfully", {
-                description: `"${chat.name}" has been created`,
-              });
-
-              // Force refresh: mark cache stale then refresh list to include new chat
-              set({ lastFetchTime: 0 });
-              // Refresh the chats list to get updated data from backend
-              console.log("🔄 Refreshing chat list...");
-              await get().getChats();
-              console.log(
-                "✅ Chat list refreshed, total chats:",
-                get().chats.length
-              );
-
-              // Set the newly created chat as current
-              set({
-                currentChat: chat,
-                selectedChatId: chat.id,
-                isCreating: false,
-              });
-
-              return chat;
-            }
-
-            set({ isCreating: false });
-            return null;
-          } catch (error) {
-            console.error("❌ Error creating chat:", error);
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to create chat";
-            toast.error("Failed to create chat", {
-              description: errorMessage,
-            });
-            set({ isCreating: false });
-            return null;
-          }
-        },
-
-        getChats: async (skip: number = 0, limit: number = 100) => {
-          const TTL_MS = 30_000; // 30s TTL for chat list
-          const cacheKey = `chats-${skip}-${limit}`;
-
-          set({ isLoading: true });
-
-          try {
-            const state = get();
-            const now = Date.now();
-            const isSamePage =
-              Math.floor(skip / limit) + 1 === state.pagination.page &&
-              limit === state.pagination.pageSize;
-            const isFresh = now - (state.lastFetchTime || 0) < TTL_MS;
-
-            if (state.chats.length > 0 && isSamePage && isFresh) {
-              // Serve cache immediately; background revalidate
-              set({ isLoading: false });
-              (async () => {
-                try {
-                  const resp = await ChatService.getChats(skip, limit);
-                  if (resp) {
-                    set({
-                      chats: resp.chats || [],
-                      pagination: {
-                        page: Math.floor(skip / limit) + 1,
-                        pageSize: limit,
-                        total: resp.total,
-                        totalPages: Math.ceil(resp.total / limit),
-                      },
-                      lastFetchTime: Date.now(),
-                    });
-                  }
-                } catch (e) {
-                  console.warn("Background revalidation (chats) failed:", e);
-                }
-              })();
-              return;
-            }
-
-            // Check for pending request to avoid duplicate calls
-            if (state._pendingRequests?.has(cacheKey)) {
-              await state._pendingRequests.get(cacheKey);
-              return;
-            }
-
-            // Create request promise
-            const requestPromise = ChatService.getChats(skip, limit);
-
-            // Store pending request
-            set((s) => ({
-              _pendingRequests: new Map(s._pendingRequests || new Map()).set(
-                cacheKey,
-                requestPromise
-              ),
-            }));
-
-            const response = await requestPromise;
-            console.log("📊 Chat Store - getChats response:", response);
-
-            if (response) {
-              console.log("✅ Response chats:", response.chats);
-              console.log("📄 Response total:", response.total);
-
-              set({
-                chats: response.chats || [],
-                pagination: {
-                  page: Math.floor(skip / limit) + 1,
-                  pageSize: limit,
-                  total: response.total,
-                  totalPages: Math.ceil(response.total / limit),
-                },
-                isLoading: false,
-                lastFetchTime: Date.now(),
-              });
-            }
-
-            // Clear pending request
-            set((s) => {
-              const newPending = new Map(s._pendingRequests || new Map());
-              newPending.delete(cacheKey);
-              return { _pendingRequests: newPending };
-            });
-          } catch (error) {
-            console.error("❌ Chat Store - getChats error:", error);
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to fetch chats";
-            toast.error("Failed to load chats", {
-              description: errorMessage,
-            });
-            set({ isLoading: false });
-
-            // Clear pending request on error
-            set((s) => {
-              const newPending = new Map(s._pendingRequests || new Map());
-              newPending.delete(cacheKey);
-              return { _pendingRequests: newPending };
-            });
-          }
-        },
-
-        getChat: async (id: string) => {
-          set({ isLoading: true });
-
-          try {
-            const chat = await ChatService.getChat(id);
-
-            if (chat) {
-              set({
-                currentChat: chat,
-                selectedChatId: id,
-                isLoading: false,
-              });
-
-              // Load messages for this chat
-              await get().getMessages(id);
-            }
-
-            return chat;
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to fetch chat";
-            toast.error("Failed to load chat", {
-              description: errorMessage,
-            });
-            set({ isLoading: false });
-            return null;
-          }
-        },
-
-        updateChat: async (id: string, data: UpdateChatRequest) => {
-          set({ isUpdating: true });
-
-          try {
-            const chat = await ChatService.updateChat(id, data);
-
-            if (chat) {
-              toast.success("Chat updated successfully", {
-                description: `"${chat.name}" has been updated`,
-              });
-
-              // Update current chat if it's the one being edited
-              set((state) => ({
-                currentChat:
-                  state.currentChat?.id === id ? chat : state.currentChat,
-                isUpdating: false,
-              }));
-
-              // Refresh the chats list to get updated data from backend
-              await get().getChats();
-
-              return chat;
-            }
-
-            set({ isUpdating: false });
-            return null;
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to update chat";
-            toast.error("Failed to update chat", {
-              description: errorMessage,
-            });
-            set({ isUpdating: false });
-            return null;
-          }
-        },
-
-        deleteChat: async (id: string) => {
-          set({ isDeleting: true });
-
-          try {
-            const success = await ChatService.deleteChat(id);
-
-            if (success) {
-              toast.success("Chat deleted successfully");
-
-              // Remove chat from chats list and update current chat state
-              set((state) => ({
-                chats: state.chats.filter((chat) => chat.id !== id),
-                currentChat:
-                  state.currentChat?.id === id ? null : state.currentChat,
-                selectedChatId:
-                  state.selectedChatId === id ? null : state.selectedChatId,
-                messages: state.currentChat?.id === id ? [] : state.messages,
-                isDeleting: false,
-              }));
-
-              return true;
-            }
-
-            set({ isDeleting: false });
-            return false;
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to delete chat";
-            toast.error("Failed to delete chat", {
-              description: errorMessage,
-            });
-            set({ isDeleting: false });
-            return false;
-          }
-        },
-
-        // Message Actions
-        getMessages: async (
-          chatId: string,
-          skip: number = 0,
-          limit: number = 100
-        ) => {
-          const TTL_MS = 30_000; // 30s TTL for messages
-          set({ isLoadingMessages: true });
-
-          try {
-            const state = get();
-            const cached = state.messagesCache[chatId];
-            const now = Date.now();
-            const isFresh =
-              cached && now - (cached.lastFetchTime || 0) < TTL_MS;
-
-            if (cached && isFresh) {
-              // Serve cached messages immediately
-              set({
-                messages: cached.data,
-                isLoadingMessages: false,
-              });
-              // Background revalidation
-              (async () => {
-                try {
-                  const resp = await ChatService.getMessages(
-                    chatId,
-                    skip,
-                    limit
-                  );
-                  if (resp) {
-                    // API returns array directly
-                    set((s) => ({
-                      messagesCache: {
-                        ...s.messagesCache,
-                        [chatId]: {
-                          data: resp,
-                          lastFetchTime: Date.now(),
-                        },
-                      },
-                    }));
-                    // Only update visible messages if still on same chat
-                    const cur = get();
-                    if (cur.currentChat?.id === chatId) {
-                      set({ messages: resp });
-                    }
-                  }
-                } catch (e) {
-                  console.warn("Background revalidation (messages) failed:", e);
-                }
-              })();
-              return;
-            }
-
-            const response = await ChatService.getMessages(chatId, skip, limit);
-
-            if (response) {
-              // API returns array directly
-              set({
-                messages: response,
-                isLoadingMessages: false,
-                messagesCache: {
-                  ...state.messagesCache,
-                  [chatId]: {
-                    data: response,
-                    lastFetchTime: Date.now(),
-                  },
-                },
-              });
-            } else {
-              set({ isLoadingMessages: false });
-            }
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : "Failed to fetch messages";
-            toast.error("Failed to load messages", {
-              description: errorMessage,
-            });
-            set({ isLoadingMessages: false });
-          }
-        },
-
-        clearMessages: async (chatId: string) => {
-          set({ isUpdating: true });
-
-          try {
-            const updatedChat = await ChatService.clearMessages(chatId);
-
-            if (updatedChat) {
-              set({
-                messages: [],
-                isUpdating: false,
-              });
-
-              // Update current chat if it's the one being cleared
-              set((state) => ({
-                currentChat:
-                  state.currentChat?.id === chatId
-                    ? updatedChat
-                    : state.currentChat,
-              }));
-
-              // Update chat in chats list
-              set((state) => ({
-                chats: state.chats.map((chat) =>
-                  chat.id === chatId ? updatedChat : chat
-                ),
-              }));
-
-              toast.success("Messages cleared successfully");
-              return true;
-            }
-
-            set({ isUpdating: false });
-            return false;
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : "Failed to clear messages";
-            toast.error("Failed to clear messages", {
-              description: errorMessage,
-            });
-            set({ isUpdating: false });
-            return false;
-          }
-        },
-
-        // UI Actions
-        setCurrentChat: (chat: Chat | null) => {
-          set({ currentChat: chat, selectedChatId: chat?.id || null });
-          if (chat) {
-            get().getMessages(chat.id);
-          } else {
-            set({ messages: [] });
-          }
-        },
-
-        setSelectedChatId: (id: string | null) => {
-          set({ selectedChatId: id });
-          if (id) {
-            const chat = get().chats.find((c) => c.id === id);
-            if (chat) {
-              get().setCurrentChat(chat);
-            }
-          }
-        },
-
-        setSidebarOpen: (open: boolean) => {
-          set({ sidebarOpen: open });
-        },
-
-        reset: () => {
-          set(initialState);
-        },
-
-        // Handle rehydration from localStorage
-        _hasHydrated: false,
-      }),
-      {
-        name: "chat-store",
-        // Only persist essential data, not loading states
-        partialize: (state) => ({
-          chats: state.chats,
-          currentChat: state.currentChat,
-          messages: state.messages,
-          messagesCache: state.messagesCache,
-          selectedChatId: state.selectedChatId,
-          sidebarOpen: state.sidebarOpen,
-          pagination: state.pagination,
-          lastFetchTime: state.lastFetchTime,
-        }),
-        onRehydrateStorage: () => (state) => {
-          if (state) {
-            state._hasHydrated = true;
-          }
-        },
+  fetchConfigs: async () => {
+    set({ configsLoading: true, configsError: null });
+    try {
+      const data = await ChatService.listConfigs();
+      if (data) {
+        set({ configs: data.chat_configs, configsLoading: false });
+      } else {
+        set({ configsLoading: false, configsError: "Failed to fetch configs" });
       }
-    ),
-    {
-      name: "chat-store-devtools",
+    } catch (error) {
+      set({
+        configsLoading: false,
+        configsError: error instanceof Error ? error.message : "Unknown error",
+      });
     }
-  )
-);
+  },
+
+  createConfig: async (data: ChatConfigCreate) => {
+    try {
+      const config = await ChatService.createConfig(data);
+      if (config) {
+        set((state) => ({
+          configs: [config, ...state.configs],
+        }));
+        return config;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to create config:", error);
+      return null;
+    }
+  },
+
+  selectConfig: (config: ChatConfig | null) => {
+    set({ selectedConfig: config });
+    if (config) {
+      get().fetchSessions(config.id);
+    }
+  },
+
+  deleteConfig: async (id: string) => {
+    try {
+      const success = await ChatService.deleteConfig(id);
+      if (success) {
+        set((state) => ({
+          configs: state.configs.filter((c) => c.id !== id),
+          selectedConfig:
+            state.selectedConfig?.id === id ? null : state.selectedConfig,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to delete config:", error);
+    }
+  },
+
+  fetchSessions: async (configId?: string) => {
+    set({ sessionsLoading: true, sessionsError: null });
+    try {
+      const data = await ChatService.listSessions();
+      if (data) {
+        let sessions = data.chat_sessions;
+        if (configId) {
+          sessions = sessions.filter((s) => s.chat_config_id === configId);
+        }
+        set({ sessions, sessionsLoading: false });
+      } else {
+        set({
+          sessionsLoading: false,
+          sessionsError: "Failed to fetch sessions",
+        });
+      }
+    } catch (error) {
+      set({
+        sessionsLoading: false,
+        sessionsError: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  createSession: async (data: ChatSessionCreate) => {
+    try {
+      const session = await ChatService.createSession(data);
+      if (session) {
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+        }));
+        return session;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to create session:", error);
+      return null;
+    }
+  },
+
+  selectSession: async (session: ChatSession | null) => {
+    set({ selectedSession: session });
+    if (session) {
+      await get().fetchSessionMessages(session.id);
+    } else {
+      set({ messages: [] });
+    }
+  },
+
+  deleteSession: async (id: string) => {
+    try {
+      const success = await ChatService.deleteSession(id);
+      if (success) {
+        set((state) => ({
+          sessions: state.sessions.filter((s) => s.id !== id),
+          selectedSession:
+            state.selectedSession?.id === id ? null : state.selectedSession,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to delete session:", error);
+    }
+  },
+
+  fetchSessionMessages: async (sessionId: string) => {
+    set({ messagesLoading: true });
+    try {
+      const session = await ChatService.getSession(sessionId);
+      if (session && session.messages) {
+        set({
+          messages: session.messages.chat_messages,
+          messagesLoading: false,
+        });
+      } else {
+        set({ messages: [], messagesLoading: false });
+      }
+    } catch (error) {
+      set({ messagesLoading: false });
+      console.error("Failed to fetch messages:", error);
+    }
+  },
+
+  addMessage: (message: ChatMessage) => {
+    set((state) => ({
+      messages: [...state.messages, message],
+    }));
+  },
+
+  clearMessages: () => {
+    set({ messages: [] });
+  },
+
+  reset: () => {
+    set(initialState);
+  },
+}));
+
+// Selectors
+export const useChatConfigs = () => useChatStore((state) => state.configs);
+export const useSelectedConfig = () =>
+  useChatStore((state) => state.selectedConfig);
+export const useConfigsLoading = () =>
+  useChatStore((state) => state.configsLoading);
+export const useConfigsError = () =>
+  useChatStore((state) => state.configsError);
+
+export const useChatSessions = () => useChatStore((state) => state.sessions);
+export const useSelectedSession = () =>
+  useChatStore((state) => state.selectedSession);
+export const useSessionsLoading = () =>
+  useChatStore((state) => state.sessionsLoading);
+export const useSessionsError = () =>
+  useChatStore((state) => state.sessionsError);
+
+export const useChatMessages = () => useChatStore((state) => state.messages);
+export const useMessagesLoading = () =>
+  useChatStore((state) => state.messagesLoading);
