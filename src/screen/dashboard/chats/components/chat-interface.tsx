@@ -127,7 +127,7 @@ const ToolResultDisplay: React.FC<{ content: any }> = ({ content }) => {
     // If object has few simple key-value pairs, display as list
     if (
       entries.length <= 5 &&
-      entries.every(([_, v]) => typeof v !== "object" || v === null)
+      entries.every(([, v]) => typeof v !== "object" || v === null)
     ) {
       return (
         <div className="space-y-3">
@@ -247,10 +247,7 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversationMessages, streamingState]);
 
-  const handleSend = async (
-    message: { text?: string; files?: any[] },
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSend = async (message: { text?: string; files?: any[] }) => {
     const inputText = message.text || "";
     if (!inputText.trim() || isStreaming) return;
 
@@ -307,69 +304,62 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
           return;
         }
 
+        // Support legacy event names (tool_calls, tool_result, ai_result)
         if (event.event === "tool_calls") {
-          // Handle tool calls - tools being invoked
-          const tools = event.data?.tools || [];
+          // Backend sends a single tool call with { type, name, arguments }
+          const toolName = event.data?.name || "unknown";
+          const args = event.data?.arguments || {};
+          const incomingId = event.data?.id || `${toolName}-${Date.now()}`;
 
           setStreamingState((prev) => {
             const newTools = new Map(prev.tools);
-
-            // Add or update tool calls
-            tools.forEach(
-              (toolCall: {
-                name: string;
-                args: Record<string, any>;
-                id: string;
-              }) => {
-                const toolId = toolCall.id || `${toolCall.name}-${Date.now()}`;
-
-                // If tool already exists, keep it; otherwise create new with "input-available" state
-                if (!newTools.has(toolId)) {
-                  newTools.set(toolId, {
-                    id: toolId,
-                    name: toolCall.name,
-                    args: toolCall.args || {},
-                    state: "input-available", // Tool is being called
-                    content: undefined,
-                  });
-                }
-              }
-            );
-
-            return {
-              ...prev,
-              tools: newTools,
-            };
+            if (!newTools.has(incomingId)) {
+              newTools.set(incomingId, {
+                id: incomingId,
+                name: toolName,
+                args,
+                state: "input-available",
+                content: undefined,
+              });
+            }
+            return { ...prev, tools: newTools };
           });
-        } else if (event.event === "tool_result") {
+        } else if (
+          event.event === "tool_result" ||
+          event.event === "tool_results"
+        ) {
           // Handle tool result - tool has finished and returned result
           const toolName = event.data?.name || "unknown";
-          const toolContent = event.data?.content || "";
+          const toolContent = event.data?.result ?? event.data?.content ?? "";
+          const incomingId = event.data?.id as string | undefined;
 
           setStreamingState((prev) => {
             const newTools = new Map(prev.tools);
 
-            // Find tool by name (try to match with existing tool calls)
-            let toolId = "";
-            for (const [id, tool] of newTools.entries()) {
-              if (tool.name === toolName && tool.state === "input-available") {
-                toolId = id;
-                break;
+            // Prefer matching by incoming id, else by name with pending state
+            let toolId =
+              incomingId && newTools.has(incomingId) ? incomingId : "";
+            if (!toolId) {
+              for (const [id, tool] of newTools.entries()) {
+                if (
+                  tool.name === toolName &&
+                  tool.state === "input-available"
+                ) {
+                  toolId = id;
+                  break;
+                }
               }
             }
-
-            // If not found, create new ID
-            if (!toolId) {
-              toolId = `${toolName}-${Date.now()}`;
-            }
+            if (!toolId) toolId = `${toolName}-${Date.now()}`;
 
             // Parse tool content if it's JSON
             let parsedContent = toolContent;
-            try {
-              parsedContent = JSON.parse(toolContent);
-            } catch (e) {
-              // If not JSON, use as string
-              parsedContent = toolContent;
+            if (typeof toolContent === "string") {
+              try {
+                parsedContent = JSON.parse(toolContent);
+              } catch {
+                parsedContent = toolContent;
+              }
             }
 
             // Update tool with result
@@ -386,6 +376,16 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               ...prev,
               tools: newTools,
             };
+          });
+          // Record tool message to save later
+          const contentToSave =
+            typeof toolContent === "string"
+              ? toolContent
+              : JSON.stringify(toolContent);
+          messagesToSave.push({
+            role: "tool",
+            content: contentToSave,
+            tools: { name: toolName },
           });
         } else if (event.event === "ai_result") {
           const content = event.data?.content || "";
@@ -405,45 +405,97 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               content: accumulatedContent,
             }));
           }
-        } else if (event.event === "tool_result") {
-          // Handle tool result
-          const toolName = event.data?.name || "unknown";
-          const toolContent = event.data?.content || "";
+        }
 
-          setStreamingState((prev) => {
-            const newTools = new Map(prev.tools);
-            const toolId = `${toolName}-${Date.now()}`;
+        // New unified backend format: event: "message" with data.type
+        if (event.event === "message") {
+          const data = event.data;
+          const type = data?.type;
 
-            // Parse tool content if it's JSON
-            let parsedContent = toolContent;
-            try {
-              parsedContent = JSON.parse(toolContent);
-            } catch (e) {
-              // If not JSON, use as string
-              parsedContent = toolContent;
-            }
+          if (type === "tool_call") {
+            const toolName = data?.name || "unknown";
+            const args = data?.arguments || {};
+            const incomingId = data?.id || `${toolName}-${Date.now()}`;
 
-            newTools.set(toolId, {
-              id: toolId,
-              name: toolName,
-              content: parsedContent,
-              state: "output-available",
+            setStreamingState((prev) => {
+              const newTools = new Map(prev.tools);
+              if (!newTools.has(incomingId)) {
+                newTools.set(incomingId, {
+                  id: incomingId,
+                  name: toolName,
+                  args,
+                  state: "input-available",
+                  content: undefined,
+                });
+              }
+              return { ...prev, tools: newTools };
+            });
+          } else if (type === "tool_result") {
+            const toolName = data?.name || "unknown";
+            const toolContent = data?.result ?? data?.content ?? "";
+            const incomingId = data?.id as string | undefined;
+
+            setStreamingState((prev) => {
+              const newTools = new Map(prev.tools);
+
+              // Prefer matching by incoming id, else by name with pending state
+              let toolId =
+                incomingId && newTools.has(incomingId) ? incomingId : "";
+              if (!toolId) {
+                for (const [id, tool] of newTools.entries()) {
+                  if (
+                    tool.name === toolName &&
+                    tool.state === "input-available"
+                  ) {
+                    toolId = id;
+                    break;
+                  }
+                }
+              }
+              if (!toolId) toolId = `${toolName}-${Date.now()}`;
+
+              let parsedContent: any = toolContent;
+              if (typeof toolContent === "string") {
+                try {
+                  parsedContent = JSON.parse(toolContent);
+                } catch {
+                  parsedContent = toolContent;
+                }
+              }
+
+              const existingTool = newTools.get(toolId);
+              newTools.set(toolId, {
+                id: toolId,
+                name: toolName,
+                args: existingTool?.args || {},
+                content: parsedContent,
+                state: "output-available",
+              });
+
+              return { ...prev, tools: newTools };
             });
 
-            return {
-              ...prev,
-              tools: newTools,
-            };
-          });
-
-          messagesToSave.push({
-            role: "tool",
-            content:
+            // Record tool message to save later
+            const contentToSave =
               typeof toolContent === "string"
                 ? toolContent
-                : JSON.stringify(toolContent),
-            tools: { name: toolName },
-          });
+                : JSON.stringify(toolContent);
+            messagesToSave.push({
+              role: "tool",
+              content: contentToSave,
+              tools: { name: toolName },
+            });
+          } else if (type === "message") {
+            // Final assistant message content (non-delta)
+            const content = data?.content || "";
+            if (content) {
+              accumulatedContent = String(content);
+              setStreamingState((prev) => ({
+                ...prev,
+                content: accumulatedContent,
+              }));
+            }
+          }
         }
 
         // Handle [DONE] marker
@@ -542,7 +594,10 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
             ) : (
               <>
                 {displayMessages.map((msg, idx) => (
-                  <Message key={msg.id || idx} from={msg.role}>
+                  <Message
+                    key={msg.id || idx}
+                    from={msg.role === "tool" ? "assistant" : msg.role}
+                  >
                     <MessageAvatar
                       src=""
                       name={msg.role === "user" ? "You" : "AI"}
