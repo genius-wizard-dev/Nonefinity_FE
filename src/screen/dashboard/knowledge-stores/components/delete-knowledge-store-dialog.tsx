@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { useKnowledgeStoreStore } from "../store";
 import type { KnowledgeStore } from "../types";
 
@@ -23,7 +24,7 @@ interface DeleteKnowledgeStoreDialogProps {
 export const DeleteKnowledgeStoreDialog: React.FC<
   DeleteKnowledgeStoreDialogProps
 > = ({ open, onOpenChange, knowledgeStore }) => {
-  const { deleteKnowledgeStore, error } = useKnowledgeStoreStore();
+  const { deleteKnowledgeStore } = useKnowledgeStoreStore();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -33,9 +34,19 @@ export const DeleteKnowledgeStoreDialog: React.FC<
 
     try {
       await deleteKnowledgeStore(knowledgeStore.id);
+      toast.success("Knowledge store deleted successfully", {
+        description: `${knowledgeStore.name} has been permanently deleted.`,
+      });
       onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to delete knowledge store:", error);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to delete knowledge store";
+
+      toast.error("Failed to delete knowledge store", {
+        description: errorMessage,
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -66,21 +77,32 @@ export const DeleteKnowledgeStoreDialog: React.FC<
         </DialogHeader>
 
         <div className="space-y-4">
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Warning:</strong> This will permanently delete:
-              <ul className="mt-2 ml-4 list-disc space-y-1">
-                <li>Knowledge store "{knowledgeStore.name}"</li>
-                <li>All vectors in the Qdrant collection</li>
-                <li>All associated metadata</li>
-                <li>All related embedding tasks</li>
-              </ul>
-              <p className="mt-2 font-medium">
-                This action cannot be reversed!
-              </p>
-            </AlertDescription>
-          </Alert>
+          {knowledgeStore.is_use ? (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Cannot Delete:</strong> This knowledge store is
+                currently being used in one or more chat configurations. Please
+                remove it from all chat configs before deleting.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Warning:</strong> This will permanently delete:
+                <ul className="mt-2 ml-4 list-disc space-y-1">
+                  <li>Knowledge store "{knowledgeStore.name}"</li>
+                  <li>All vectors in the Qdrant collection</li>
+                  <li>All associated metadata</li>
+                  <li>All related embedding tasks</li>
+                </ul>
+                <p className="mt-2 font-medium">
+                  This action cannot be reversed!
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="font-medium text-sm text-gray-700 mb-2">
@@ -106,11 +128,6 @@ export const DeleteKnowledgeStoreDialog: React.FC<
             </div>
           </div>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
         </div>
 
         <DialogFooter>
@@ -126,7 +143,7 @@ export const DeleteKnowledgeStoreDialog: React.FC<
             type="button"
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={isDeleting || knowledgeStore.is_use}
           >
             {isDeleting && (
               <LogoSpinner size="sm" className="mr-2" variant="light" />

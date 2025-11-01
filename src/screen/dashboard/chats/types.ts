@@ -25,6 +25,7 @@ export interface ChatConfigUpdate {
   chat_model_id?: string;
   embedding_model_id?: string | null;
   knowledge_store_id?: string | null;
+  dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
 }
 
@@ -66,7 +67,11 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
   models?: Record<string, any>;
-  tools?: Record<string, any>;
+  tools?: Array<{
+    name: string;
+    arguments?: Record<string, any>;
+    result?: any;
+  }>;
   interrupt?: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -77,7 +82,11 @@ export interface ChatMessageCreate {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
   models?: Record<string, any>;
-  tools?: Record<string, any>;
+  tools?: Array<{
+    name: string;
+    arguments?: Record<string, any>;
+    result?: any;
+  }>;
   interrupt?: Record<string, any>;
 }
 

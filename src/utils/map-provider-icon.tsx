@@ -18,6 +18,8 @@ import { OpenrouterDark } from "../components/ui/svgs/openrouterDark";
 import { OpenrouterLight } from "../components/ui/svgs/openrouterLight";
 import { TogetheraiDark } from "../components/ui/svgs/togetheraiDark";
 import { TogetheraiLight } from "../components/ui/svgs/togetheraiLight";
+import { Google } from "../components/ui/svgs/google";
+import { GoogleWordmark } from "../components/ui/svgs/googleWordmark";
 
 // Define provider types
 import type { ProviderName } from "../screen/dashboard/credentials/type";
@@ -91,6 +93,16 @@ const providerIconMap: Record<
     wordmark: {
       light: OpenrouterLight,
       dark: OpenrouterDark,
+    },
+  },
+  google_genai: {
+    icon: {
+      light: Google,
+      dark: Google,
+    },
+    wordmark: {
+      light: GoogleWordmark,
+      dark: GoogleWordmark,
     },
   },
 };
@@ -175,6 +187,7 @@ export const PROVIDER_ICON_SIZES: Record<
   nvidia: { width: 20, height: 20 },
   togetherai: { width: 22, height: 22 },
   openrouter: { width: 20, height: 20 },
+  google_genai: { width: 20, height: 20 },
 };
 
 /**

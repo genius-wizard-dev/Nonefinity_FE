@@ -194,69 +194,87 @@ export function AddModelDialog({
             <Label htmlFor="model" className="text-sm font-medium">
               Model Identifier
             </Label>
-            <Select
-              value={formData.model}
-              onValueChange={(value) => onFormChange("model", value)}
-              disabled={loadingModelCredentials || !formData.credential_id}
-            >
-              <SelectTrigger className="w-full h-10">
-                <div className="flex items-center gap-2">
-                  {loadingModelCredentials && (
-                    <>
-                      <LogoSpinner size="sm" className="text-muted-foreground" />
-                    </>
-                  )}
-                  <SelectValue
-                    placeholder={
-                      loadingModelCredentials
-                        ? "Loading models..."
-                        : !formData.credential_id
-                        ? "Select a credential first"
-                        : modelCredentials.length === 0
-                        ? "No models available"
-                        : "Select a model"
-                    }
+            {!formData.credential_id ? (
+              <Input
+                id="model"
+                placeholder="Select a credential first"
+                value={formData.model}
+                onChange={(e) => onFormChange("model", e.target.value)}
+                disabled={true}
+                className="h-10"
+              />
+            ) : loadingModelCredentials ? (
+              <div className="relative">
+                <Input
+                  id="model"
+                  placeholder="Loading models..."
+                  value={formData.model}
+                  onChange={(e) => onFormChange("model", e.target.value)}
+                  disabled={true}
+                  className="h-10"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <LogoSpinner size="sm" className="text-muted-foreground" />
+                </div>
+              </div>
+            ) : modelCredentials.length === 0 ? (
+              <div className="space-y-2">
+                <Input
+                  id="model"
+                  placeholder="e.g., gemini-pro, gpt-4, claude-3"
+                  value={formData.model}
+                  onChange={(e) => onFormChange("model", e.target.value)}
+                  className="h-10"
+                />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span>ℹ️</span>
+                  <span>
+                    No models available from API. Please enter the model name
+                    manually.
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Select
+                  value={formData.model}
+                  onValueChange={(value) => onFormChange("model", value)}
+                >
+                  <SelectTrigger className="w-full h-10">
+                    <SelectValue placeholder="Quick select from available models" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    {modelCredentials.map((modelCredential) => (
+                      <SelectItem
+                        key={modelCredential.id}
+                        value={modelCredential.id}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="truncate">{modelCredential.id}</span>
+                        {modelCredential.owned_by && (
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {modelCredential.owned_by}
+                          </Badge>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="relative">
+                  <Input
+                    id="model-manual"
+                    placeholder="Or enter model name manually (e.g., gemini-pro, gpt-4)"
+                    value={formData.model}
+                    onChange={(e) => onFormChange("model", e.target.value)}
+                    className="h-10"
                   />
                 </div>
-              </SelectTrigger>
-              <SelectContent className="w-full">
-                {!formData.credential_id ? (
-                  <div className="p-2 text-sm text-muted-foreground">
-                    Please select a credential first.
-                  </div>
-                ) : modelCredentials.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground">
-                    <div className="mb-2">
-                      No models available for this credential.
-                    </div>
-                    <div>Please select a different credential.</div>
-                  </div>
-                ) : (
-                  modelCredentials.map((modelCredential) => (
-                    <SelectItem
-                      key={modelCredential.id}
-                      value={modelCredential.id}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="truncate">{modelCredential.id}</span>
-                      {modelCredential.owned_by && (
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {modelCredential.owned_by}
-                        </Badge>
-                      )}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {!loadingModelCredentials &&
-              modelCredentials.length === 0 &&
-              formData.credential_id && (
-                <p className="text-xs text-amber-600 flex items-center gap-1">
-                  <span>⚠️</span>
-                  <span>No models found for the selected credential.</span>
+                <p className="text-xs text-muted-foreground">
+                  You can select from the dropdown above or type the model name
+                  directly.
                 </p>
-              )}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium">

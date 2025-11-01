@@ -124,9 +124,15 @@ export function KnowledgeStoreCard({
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={handleDeleteClick}
+                disabled={knowledgeStore.is_use}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Store
+                {knowledgeStore.is_use && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    (In use)
+                  </span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -387,14 +387,19 @@ export const useKnowledgeStoreStore = create<KnowledgeStoreState>()(
                         loading: false,
                         error: null,
                     });
-                } catch (error) {
+                } catch (error: any) {
+                    const errorMessage =
+                        error?.response?.data?.detail ||
+                        error?.message ||
+                        "Failed to delete knowledge store";
+
                     set({
                         loading: false,
-                        error:
-                            error instanceof Error
-                                ? error.message
-                                : "Failed to delete knowledge store",
+                        error: errorMessage,
                     });
+
+                    // Error will be handled by component using toast
+                    throw error;
                 }
             },
 

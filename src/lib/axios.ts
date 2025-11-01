@@ -168,32 +168,21 @@ export const httpClient = {
       const fullEndpoint = endpoint;
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      console.log(
-        "🌐 httpClient.get - Calling:",
-        fullEndpoint,
-        "with params:",
-        params
-      );
+
 
       const response = await api.get<ServerApiResponse<T>>(fullEndpoint, {
         params,
         headers,
       });
 
-      console.log("📥 httpClient.get - Raw axios response:", response);
-      console.log("📦 httpClient.get - response.data:", response.data);
+
 
       const result = new ApiResult<T>(response);
-      console.log("✨ httpClient.get - ApiResult:", result);
 
       return result;
     } catch (error) {
-      console.error("❌ httpClient.get - Error:", error);
       // Retry once if backend clock is behind token iat
       if (shouldRetryTokenSkew(error)) {
-        console.warn(
-          "⏳ Clock skew suspected (iat/nbf). Retrying GET in 3s..."
-        );
         await sleep(3000);
         try {
           const response = await api.get<ServerApiResponse<T>>(endpoint, {
@@ -226,7 +215,6 @@ export const httpClient = {
       return new ApiResult<T>(response);
     } catch (error) {
       if (shouldRetryTokenSkew(error)) {
-        console.warn("⏳ Clock skew suspected. Retrying POST in 3s...");
         await sleep(3000);
         try {
           const response = await api.post<ServerApiResponse<T>>(
@@ -263,7 +251,6 @@ export const httpClient = {
       return new ApiResult<T>(response);
     } catch (error) {
       if (shouldRetryTokenSkew(error)) {
-        console.warn("⏳ Clock skew suspected. Retrying PUT in 3s...");
         await sleep(3000);
         try {
           const response = await api.put<ServerApiResponse<T>>(endpoint, data, {
@@ -297,7 +284,6 @@ export const httpClient = {
       return new ApiResult<T>(response);
     } catch (error) {
       if (shouldRetryTokenSkew(error)) {
-        console.warn("⏳ Clock skew suspected. Retrying DELETE in 3s...");
         await sleep(3000);
         try {
           const response = await api.delete<ServerApiResponse<T>>(endpoint, {

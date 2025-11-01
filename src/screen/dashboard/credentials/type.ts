@@ -11,7 +11,8 @@ export type ProviderName =
   | "huggingface"
   | "nvidia"
   | "togetherai"
-  | "openrouter";
+  | "openrouter"
+  | "google_genai";
 
 // Provider Types
 export interface Provider {

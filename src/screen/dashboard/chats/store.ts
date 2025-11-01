@@ -3,6 +3,7 @@ import { ChatService } from "./services";
 import type {
   ChatConfig,
   ChatConfigCreate,
+  ChatConfigUpdate,
   ChatMessage,
   ChatSession,
   ChatSessionCreate,
@@ -28,6 +29,7 @@ interface ChatState {
   // Actions
   fetchConfigs: () => Promise<void>;
   createConfig: (data: ChatConfigCreate) => Promise<ChatConfig | null>;
+  updateConfig: (id: string, data: ChatConfigUpdate) => Promise<ChatConfig | null>;
   selectConfig: (config: ChatConfig | null) => void;
   deleteConfig: (id: string) => Promise<void>;
 
@@ -88,6 +90,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return null;
     } catch (error) {
       console.error("Failed to create config:", error);
+      return null;
+    }
+  },
+
+  updateConfig: async (id: string, data: ChatConfigUpdate) => {
+    try {
+      const config = await ChatService.updateConfig(id, data);
+      if (config) {
+        set((state) => ({
+          configs: state.configs.map((c) => (c.id === id ? config : c)),
+          selectedConfig:
+            state.selectedConfig?.id === id ? config : state.selectedConfig,
+        }));
+        return config;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to update config:", error);
       return null;
     }
   },
