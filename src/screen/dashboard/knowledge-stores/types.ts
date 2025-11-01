@@ -10,6 +10,7 @@ export interface KnowledgeStore {
   created_at: string;
   updated_at?: string;
   points_count: number;
+  is_use: boolean;
 }
 
 export interface KnowledgeStoreCreateRequest {

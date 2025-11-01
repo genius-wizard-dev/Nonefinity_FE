@@ -1,246 +1,448 @@
 import { ENDPOINTS } from "@/consts/endpoint";
-import { httpClient } from "@/lib/axios";
+import { getAuthToken, getBaseURL, httpClient } from "@/lib/axios";
 import type {
-  Chat,
-  ChatListResponse,
-  ChatMessage,
-  CreateChatRequest,
-  CreateMessageRequest,
-  MessageListResponse,
-  MessageResponse,
-  UpdateChatRequest,
-} from "./type";
+  ChatConfig,
+  ChatConfigCreate,
+  ChatConfigListResponse,
+  ChatConfigUpdate,
+  ChatSession,
+  ChatSessionCreate,
+  ChatSessionListResponse,
+} from "./types";
 
 export class ChatService {
-  // Chat CRUD Operations
-  static async createChat(data: CreateChatRequest): Promise<Chat | null> {
-    try {
-      console.log("📤 ChatService - Creating chat with data:", data);
-      const response = await httpClient.post<Chat>(
-        ENDPOINTS.CHATS.CREATE,
-        data
-      );
-
-      console.log("📡 ChatService - Create response:", response);
-      console.log("📦 ChatService - response.data:", response.data);
-      console.log("✅ ChatService - isSuccess:", response.isSuccess);
-
-      if (response.isSuccess && response.data) {
-        console.log("🎉 ChatService - Returning chat:", response.data);
-        return response.data;
-      }
-
-      throw new Error(response.message || "Failed to create chat");
-    } catch (error) {
-      console.error("❌ ChatService - Error creating chat:", error);
-      throw error;
-    }
-  }
-
-  static async getChats(
-    skip: number = 0,
-    limit: number = 10
-  ): Promise<ChatListResponse | null> {
-    try {
-      console.log("🔍 ChatService - getChats called with:", { skip, limit });
-
-      const response = await httpClient.get<ChatListResponse>(
-        ENDPOINTS.CHATS.LIST,
-        { skip, limit }
-      );
-
-      console.log("📡 ChatService - Raw API response:", response);
-      console.log("📦 ChatService - response.data:", response.data);
-
-      if (response.isSuccess && response.data) {
-        console.log("✅ ChatService - Returning data:", response.data);
-        // Response.data now contains the nested structure { chats, total, skip, limit }
-        return response.data;
-      }
-
-      throw new Error(response.message || "Failed to fetch chats");
-    } catch (error) {
-      console.error("❌ ChatService - Error fetching chats:", error);
-      throw error;
-    }
-  }
-
-  static async getChat(id: string): Promise<Chat | null> {
-    try {
-      const response = await httpClient.get<Chat>(ENDPOINTS.CHATS.GET(id));
-
-      if (response.isSuccess && response.data) {
-        return response.data;
-      }
-
-      throw new Error(response.message || "Failed to fetch chat");
-    } catch (error) {
-      console.error("Error fetching chat:", error);
-      throw error;
-    }
-  }
-
-  static async updateChat(
-    id: string,
-    data: UpdateChatRequest
-  ): Promise<Chat | null> {
-    try {
-      const response = await httpClient.put<Chat>(
-        ENDPOINTS.CHATS.UPDATE(id),
-        data
-      );
-
-      if (response.isSuccess && response.data) {
-        return response.data;
-      }
-
-      throw new Error(response.message || "Failed to update chat");
-    } catch (error) {
-      console.error("Error updating chat:", error);
-      throw error;
-    }
-  }
-
-  static async deleteChat(id: string): Promise<boolean> {
-    try {
-      const response = await httpClient.delete(ENDPOINTS.CHATS.DELETE(id));
-
-      if (response.isSuccess) {
-        return true;
-      }
-
-      throw new Error(response.message || "Failed to delete chat");
-    } catch (error) {
-      console.error("Error deleting chat:", error);
-      throw error;
-    }
-  }
-
-  // Message Operations
-  static async getMessages(
-    chatId: string,
+  // Chat Config Methods
+  static async listConfigs(
     skip: number = 0,
     limit: number = 100
-  ): Promise<MessageListResponse | null> {
+  ): Promise<ChatConfigListResponse | null> {
     try {
-      const response = await httpClient.get<MessageListResponse>(
-        ENDPOINTS.CHATS.MESSAGES.LIST(chatId),
+      const response = await httpClient.get<ChatConfigListResponse>(
+        ENDPOINTS.CHATS.CONFIGS.LIST,
         { skip, limit }
       );
 
-      if (response.isSuccess && response.data) {
-        return response.data;
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch chat configs:", response.message);
+        return null;
       }
 
-      throw new Error(response.message || "Failed to fetch messages");
+      return response.getData();
     } catch (error) {
-      console.error("Error fetching messages:", error);
-      throw error;
+      console.error("❌ Failed to fetch chat configs:", error);
+      return null;
     }
   }
 
-  static async sendMessage(
-    chatId: string,
-    content: string
-  ): Promise<ChatMessage | null> {
+  static async createConfig(
+    data: ChatConfigCreate
+  ): Promise<ChatConfig | null> {
     try {
-      const data: CreateMessageRequest = {
-        role: "user",
-        content,
-      };
-
-      const response = await httpClient.post<MessageResponse>(
-        ENDPOINTS.CHATS.MESSAGES.CREATE(chatId),
+      const response = await httpClient.post<ChatConfig>(
+        ENDPOINTS.CHATS.CONFIGS.CREATE,
         data
       );
 
-      if (response.isSuccess && response.data) {
-        return response.data.data;
+      if (!response.isSuccess) {
+        console.error("❌ Failed to create chat config:", response.message);
+        return null;
       }
 
-      throw new Error(response.message || "Failed to send message");
+      return response.getData();
     } catch (error) {
-      console.error("Error sending message:", error);
-      throw error;
+      console.error("❌ Failed to create chat config:", error);
+      return null;
     }
   }
 
-  static async clearMessages(chatId: string): Promise<Chat | null> {
+  static async getConfig(id: string): Promise<ChatConfig | null> {
     try {
-      const response = await httpClient.delete<Chat>(
-        ENDPOINTS.CHATS.MESSAGES.DELETE(chatId)
+      const response = await httpClient.get<ChatConfig>(
+        ENDPOINTS.CHATS.CONFIGS.GET(id)
       );
 
-      if (response.isSuccess && response.data) {
-        return response.data;
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch chat config:", response.message);
+        return null;
       }
 
-      throw new Error(response.message || "Failed to clear messages");
+      return response.getData();
     } catch (error) {
-      console.error("Error clearing messages:", error);
+      console.error("❌ Failed to fetch chat config:", error);
+      return null;
+    }
+  }
+
+  static async updateConfig(
+    id: string,
+    data: ChatConfigUpdate
+  ): Promise<ChatConfig | null> {
+    try {
+      const response = await httpClient.put<ChatConfig>(
+        ENDPOINTS.CHATS.CONFIGS.UPDATE(id),
+        data
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to update chat config:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to update chat config:", error);
+      return null;
+    }
+  }
+
+  static async deleteConfig(id: string): Promise<boolean> {
+    try {
+      const response = await httpClient.delete(
+        ENDPOINTS.CHATS.CONFIGS.DELETE(id)
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to delete chat config:", response.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("❌ Failed to delete chat config:", error);
+      return false;
+    }
+  }
+
+  // Chat Session Methods
+  static async listSessions(
+    skip: number = 0,
+    limit: number = 100
+  ): Promise<ChatSessionListResponse | null> {
+    try {
+      const response = await httpClient.get<ChatSessionListResponse>(
+        ENDPOINTS.CHATS.SESSIONS.LIST,
+        { skip, limit }
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch chat sessions:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch chat sessions:", error);
+      return null;
+    }
+  }
+
+  static async createSession(
+    data: ChatSessionCreate
+  ): Promise<ChatSession | null> {
+    try {
+      const response = await httpClient.post<ChatSession>(
+        ENDPOINTS.CHATS.SESSIONS.CREATE,
+        data
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to create chat session:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to create chat session:", error);
+      return null;
+    }
+  }
+
+  static async getSession(
+    id: string,
+    skip: number = 0,
+    limit: number = 100
+  ): Promise<ChatSession | null> {
+    try {
+      const response = await httpClient.get<ChatSession>(
+        ENDPOINTS.CHATS.SESSIONS.GET(id),
+        { skip, limit }
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch chat session:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch chat session:", error);
+      return null;
+    }
+  }
+
+  static async deleteSession(id: string): Promise<boolean> {
+    try {
+      const response = await httpClient.delete(
+        ENDPOINTS.CHATS.SESSIONS.DELETE(id)
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to delete chat session:", response.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("❌ Failed to delete chat session:", error);
+      return false;
+    }
+  }
+
+  static async clearSessionMessages(id: string): Promise<boolean> {
+    try {
+      const response = await httpClient.delete(
+        ENDPOINTS.CHATS.SESSIONS.CLEAR_MESSAGES(id)
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to clear session messages:", response.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("❌ Failed to clear session messages:", error);
+      return false;
+    }
+  }
+
+  // Streaming Methods
+  static async streamMessage(
+    sessionId: string,
+    message: string,
+    onEvent: (event: { event: string; data: any }) => void
+  ): Promise<void> {
+    try {
+      // Use baseURL from axios config
+      const baseURL = getBaseURL();
+      console.debug("[ChatService.stream] baseURL:", baseURL);
+
+      // Get token using same logic as axios interceptor
+      const token = await getAuthToken();
+      console.debug(
+        "[ChatService.stream] sessionId:",
+        sessionId,
+        "tokenPresent:",
+        Boolean(token),
+        "messageLen:",
+        message?.length ?? 0
+      );
+
+      const response = await fetch(
+        `${baseURL}${ENDPOINTS.CHATS.SESSIONS.STREAM(sessionId)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            role: "user",
+            content: message,
+          }),
+        }
+      );
+
+      console.debug(
+        "[ChatService.stream] response status:",
+        response.status,
+        response.statusText
+      );
+      if (!response.ok) {
+        const errorText = await response
+          .text()
+          .catch(() => response.statusText);
+        throw new Error(
+          `Stream failed: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+
+      // Check if response is actually a stream
+      const contentType = response.headers.get("content-type");
+      console.debug("[ChatService.stream] content-type:", contentType);
+      if (!contentType?.includes("text/event-stream")) {
+        console.warn("⚠️ Expected text/event-stream, got:", contentType);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No reader available - response body is null");
+      }
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.debug(
+            "[ChatService.stream] reader done. remainingBufferLen:",
+            buffer.length
+          );
+        } else {
+          console.debug(
+            "[ChatService.stream] chunk received. size:",
+            value?.byteLength ?? 0
+          );
+        }
+
+        if (done) {
+          // Process remaining buffer before finishing
+          if (buffer.trim()) {
+            console.debug("[ChatService.stream] processing remaining buffer");
+            ChatService._processSSEBuffer(buffer, onEvent);
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        console.debug(
+          "[ChatService.stream] lines parsed:",
+          lines.length,
+          "currentBufferLen:",
+          buffer.length
+        );
+
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || "";
+
+        // Process complete SSE messages
+        for (const line of lines) {
+          if (line.trim()) {
+            console.debug(
+              "[ChatService.stream] processing line:",
+              line.slice(0, 200)
+            );
+            ChatService._processSSELine(line, onEvent);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Stream error:", error);
+
+      // Notify caller of error via onEvent
+      onEvent({
+        event: "error",
+        data: {
+          message:
+            error instanceof Error ? error.message : "Unknown stream error",
+          error: String(error),
+        },
+      });
+
       throw error;
     }
   }
 
-  // Helper Methods
-  static getChatType(
-    chat: Chat
-  ): "ai_only" | "knowledge_base" | "dataset" | "full_featured" {
-    const hasKnowledgeStore =
-      chat.knowledge_store_id !== null && chat.knowledge_store_id !== undefined;
-    const hasDatasets =
-      chat.dataset_ids &&
-      Array.isArray(chat.dataset_ids) &&
-      chat.dataset_ids.length > 0;
+  /**
+   * Process a single SSE line and emit event
+   * @private
+   */
+  private static _processSSELine(
+    line: string,
+    onEvent: (event: { event: string; data: any }) => void
+  ): void {
+    const match = line.match(/^event: (.+)$/m);
+    const dataMatch = line.match(/^data: (.+)$/m);
+    console.debug(
+      "[ChatService._processSSELine] raw line:",
+      line.slice(0, 200)
+    );
 
-    if (hasKnowledgeStore && hasDatasets) {
-      return "full_featured";
-    } else if (hasKnowledgeStore) {
-      return "knowledge_base";
-    } else if (hasDatasets) {
-      return "dataset";
-    } else {
-      return "ai_only";
+    if (match || dataMatch) {
+      const eventType = match ? match[1] : "message";
+      const dataStr = dataMatch ? dataMatch[1] : "{}";
+      console.debug(
+        "[ChatService._processSSELine] event:",
+        eventType,
+        "dataStr:",
+        dataStr.slice(0, 200)
+      );
+
+      try {
+        if (dataStr.trim() === '"[START]"') {
+          console.debug("[ChatService._processSSELine] START event");
+          onEvent({ event: "start", data: {} });
+          return;
+        }
+        if (dataStr.trim() === '"[END]"') {
+          console.debug("[ChatService._processSSELine] END event");
+          onEvent({ event: eventType, data: { done: true } });
+          return;
+        }
+
+        const data = JSON.parse(dataStr);
+        console.debug("[ChatService._processSSELine] parsed data:", data);
+        onEvent({ event: eventType, data });
+      } catch (e) {
+        console.error("Failed to parse SSE data:", e, "Raw data:", dataStr);
+        onEvent({
+          event: eventType,
+          data: { raw: dataStr, parseError: String(e) },
+        });
+      }
     }
   }
 
-  static validateChatData(
-    data: Partial<CreateChatRequest | UpdateChatRequest>
-  ): string[] {
-    const errors: string[] = [];
-
-    // Check if embedding model is provided but knowledge store is not
-    if (data.embedding_model_id && !data.knowledge_store_id) {
-      errors.push(
-        "Knowledge store ID is required when embedding model is provided"
+  /**
+   * Process SSE buffer (for remaining data at end of stream)
+   * @private
+   */
+  private static _processSSEBuffer(
+    buffer: string,
+    onEvent: (event: { event: string; data: any }) => void
+  ): void {
+    const lines = buffer.split("\n\n").filter((line) => line.trim());
+    console.debug(
+      "[ChatService._processSSEBuffer] lines to flush:",
+      lines.length
+    );
+    for (const line of lines) {
+      console.debug(
+        "[ChatService._processSSEBuffer] flushing line:",
+        line.slice(0, 200)
       );
+      ChatService._processSSELine(line, onEvent);
     }
+  }
 
-    // Check if knowledge store is provided but embedding model is not
-    if (data.knowledge_store_id && !data.embedding_model_id) {
-      errors.push(
-        "Embedding model ID is required when knowledge store is provided"
+  static async saveConversation(
+    sessionId: string,
+    messages: Array<{
+      role: string;
+      content: string;
+      models?: Record<string, any>;
+      tools?: Record<string, any>;
+      interrupt?: Record<string, any>;
+    }>
+  ): Promise<boolean> {
+    try {
+      const response = await httpClient.post(
+        ENDPOINTS.CHATS.SESSIONS.SAVE_CONVERSATION(sessionId),
+        { messages }
       );
-    }
 
-    // Validate temperature range
-    if (
-      data.temperature !== undefined &&
-      (data.temperature < 0 || data.temperature > 1)
-    ) {
-      errors.push("Temperature must be between 0 and 1");
-    }
+      if (!response.isSuccess) {
+        console.error("❌ Failed to save conversation:", response.message);
+        return false;
+      }
 
-    // Validate max_tokens
-    if (data.max_tokens !== undefined && data.max_tokens < 1) {
-      errors.push("Max tokens must be greater than 0");
+      return true;
+    } catch (error) {
+      console.error("❌ Failed to save conversation:", error);
+      return false;
     }
-
-    // Validate top_p range
-    if (data.top_p !== undefined && (data.top_p < 0 || data.top_p > 1)) {
-      errors.push("Top P must be between 0 and 1");
-    }
-
-    return errors;
   }
 }

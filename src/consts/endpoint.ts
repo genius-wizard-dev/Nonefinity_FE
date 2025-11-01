@@ -111,6 +111,26 @@ export const ENDPOINTS = {
 
   // Chat endpoints
   CHATS: {
+    // Chat Config endpoints
+    CONFIGS: {
+      LIST: "/chats/configs",
+      CREATE: "/chats/configs",
+      GET: (id: string) => `/chats/configs/${id}`,
+      UPDATE: (id: string) => `/chats/configs/${id}`,
+      DELETE: (id: string) => `/chats/configs/${id}`,
+    },
+    // Chat Session endpoints
+    SESSIONS: {
+      LIST: "/chats/sessions",
+      CREATE: "/chats/sessions",
+      GET: (id: string) => `/chats/sessions/${id}`,
+      DELETE: (id: string) => `/chats/sessions/${id}`,
+      CLEAR_MESSAGES: (id: string) => `/chats/sessions/${id}/messages`,
+      STREAM: (id: string) => `/chats/sessions/${id}/stream`,
+      SAVE_CONVERSATION: (id: string) =>
+        `/chats/sessions/${id}/save-conversation`,
+    },
+    // Legacy endpoints for backward compatibility
     LIST: "/chats",
     CREATE: "/chats",
     GET: (id: string) => `/chats/${id}`,
@@ -121,6 +141,9 @@ export const ENDPOINTS = {
       CREATE: (id: string) => `/chats/${id}/messages`,
       DELETE: (id: string) => `/chats/${id}/messages`,
     },
+    STREAM: (id: string) => `/chats/${id}/stream`,
+    APPROVE: (id: string) => `/chats/${id}/approve`,
+    SAVE_CONVERSATION: (id: string) => `/chats/${id}/save-conversation`,
   },
 } as const;
 

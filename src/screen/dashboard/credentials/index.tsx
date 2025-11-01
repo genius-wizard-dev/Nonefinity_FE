@@ -431,6 +431,21 @@ function ManageAICredentials() {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="baseUrl">Base URL (Optional)</Label>
+                  <Input
+                    id="baseUrl"
+                    type="url"
+                    placeholder="e.g., https://api.openai.com/v1"
+                    value={formData.base_url || ""}
+                    onChange={(e) =>
+                      handleInputChange("base_url", e.target.value)
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Custom base URL to override the provider default. Leave empty to use provider default.
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -738,6 +753,19 @@ function ManageAICredentials() {
               />
               <p className="text-xs text-muted-foreground">
                 Leave blank to keep current API key
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-baseUrl">Base URL (Optional)</Label>
+              <Input
+                id="edit-baseUrl"
+                type="url"
+                placeholder="e.g., https://api.openai.com/v1"
+                value={formData.base_url || ""}
+                onChange={(e) => handleInputChange("base_url", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Custom base URL to override the provider default. Leave empty to use provider default.
               </p>
             </div>
           </div>

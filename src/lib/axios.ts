@@ -4,344 +4,321 @@ import { API_CONFIG } from "../consts/endpoint";
 const baseURL = `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}`;
 
 const api = Axios.create({
-    baseURL,
-    withCredentials: true,
-    timeout: API_CONFIG.TIMEOUT,
+  baseURL,
+  withCredentials: true,
+  timeout: API_CONFIG.TIMEOUT,
 });
 
 // Small helpers
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const shouldRetryTokenSkew = (err: any) => {
-    try {
-        const msg = (err?.message || err?.error || "").toString().toLowerCase();
-        return (
-            msg.includes("not yet valid") ||
-            msg.includes("token is not yet valid") ||
-            msg.includes("nbf") ||
-            msg.includes("iat")
-        );
-    } catch {
-        return false;
-    }
+  try {
+    const msg = (err?.message || err?.error || "").toString().toLowerCase();
+    return (
+      msg.includes("not yet valid") ||
+      msg.includes("token is not yet valid") ||
+      msg.includes("nbf") ||
+      msg.includes("iat")
+    );
+  } catch {
+    return false;
+  }
 };
 
 // API Response format from server
 export interface ServerApiResponse<T = unknown> {
-    data: T;
-    success: boolean;
-    message?: string;
-    error?: string;
-    meta?: {
-        total?: number;
-        page?: number;
-        page_size?: number;
-        pages?: number;
-        next?: string;
-        previous?: string;
-        [key: string]: unknown;
-    };
+  data: T;
+  success: boolean;
+  message?: string;
+  error?: string;
+  meta?: {
+    total?: number;
+    page?: number;
+    page_size?: number;
+    pages?: number;
+    next?: string;
+    previous?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ApiError {
-    statusCode: number;
-    success: false;
-    message: string;
-    error: string;
-    data?: unknown;
+  statusCode: number;
+  success: false;
+  message: string;
+  error: string;
+  data?: unknown;
 }
 
 // Generic API response wrapper with type safety
 export class ApiResult<T = unknown> {
-    public data: T;
-    public statusCode: number;
-    public isSuccess: boolean;
-    public isFail: boolean;
-    public message?: string;
-    public error?: string;
-    public meta?: {
-        total?: number;
-        page?: number;
-        page_size?: number;
-        pages?: number;
-        next?: string;
-        previous?: string;
-        [key: string]: unknown;
-    };
+  public data: T;
+  public statusCode: number;
+  public isSuccess: boolean;
+  public isFail: boolean;
+  public message?: string;
+  public error?: string;
+  public meta?: {
+    total?: number;
+    page?: number;
+    page_size?: number;
+    pages?: number;
+    next?: string;
+    previous?: string;
+    [key: string]: unknown;
+  };
 
-    constructor(response: AxiosResponse<ServerApiResponse<T>> | ApiError) {
-        if ("success" in response && response.success === false) {
-            this.data = (response.data || null) as T;
-            this.statusCode = response.statusCode;
-            this.isSuccess = false;
-            this.isFail = true;
-            this.message = response.message;
-            this.error = response.error;
-            this.meta = undefined;
-        } else if ("statusCode" in response) {
-            this.data = (response.data || null) as T;
-            this.statusCode = response.statusCode;
-            this.isSuccess = false;
-            this.isFail = true;
-            this.message = response.message;
-            this.error = response.error;
-            this.meta = undefined;
-        } else {
-            const axiosResponse = response as AxiosResponse<
-                ServerApiResponse<T>
-            >;
-            const serverResponse = axiosResponse.data;
+  constructor(response: AxiosResponse<ServerApiResponse<T>> | ApiError) {
+    if ("success" in response && response.success === false) {
+      this.data = (response.data || null) as T;
+      this.statusCode = response.statusCode;
+      this.isSuccess = false;
+      this.isFail = true;
+      this.message = response.message;
+      this.error = response.error;
+      this.meta = undefined;
+    } else if ("statusCode" in response) {
+      this.data = (response.data || null) as T;
+      this.statusCode = response.statusCode;
+      this.isSuccess = false;
+      this.isFail = true;
+      this.message = response.message;
+      this.error = response.error;
+      this.meta = undefined;
+    } else {
+      const axiosResponse = response as AxiosResponse<ServerApiResponse<T>>;
+      const serverResponse = axiosResponse.data;
 
-            this.data = (serverResponse.data || serverResponse) as T;
-            this.statusCode = axiosResponse.status;
-            this.isSuccess =
-                serverResponse.success &&
-                axiosResponse.status >= 200 &&
-                axiosResponse.status < 300;
-            this.isFail = !this.isSuccess;
-            this.message = serverResponse.message || axiosResponse.statusText;
-            this.error = serverResponse.error;
-            this.meta = serverResponse.meta;
-        }
+      this.data = (serverResponse.data || serverResponse) as T;
+      this.statusCode = axiosResponse.status;
+      this.isSuccess =
+        serverResponse.success &&
+        axiosResponse.status >= 200 &&
+        axiosResponse.status < 300;
+      this.isFail = !this.isSuccess;
+      this.message = serverResponse.message || axiosResponse.statusText;
+      this.error = serverResponse.error;
+      this.meta = serverResponse.meta;
     }
+  }
 
-    getData(): T {
-        return this.data;
-    }
+  getData(): T {
+    return this.data;
+  }
 }
 
 api.interceptors.request.use(
-    async (config) => {
-        try {
-            if (typeof window !== "undefined") {
-                const clerk = (window as unknown as Record<string, unknown>)
-                    .Clerk;
-                const token = await (
-                    clerk as { session?: { getToken?: () => Promise<string> } }
-                )?.session?.getToken?.();
-                if (token) {
-                    config.headers = config.headers ?? {};
-                    (config.headers as Record<string, string>)[
-                        "Authorization"
-                    ] = `Bearer ${token}`;
-                }
-            }
-        } catch {
-            // Silently ignore token errors; request proceeds without auth header
+  async (config) => {
+    try {
+      if (typeof window !== "undefined") {
+        const clerk = (window as unknown as Record<string, unknown>).Clerk;
+        const token = await (
+          clerk as { session?: { getToken?: () => Promise<string> } }
+        )?.session?.getToken?.();
+        if (token) {
+          config.headers = config.headers ?? {};
+          (config.headers as Record<string, string>)[
+            "Authorization"
+          ] = `Bearer ${token}`;
         }
-        return config;
-    },
-    (error) => Promise.reject(error)
+      }
+    } catch {
+      // Silently ignore token errors; request proceeds without auth header
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 // Enhanced response interceptor with error handling
 api.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-        // Try to extract the actual error message from the response body
-        const responseData = error.response?.data as any;
+  (response) => response,
+  (error: AxiosError) => {
+    // Try to extract the actual error message from the response body
+    const responseData = error.response?.data as any;
 
-        const actualMessage =
-            responseData?.message ||
-            responseData?.error ||
-            error.response?.statusText ||
-            error.message ||
-            "Unknown error";
+    const actualMessage =
+      responseData?.message ||
+      responseData?.error ||
+      error.response?.statusText ||
+      error.message ||
+      "Unknown error";
 
-        const apiError: ApiError = {
-            statusCode: error.response?.status || 500,
-            success: false,
-            message: actualMessage,
-            error: error.message,
-            data: error.response?.data,
-        };
+    const apiError: ApiError = {
+      statusCode: error.response?.status || 500,
+      success: false,
+      message: actualMessage,
+      error: error.message,
+      data: error.response?.data,
+    };
 
-        // Return a rejected promise with our custom error format
-        return Promise.reject(apiError);
-    }
+    // Return a rejected promise with our custom error format
+    return Promise.reject(apiError);
+  }
 );
 
 // HTTP Methods with type safety and token support
 export const httpClient = {
-    async get<T = unknown>(
-        endpoint: string,
-        params?: Record<string, unknown>,
-        token?: string
-    ): Promise<ApiResult<T>> {
+  async get<T = unknown>(
+    endpoint: string,
+    params?: Record<string, unknown>,
+    token?: string
+  ): Promise<ApiResult<T>> {
+    try {
+      const fullEndpoint = endpoint;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+
+
+      const response = await api.get<ServerApiResponse<T>>(fullEndpoint, {
+        params,
+        headers,
+      });
+
+
+
+      const result = new ApiResult<T>(response);
+
+      return result;
+    } catch (error) {
+      // Retry once if backend clock is behind token iat
+      if (shouldRetryTokenSkew(error)) {
+        await sleep(3000);
         try {
-            const fullEndpoint = endpoint;
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-            console.log(
-                "🌐 httpClient.get - Calling:",
-                fullEndpoint,
-                "with params:",
-                params
-            );
-
-            const response = await api.get<ServerApiResponse<T>>(fullEndpoint, {
-                params,
-                headers,
-            });
-
-            console.log("📥 httpClient.get - Raw axios response:", response);
-            console.log("📦 httpClient.get - response.data:", response.data);
-
-            const result = new ApiResult<T>(response);
-            console.log("✨ httpClient.get - ApiResult:", result);
-
-            return result;
-        } catch (error) {
-            console.error("❌ httpClient.get - Error:", error);
-            // Retry once if backend clock is behind token iat
-            if (shouldRetryTokenSkew(error)) {
-                console.warn(
-                    "⏳ Clock skew suspected (iat/nbf). Retrying GET in 3s..."
-                );
-                await sleep(3000);
-                try {
-                    const response = await api.get<ServerApiResponse<T>>(
-                        endpoint,
-                        {
-                            params,
-                            headers: token
-                                ? { Authorization: `Bearer ${token}` }
-                                : {},
-                        }
-                    );
-                    return new ApiResult<T>(response);
-                } catch (err2) {
-                    return new ApiResult<T>(err2 as ApiError);
-                }
-            }
-            return new ApiResult<T>(error as ApiError);
+          const response = await api.get<ServerApiResponse<T>>(endpoint, {
+            params,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          return new ApiResult<T>(response);
+        } catch (err2) {
+          return new ApiResult<T>(err2 as ApiError);
         }
-    },
+      }
+      return new ApiResult<T>(error as ApiError);
+    }
+  },
 
-    async post<T = unknown>(
-        endpoint: string,
-        data?: unknown,
-        token?: string
-    ): Promise<ApiResult<T>> {
+  async post<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    token?: string
+  ): Promise<ApiResult<T>> {
+    try {
+      const fullEndpoint = endpoint;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await api.post<ServerApiResponse<T>>(
+        fullEndpoint,
+        data,
+        { headers }
+      );
+      return new ApiResult<T>(response);
+    } catch (error) {
+      if (shouldRetryTokenSkew(error)) {
+        await sleep(3000);
         try {
-            const fullEndpoint = endpoint;
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-            const response = await api.post<ServerApiResponse<T>>(
-                fullEndpoint,
-                data,
-                { headers }
-            );
-            return new ApiResult<T>(response);
-        } catch (error) {
-            if (shouldRetryTokenSkew(error)) {
-                console.warn("⏳ Clock skew suspected. Retrying POST in 3s...");
-                await sleep(3000);
-                try {
-                    const response = await api.post<ServerApiResponse<T>>(
-                        endpoint,
-                        data,
-                        {
-                            headers: token
-                                ? { Authorization: `Bearer ${token}` }
-                                : {},
-                        }
-                    );
-                    return new ApiResult<T>(response);
-                } catch (err2) {
-                    return new ApiResult<T>(err2 as ApiError);
-                }
+          const response = await api.post<ServerApiResponse<T>>(
+            endpoint,
+            data,
+            {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
             }
-            return new ApiResult<T>(error as ApiError);
+          );
+          return new ApiResult<T>(response);
+        } catch (err2) {
+          return new ApiResult<T>(err2 as ApiError);
         }
-    },
+      }
+      return new ApiResult<T>(error as ApiError);
+    }
+  },
 
-    async put<T = unknown>(
-        endpoint: string,
-        data?: unknown,
-        token?: string
-    ): Promise<ApiResult<T>> {
+  async put<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    token?: string
+  ): Promise<ApiResult<T>> {
+    try {
+      const fullEndpoint = endpoint;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const response = await api.put<ServerApiResponse<T>>(fullEndpoint, data, {
+        headers,
+      });
+      return new ApiResult<T>(response);
+    } catch (error) {
+      if (shouldRetryTokenSkew(error)) {
+        await sleep(3000);
         try {
-            const fullEndpoint = endpoint;
-            const headers: Record<string, string> = {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            };
-
-            const response = await api.put<ServerApiResponse<T>>(
-                fullEndpoint,
-                data,
-                {
-                    headers,
-                }
-            );
-            return new ApiResult<T>(response);
-        } catch (error) {
-            if (shouldRetryTokenSkew(error)) {
-                console.warn("⏳ Clock skew suspected. Retrying PUT in 3s...");
-                await sleep(3000);
-                try {
-                    const response = await api.put<ServerApiResponse<T>>(
-                        endpoint,
-                        data,
-                        {
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...(token
-                                    ? { Authorization: `Bearer ${token}` }
-                                    : {}),
-                            },
-                        }
-                    );
-                    return new ApiResult<T>(response);
-                } catch (err2) {
-                    return new ApiResult<T>(err2 as ApiError);
-                }
-            }
-            return new ApiResult<T>(error as ApiError);
+          const response = await api.put<ServerApiResponse<T>>(endpoint, data, {
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          return new ApiResult<T>(response);
+        } catch (err2) {
+          return new ApiResult<T>(err2 as ApiError);
         }
-    },
+      }
+      return new ApiResult<T>(error as ApiError);
+    }
+  },
 
-    async delete<T = unknown>(
-        endpoint: string,
-        params?: Record<string, unknown>,
-        token?: string
-    ): Promise<ApiResult<T>> {
+  async delete<T = unknown>(
+    endpoint: string,
+    params?: Record<string, unknown>,
+    token?: string
+  ): Promise<ApiResult<T>> {
+    try {
+      const fullEndpoint = endpoint;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await api.delete<ServerApiResponse<T>>(fullEndpoint, {
+        params,
+        headers,
+      });
+      return new ApiResult<T>(response);
+    } catch (error) {
+      if (shouldRetryTokenSkew(error)) {
+        await sleep(3000);
         try {
-            const fullEndpoint = endpoint;
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-            const response = await api.delete<ServerApiResponse<T>>(
-                fullEndpoint,
-                {
-                    params,
-                    headers,
-                }
-            );
-            return new ApiResult<T>(response);
-        } catch (error) {
-            if (shouldRetryTokenSkew(error)) {
-                console.warn(
-                    "⏳ Clock skew suspected. Retrying DELETE in 3s..."
-                );
-                await sleep(3000);
-                try {
-                    const response = await api.delete<ServerApiResponse<T>>(
-                        endpoint,
-                        {
-                            params,
-                            headers: token
-                                ? { Authorization: `Bearer ${token}` }
-                                : {},
-                        }
-                    );
-                    return new ApiResult<T>(response);
-                } catch (err2) {
-                    return new ApiResult<T>(err2 as ApiError);
-                }
-            }
-            return new ApiResult<T>(error as ApiError);
+          const response = await api.delete<ServerApiResponse<T>>(endpoint, {
+            params,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          return new ApiResult<T>(response);
+        } catch (err2) {
+          return new ApiResult<T>(err2 as ApiError);
         }
-    },
+      }
+      return new ApiResult<T>(error as ApiError);
+    }
+  },
 };
 
 export default api;
+
+// Helper function to get authentication token (reused from interceptor logic)
+export const getAuthToken = async (): Promise<string | undefined> => {
+  try {
+    if (typeof window !== "undefined") {
+      const clerk = (window as unknown as Record<string, unknown>).Clerk;
+      const token = await (
+        clerk as { session?: { getToken?: () => Promise<string> } }
+      )?.session?.getToken?.();
+      return token || undefined;
+    }
+  } catch {
+    // Silently ignore token errors
+  }
+  return undefined;
+};
+
+// Export baseURL for SSE and other direct fetch calls
+export const getBaseURL = (): string => {
+  return baseURL;
+};
