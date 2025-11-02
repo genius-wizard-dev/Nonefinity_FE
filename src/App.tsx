@@ -73,7 +73,7 @@ function App() {
               element={<KnowledgeStoreDetail />}
             />
             <Route path="/dashboard/credentials" element={<Credentials />} />
-            <Route path="/dashboard/embedding" element={<Embedding />} />
+            <Route path="/dashboard/embeddings" element={<Embedding />} />
             <Route path="/dashboard/models" element={<Models />} />
           </Route>
         </Routes>

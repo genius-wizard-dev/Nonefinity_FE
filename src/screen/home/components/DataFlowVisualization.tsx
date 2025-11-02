@@ -28,7 +28,7 @@ const Circle = forwardRef<
         <div
             ref={ref}
             className={cn(
-                "z-20 flex size-16 items-center justify-center rounded-full border bg-white p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)] transition-all duration-300 hover:scale-110",
+                "z-20 flex size-16 items-center justify-center rounded-full border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)] dark:shadow-[0_0_20px_-12px_rgba(255,255,255,0.1)] transition-all duration-300 hover:scale-110",
                 className
             )}
         >
@@ -84,7 +84,7 @@ export function DataFlowVisualization() {
     } as const;
 
     return (
-        <section className="py-24 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <section className="py-24 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-950/30 dark:to-purple-950/30">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
                 <BlurFade delay={0.1} inView>
@@ -95,21 +95,21 @@ export function DataFlowVisualization() {
                             viewport={{ once: true }}
                             transition={{ duration: 0.6 }}
                         >
-                            <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
+                            <Badge className="mb-4 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
                                 <Sparkles className="h-3 w-3 mr-1" />
                                 Simple Process
                             </Badge>
-                            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+                            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                                 How It Works
                                 <div className="mt-2">
                                     <SparklesText>
-                                        <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                        <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                                             Data to AI
                                         </span>
                                     </SparklesText>
                                 </div>
                             </h2>
-                            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
                                 From raw data to intelligent chatbot in just a
                                 few simple steps. Watch how your files transform
                                 into powerful AI agents.
@@ -120,7 +120,7 @@ export function DataFlowVisualization() {
 
                 {/* Main Demo Section */}
                 <motion.div
-                    className="relative flex h-[700px] w-full items-center justify-center overflow-hidden p-12 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-3xl shadow-2xl border border-gray-200 mb-20"
+                    className="relative flex h-[700px] w-full items-center justify-center overflow-hidden p-12 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-blue-950/30 dark:to-purple-950/30 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 mb-20"
                     ref={mainContainerRef}
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -139,12 +139,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={csvRef}
-                                className="bg-green-50 border-green-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.csv />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-green-600 font-medium">
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                                     Spreadsheet
                                 </p>
                             </div>
@@ -152,12 +152,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={pdfRef}
-                                className="bg-red-50 border-red-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.pdf />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-red-600 font-medium">
+                                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
                                     Document
                                 </p>
                             </div>
@@ -165,12 +165,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={txtRef}
-                                className="bg-gray-50 border-gray-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.txt />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-gray-600 font-medium">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                                     Text File
                                 </p>
                             </div>
@@ -178,12 +178,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={xlsxRef}
-                                className="bg-emerald-50 border-emerald-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.xlsx />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-emerald-600 font-medium">
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                                     Excel
                                 </p>
                             </div>
@@ -191,12 +191,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={docxRef}
-                                className="bg-blue-50 border-blue-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.docx />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-blue-600 font-medium">
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                                     Word Doc
                                 </p>
                             </div>
@@ -206,18 +206,18 @@ export function DataFlowVisualization() {
                     <div className="flex flex-col items-center -mt-8">
                         <Circle
                             ref={storageRef}
-                            className="size-28 bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-400 shadow-2xl hover:shadow-3xl transition-all duration-300"
+                            className="size-28 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 border-blue-400 dark:border-blue-600 shadow-2xl hover:shadow-3xl transition-all duration-300"
                         >
                             <Icons.storage />
                         </Circle>
                         <div className="mt-4 text-center">
-                            <h3 className="font-bold text-gray-900 text-xl">
+                            <h3 className="font-bold text-gray-900 dark:text-white text-xl">
                                 Nonefinity Storage
                             </h3>
-                            <p className="text-sm text-gray-600 font-medium">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                                 Secure Cloud Processing
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 AI-Powered Data Processing
                             </p>
                         </div>
@@ -228,12 +228,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={chatbotRef}
-                                className="bg-green-50 border-green-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.chatbot />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-green-600 font-medium">
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                                     Smart Assistant
                                 </p>
                             </div>
@@ -241,12 +241,12 @@ export function DataFlowVisualization() {
                         <div className="flex flex-col items-center">
                             <Circle
                                 ref={analyticsRef}
-                                className="bg-yellow-50 border-yellow-300 hover:shadow-lg transition-all duration-300"
+                                className="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-800 hover:shadow-lg transition-all duration-300"
                             >
                                 <Icons.analytics />
                             </Circle>
                             <div className="mt-2 text-center">
-                                <p className="text-xs text-yellow-600 font-medium">
+                                <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
                                     Data Insights
                                 </p>
                             </div>

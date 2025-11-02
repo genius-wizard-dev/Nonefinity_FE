@@ -1,4 +1,4 @@
-import { QuickAccessGrid, RecentActivity, UserInfoCard } from "./components";
+import { QuickAccessGrid, UserInfoCard } from "./components";
 
 export default function General() {
   return (
@@ -6,7 +6,6 @@ export default function General() {
       <div className="container mx-auto px-4 py-8 space-y-8">
         <UserInfoCard />
         <QuickAccessGrid />
-        <RecentActivity />
       </div>
     </div>
   );
