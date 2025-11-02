@@ -4,6 +4,7 @@ import type {
   Column,
   ConvertDatasetRequest,
   Dataset,
+  DatasetSchema,
   DatasetStoreActions,
   DatasetStoreState,
   Table,
@@ -290,13 +291,50 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
       console.log("📊 Store: Result success:", result.success);
 
       if (result.success) {
-        // Since the API only returns success/message, we don't update the store data
-        // The local state changes are already applied via onUpdateDataset
-        set({
-          isLoading: false,
-          error: null,
+        // Update the dataset schema in the store with the new descriptions
+        // This ensures the UI reflects the changes immediately without refresh
+        set((state) => {
+          // Helper function to update schema with new descriptions
+          const updatedSchema = (schema: DatasetSchema[]) =>
+            schema.map((field) => {
+              if (field.column_name in request.descriptions) {
+                return {
+                  ...field,
+                  desc: request.descriptions[field.column_name],
+                };
+              }
+              return field;
+            });
+
+          // Update selectedDataset if it matches
+          const updatedSelectedDataset =
+            state.selectedDataset?.id === datasetId
+              ? {
+                  ...state.selectedDataset,
+                  data_schema: updatedSchema(state.selectedDataset.data_schema),
+                }
+              : state.selectedDataset;
+
+          // Update dataset in datasets array
+          const updatedDatasets = state.datasets.map((dataset) =>
+            dataset.id === datasetId
+              ? {
+                  ...dataset,
+                  data_schema: updatedSchema(dataset.data_schema),
+                }
+              : dataset
+          );
+
+          return {
+            datasets: updatedDatasets,
+            selectedDataset: updatedSelectedDataset,
+            isLoading: false,
+            error: null,
+          };
         });
-        console.log("✅ Store: Dataset schema updated successfully");
+        console.log(
+          "✅ Store: Dataset schema updated successfully and state synced"
+        );
         return true;
       } else {
         set({
