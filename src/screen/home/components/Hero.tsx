@@ -10,7 +10,7 @@ import { Brain, Database, MessageSquare, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-20 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 overflow-hidden">
+    <section className="relative pt-32 pb-20 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-blue-950/30 dark:to-purple-950/20 overflow-hidden">
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0">
         <Meteors number={20} />
@@ -30,20 +30,20 @@ export function Hero() {
             <div className="text-center lg:text-left">
               {/* Main Heading */}
               <BlurFade delay={0.2} inView>
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                   Build Intelligent
                   <div className="mt-2">
                     <SparklesText>
                       <AuroraText>AI Agents</AuroraText>
                     </SparklesText>
                   </div>
-                  <span className="block text-gray-900 mt-2">In Minutes</span>
+                  <span className="block text-gray-900 dark:text-white mt-2">In Minutes</span>
                 </h1>
               </BlurFade>
 
               {/* Subtitle */}
               <BlurFade delay={0.3} inView>
-                <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
                   Transform your data into intelligent AI agents with our
                   no-code platform. Upload files, create embeddings, and deploy
                   powerful conversational AI instantly.
@@ -54,7 +54,7 @@ export function Hero() {
               <BlurFade delay={0.4} inView>
                 <div className="flex items-center justify-center lg:justify-start mb-12">
                   <Link to="/sign-in">
-                    <InteractiveHoverButton className="text-base px-6 py-3 bg-white border-gray-300 text-gray-900 hover:border-gray-400">
+                    <InteractiveHoverButton className="text-base px-6 py-3 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-600">
                       Start Building Free
                     </InteractiveHoverButton>
                   </Link>
@@ -65,22 +65,22 @@ export function Hero() {
               <BlurFade delay={0.5} inView>
                 <div className="grid grid-cols-3 gap-6 text-center lg:text-left">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                       5 min
                     </div>
-                    <div className="text-sm text-gray-600">Setup Time</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Setup Time</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-purple-600 mb-1">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
                       99.9%
                     </div>
-                    <div className="text-sm text-gray-600">Accuracy</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-indigo-600 mb-1">
+                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">
                       24/7
                     </div>
-                    <div className="text-sm text-gray-600">Support</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Support</div>
                   </div>
                 </div>
               </BlurFade>
@@ -125,7 +125,7 @@ export function Hero() {
 
                     {/* Floating AI Elements */}
                     <motion.div
-                      className="absolute top-8 right-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      className="absolute top-8 right-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20 dark:border-gray-700/20"
                       animate={{
                         y: [0, -8, 0],
                         rotate: [0, 1, 0],
@@ -137,15 +137,15 @@ export function Hero() {
                       }}
                     >
                       <div className="flex items-center space-x-2">
-                        <Brain className="h-4 w-4 text-blue-600" />
-                        <span className="text-xs text-gray-700 font-medium">
+                        <Brain className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                           AI Ready
                         </span>
                       </div>
                     </motion.div>
 
                     <motion.div
-                      className="absolute bottom-8 left-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      className="absolute bottom-8 left-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20 dark:border-gray-700/20"
                       animate={{
                         y: [0, 8, 0],
                         rotate: [0, -1, 0],
@@ -157,15 +157,15 @@ export function Hero() {
                       }}
                     >
                       <div className="flex items-center space-x-2">
-                        <Database className="h-4 w-4 text-green-600" />
-                        <span className="text-xs text-gray-700 font-medium">
+                        <Database className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                           Data Processing
                         </span>
                       </div>
                     </motion.div>
 
                     <motion.div
-                      className="absolute top-1/2 -left-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      className="absolute top-1/2 -left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20 dark:border-gray-700/20"
                       animate={{
                         x: [0, -5, 0],
                         rotate: [0, -0.5, 0],
@@ -177,15 +177,15 @@ export function Hero() {
                       }}
                     >
                       <div className="flex items-center space-x-2">
-                        <MessageSquare className="h-4 w-4 text-purple-600" />
-                        <span className="text-xs text-gray-700 font-medium">
+                        <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                           Chat Ready
                         </span>
                       </div>
                     </motion.div>
 
                     <motion.div
-                      className="absolute top-1/2 -right-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20"
+                      className="absolute top-1/2 -right-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-lg p-3 border border-white/20 dark:border-gray-700/20"
                       animate={{
                         x: [0, 5, 0],
                         rotate: [0, 0.5, 0],
@@ -197,8 +197,8 @@ export function Hero() {
                       }}
                     >
                       <div className="flex items-center space-x-2">
-                        <TrendingUp className="h-4 w-4 text-orange-600" />
-                        <span className="text-xs text-gray-700 font-medium">
+                        <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                           Analytics
                         </span>
                       </div>

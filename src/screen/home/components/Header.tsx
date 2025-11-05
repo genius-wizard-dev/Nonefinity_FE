@@ -19,32 +19,32 @@ export function Header() {
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-2 group">
                         <img src={logoImage} alt="Logo" className="w-8 h-8" />
-                        <span className="text-xl font-bold">Nonefinity</span>
+                        <span className="text-xl font-bold text-foreground">Nonefinity</span>
                     </Link>
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
                         <Link
                             to="/features"
-                            className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                            className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Features
                         </Link>
                         <Link
                             to="https://docs.nonefinity.com/"
-                            className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                            className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Documentation
                         </Link>
                         <Link
                             to="/pricing"
-                            className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                            className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Pricing
                         </Link>
                         <Link
                             to="/contact"
-                            className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                            className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Contact
                         </Link>
@@ -53,7 +53,7 @@ export function Header() {
                     {/* CTA Buttons + Theme */}
                     <div className="hidden md:flex items-center space-x-2">
                         <ThemeToggle />
-                        <div className="w-px h-6 bg-gray-200" />
+                        <div className="w-px h-6 bg-border" />
                         <Button
                             variant="outline"
                             asChild
@@ -71,7 +71,7 @@ export function Header() {
 
                     {/* Mobile Menu Button */}
                     <button
-                        className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors text-foreground"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                     >
                         {isMenuOpen ? (
@@ -85,31 +85,31 @@ export function Header() {
                 {/* Mobile Navigation */}
                 {isMenuOpen && (
                     <div className="md:hidden">
-                        <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 backdrop-blur-sm border-t rounded-b-lg">
+                        <div className="px-2 pt-2 pb-3 space-y-1 bg-background/95 backdrop-blur-sm border-t rounded-b-lg">
                             <Link
                                 to="/features"
-                                className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Features
                             </Link>
                             <Link
                                 to="https://docs.nonefinity.com/"
-                                className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Documentation
                             </Link>
                             <Link
                                 to="/pricing"
-                                className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Pricing
                             </Link>
                             <Link
                                 to="/contact"
-                                className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Contact

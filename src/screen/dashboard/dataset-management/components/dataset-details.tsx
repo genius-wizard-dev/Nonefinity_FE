@@ -50,8 +50,24 @@ export function DatasetDetails({
 
   // Set original data when dataset changes
   React.useEffect(() => {
-    if (dataset && !originalData) {
-      setOriginalData(dataset);
+    if (dataset) {
+      // Sync originalData when:
+      // 1. originalData is null (first mount)
+      // 2. Dataset ID changed (switching datasets)
+      // 3. Dataset schema changed (after store update from API)
+      const shouldUpdate =
+        !originalData ||
+        originalData.id !== dataset.id ||
+        JSON.stringify(originalData.data_schema) !==
+          JSON.stringify(dataset.data_schema);
+
+      if (shouldUpdate) {
+        setOriginalData(dataset);
+        // Clear any pending changes when dataset changes significantly
+        if (originalData && originalData.id !== dataset.id) {
+          setAllChanges({});
+        }
+      }
     }
   }, [dataset, originalData]);
 
@@ -179,8 +195,8 @@ export function DatasetDetails({
     try {
       const token = await getClerkToken();
       if (token) {
-        const { updateDatasetSchema } = useDatasetStore.getState();
-        const success = await updateDatasetSchema(
+        const store = useDatasetStore.getState();
+        const success = await store.updateDatasetSchema(
           dataset.id,
           { descriptions: allChanges },
           token
@@ -189,15 +205,22 @@ export function DatasetDetails({
         console.log("🔧 Component: Update schema success:", success);
 
         if (success) {
-          // Update original data to current state to remove highlights
-          const updatedOriginalData = {
-            ...dataset,
-            data_schema: dataset.data_schema.map((col) => ({
-              ...col,
-              desc: allChanges[col.column_name] || col.desc,
-            })),
-          };
-          setOriginalData(updatedOriginalData);
+          // Get updated dataset from store after successful update
+          // This ensures we use the latest state from Zustand
+          const updatedDataset = store.selectedDataset;
+          if (updatedDataset && updatedDataset.id === dataset.id) {
+            setOriginalData(updatedDataset);
+          } else {
+            // Fallback: update original data manually if store doesn't have it
+            const updatedOriginalData = {
+              ...dataset,
+              data_schema: dataset.data_schema.map((col) => ({
+                ...col,
+                desc: allChanges[col.column_name] || col.desc,
+              })),
+            };
+            setOriginalData(updatedOriginalData);
+          }
 
           // Clear all changes after updating original data
           setAllChanges({});

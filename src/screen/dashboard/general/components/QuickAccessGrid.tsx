@@ -1,19 +1,27 @@
-import { Brain, Database, FileText, Settings, User, Zap } from "lucide-react";
+import {
+  BookOpen,
+  Brain,
+  Database,
+  FileText,
+  Key,
+  MessageSquare,
+  Zap,
+} from "lucide-react";
 import { QuickAccessCard } from "./QuickAccessCard";
 
 export function QuickAccessGrid() {
   const quickAccessItems = [
     {
-      to: "/dashboard/profile",
-      icon: <User className="w-full h-full" />,
-      title: "User Profile",
-      description: "Manage your account settings and preferences",
+      to: "/dashboard/chats",
+      icon: <MessageSquare className="w-full h-full" />,
+      title: "Chats",
+      description: "Start conversations and interact with your AI assistant",
       gradient: "bg-gradient-to-br from-blue-500/10 to-cyan-500/10",
     },
     {
       to: "/dashboard/files",
       icon: <FileText className="w-full h-full" />,
-      title: "File Management",
+      title: "Files",
       description: "Upload, search, and organize your files efficiently",
       gradient: "bg-gradient-to-br from-green-500/10 to-emerald-500/10",
     },
@@ -25,25 +33,32 @@ export function QuickAccessGrid() {
       gradient: "bg-gradient-to-br from-purple-500/10 to-pink-500/10",
     },
     {
-      to: "/dashboard/embeddings",
+      to: "/dashboard/knowledge-stores",
+      icon: <BookOpen className="w-full h-full" />,
+      title: "Knowledge Stores",
+      description: "Manage your knowledge base and storage systems",
+      gradient: "bg-gradient-to-br from-indigo-500/10 to-violet-500/10",
+    },
+    {
+      to: "/dashboard/models",
       icon: <Brain className="w-full h-full" />,
-      title: "Embeddings",
-      description: "Configure AI models and embedding services",
+      title: "Models",
+      description: "Configure and manage AI models for your applications",
       gradient: "bg-gradient-to-br from-orange-500/10 to-red-500/10",
     },
     {
-      to: "/dashboard/automation",
+      to: "/dashboard/embeddings",
       icon: <Zap className="w-full h-full" />,
-      title: "Automation",
-      description: "Set up workflows and automated tasks",
+      title: "Embedding",
+      description: "Configure AI models and embedding services",
       gradient: "bg-gradient-to-br from-yellow-500/10 to-amber-500/10",
     },
     {
-      to: "/dashboard/settings",
-      icon: <Settings className="w-full h-full" />,
-      title: "Settings",
-      description: "Customize your workspace and integrations",
-      gradient: "bg-gradient-to-br from-slate-500/10 to-gray-500/10",
+      to: "/dashboard/credentials",
+      icon: <Key className="w-full h-full" />,
+      title: "Credentials",
+      description: "Manage API keys and authentication credentials",
+      gradient: "bg-gradient-to-br from-teal-500/10 to-cyan-500/10",
     },
   ];
 

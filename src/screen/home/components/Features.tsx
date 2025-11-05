@@ -54,7 +54,7 @@ const capabilities = [
 
 export function Features() {
   return (
-    <section className="bg-gradient-to-br pt-20 from-slate-50 via-blue-50/30 to-purple-50/20 relative overflow-hidden">
+    <section className="bg-gradient-to-br pt-20 from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-blue-950/30 dark:to-purple-950/20 relative overflow-hidden">
       {/* Enhanced Background Effects */}
       <div className="absolute inset-0">
         <Particles
@@ -76,15 +76,15 @@ export function Features() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 transition-colors">
+              <Badge className="mb-4 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Powerful Features
               </Badge>
-              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 Everything You Need to Build
                 <div className="mt-2">
                   <SparklesText>
-                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                       Intelligent AI
                     </span>
                   </SparklesText>
@@ -98,10 +98,10 @@ export function Features() {
 
         <div className="mb-20">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Comprehensive Capabilities
             </h3>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Built for enterprise needs with cutting-edge AI technology
             </p>
           </div>
@@ -110,18 +110,18 @@ export function Features() {
             {capabilities.map((capability) => (
               <div key={capability.title}>
                 <motion.div
-                  className="p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  className="p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   whileHover={{ y: -5, scale: 1.02 }}
                 >
                   <div
-                    className={`inline-flex p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 mb-4 group-hover:scale-110 transition-transform duration-300 ${capability.color}`}
+                    className={`inline-flex p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 mb-4 group-hover:scale-110 transition-transform duration-300 ${capability.color}`}
                   >
                     {capability.icon}
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     {capability.title}
                   </h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                     {capability.description}
                   </p>
                 </motion.div>

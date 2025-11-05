@@ -1,5 +1,3 @@
-"use client";
-
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import {
   Conversation,
@@ -22,9 +20,12 @@ import {
 import { Response } from "@/components/ai-elements/response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolContent, ToolHeader } from "@/components/ai-elements/tool";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useUser } from "@clerk/clerk-react";
 import {
+  Brain,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -279,6 +280,7 @@ const ToolResultDisplay: React.FC<{ content: any; uniquePrefix?: string }> = ({
 const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   sessionId,
 }) => {
+  const { user } = useUser();
   const {
     messages,
     messagesLoading,
@@ -310,7 +312,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   }, [sessionId, fetchSessionMessages]);
 
   useEffect(() => {
-    // Convert messages to conversation format
     const convMessages = messages.map((msg) => ({
       role: msg.role as "user" | "assistant" | "system" | "tool",
       content: msg.content,
@@ -328,7 +329,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   }, [messages]);
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive or streaming state changes
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversationMessages, streamingState, isThinking]);
 
@@ -359,7 +359,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
     const messagesToSave: Array<{
       role: string;
       content: string;
-      // aggregated tools for assistant message
       tools?: Array<{
         name: string;
         arguments?: Record<string, any>;
@@ -375,7 +374,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
     ];
 
     setErrorMessage(null);
-    // Accumulate tool calls/results during the stream
     const accumulatedTools: Array<{
       id: string;
       name: string;
@@ -384,9 +382,7 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
     }> = [];
     try {
       await ChatService.streamMessage(sessionId, inputText, (event) => {
-        // Debug incoming events for diagnosis
         try {
-          // Avoid logging huge payloads
           const preview =
             typeof event.data === "string"
               ? event.data.slice(0, 200)
@@ -483,7 +479,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
           setStreamingState((prev) => {
             const newTools = new Map(prev.tools);
 
-            // Prefer matching by incoming id, else by name with pending state
             let toolId =
               incomingId && newTools.has(incomingId) ? incomingId : "";
             if (!toolId) {
@@ -499,7 +494,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
             }
             if (!toolId) toolId = `${toolName}-${Date.now()}`;
 
-            // Parse tool content if it's JSON
             let parsedContent = toolContent;
             if (typeof toolContent === "string") {
               try {
@@ -509,7 +503,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               }
             }
 
-            // Update tool with result
             const existingTool = newTools.get(toolId);
             newTools.set(toolId, {
               id: toolId,
@@ -524,7 +517,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               tools: newTools,
             };
           });
-          // Aggregate into accumulatedTools
           const contentToSave =
             typeof toolContent === "string"
               ? toolContent
@@ -543,7 +535,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               {}
             );
           })();
-          // find last matching by id or name
           const revIdx = accumulatedTools
             .slice()
             .reverse()
@@ -571,11 +562,8 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
           const isDelta = payload?.is_delta === true;
 
           if (content) {
-            // Stop thinking when content starts arriving
             setIsThinking(false);
 
-            // If it's a delta, append to accumulated content
-            // Otherwise, use the full content
             if (isDelta) {
               accumulatedContent += content;
             } else {
@@ -589,15 +577,12 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
           }
         }
 
-        // Handle END marker translated by service to { done: true }
         if (event.data?.done === true || event.data === "[DONE]") {
           setIsStreaming(false);
         }
       });
 
-      // Save final assistant message
       if (accumulatedContent) {
-        // Ensure content is a string
         const finalContent =
           typeof accumulatedContent === "string"
             ? accumulatedContent
@@ -640,7 +625,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
         content: "",
         tools: new Map(),
       });
-      // Refresh messages to get saved ones from backend
       await fetchSessionMessages(sessionId);
     }
   };
@@ -695,12 +679,17 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                     key={msg.id || idx}
                     from={msg.role === "tool" ? "assistant" : msg.role}
                   >
-                    <MessageAvatar
-                      src=""
-                      name={msg.role === "user" ? "You" : "AI"}
-                    />
+                    {msg.role === "user" ? (
+                      <MessageAvatar
+                        src={user?.imageUrl || ""}
+                        name={user?.fullName?.charAt(0) || "Y"}
+                      />
+                    ) : (
+                      <Avatar className="size-8 ring-1 ring-border bg-primary/10 flex items-center justify-center">
+                        <Brain className="w-4 h-4 text-primary" />
+                      </Avatar>
+                    )}
                     <MessageContent variant="contained">
-                      {/* Display tool calls and results */}
                       {msg.tools && msg.tools.length > 0 && (
                         <div className="space-y-3 mb-3">
                           {msg.tools.map((tool) => (
@@ -715,7 +704,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                                 state={tool.state}
                               />
                               <ToolContent>
-                                {/* Show tool input/parameters if available */}
                                 {tool.args &&
                                   Object.keys(tool.args).length > 0 && (
                                     <div className="p-4 pt-2 border-b border-border/50">
@@ -745,7 +733,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                                     </div>
                                   </div>
                                 )}
-                                {/* Show loading state if tool is running */}
                                 {tool.state === "input-available" &&
                                   tool.content === undefined && (
                                     <div className="p-4 pt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -758,7 +745,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                           ))}
                         </div>
                       )}
-                      {/* Display message content with streaming effect */}
                       {msg.content && (
                         <div className="inline-flex items-baseline gap-0.5">
                           <Response>{msg.content}</Response>
@@ -767,23 +753,45 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                           )}
                         </div>
                       )}
-                      {/* Show thinking indicator like ChatGPT */}
                       {isStreaming &&
                         msg.id === "streaming" &&
                         !msg.content &&
                         msg.tools?.length === 0 &&
                         (msg as any).isThinking && (
-                          <div className="flex items-center gap-2.5 py-1.5">
-                            <Loader size={18} className="text-primary/60" />
+                          <div className="flex items-center gap-2 py-1.5">
                             <Shimmer
-                              className="text-sm text-muted-foreground"
-                              duration={1.5}
+                              as="span"
+                              className="text-sm font-medium"
+                              duration={2}
+                              spread={2}
                             >
-                              Thinking...
+                              Thinking
                             </Shimmer>
+                            <div className="flex items-center gap-1 px-0.5">
+                              <span
+                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
+                                style={{
+                                  animationDelay: "0ms",
+                                  animationDuration: "1.4s",
+                                }}
+                              />
+                              <span
+                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
+                                style={{
+                                  animationDelay: "200ms",
+                                  animationDuration: "1.4s",
+                                }}
+                              />
+                              <span
+                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
+                                style={{
+                                  animationDelay: "400ms",
+                                  animationDuration: "1.4s",
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
-                      {/* Show minimal loader if just started streaming */}
                       {isStreaming &&
                         msg.id === "streaming" &&
                         !msg.content &&
@@ -825,7 +833,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
 
       <Separator className="flex-shrink-0" />
 
-      {/* Input Area */}
       <div className="p-4 border-t flex-shrink-0">
         <PromptInput onSubmit={handleSend}>
           <PromptInputTextarea
