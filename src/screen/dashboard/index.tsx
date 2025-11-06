@@ -9,7 +9,9 @@ import {
   BookOpen,
   Brain,
   Database,
+  FileSpreadsheet,
   FileText,
+  FolderOpen,
   Key,
   LayoutDashboard,
   Menu,
@@ -94,7 +96,8 @@ export function Layout() {
   ];
 
   const isActive = (href: string) => {
-    return location.pathname === href;
+    // Check if current path matches or starts with the href (for nested routes)
+    return location.pathname === href || location.pathname.startsWith(href + "/");
   };
 
   return (

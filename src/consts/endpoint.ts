@@ -36,6 +36,8 @@ export const ENDPOINTS = {
     STATS: "/file/stats", // Get file statistics
     TYPES: "/file/types", // Get available file types
     DOWNLOAD: (id: string) => `/file/download/${id}`, // Get download URL
+    IMPORT_FROM_DRIVE: "/file/import-from-drive", // Import files from Google Drive
+    IMPORT_SHEET_URL: "/file/import-sheet-url", // Import sheet from URL
   },
 
   // Credentials endpoints
@@ -144,6 +146,14 @@ export const ENDPOINTS = {
     STREAM: (id: string) => `/chats/${id}/stream`,
     APPROVE: (id: string) => `/chats/${id}/approve`,
     SAVE_CONVERSATION: (id: string) => `/chats/${id}/save-conversation`,
+  },
+
+  // Google Drive endpoints
+  GOOGLE: {
+    LIST_SHEETS: "/google/list-sheets",
+    SEARCH_SHEETS: "/google/search-sheets",
+    LIST_PDFS: "/google/list-pdfs",
+    SEARCH_PDFS: "/google/search-pdfs",
   },
 } as const;
 

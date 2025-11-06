@@ -767,29 +767,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                             >
                               Thinking
                             </Shimmer>
-                            <div className="flex items-center gap-1 px-0.5">
-                              <span
-                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
-                                style={{
-                                  animationDelay: "0ms",
-                                  animationDuration: "1.4s",
-                                }}
-                              />
-                              <span
-                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
-                                style={{
-                                  animationDelay: "200ms",
-                                  animationDuration: "1.4s",
-                                }}
-                              />
-                              <span
-                                className="inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
-                                style={{
-                                  animationDelay: "400ms",
-                                  animationDuration: "1.4s",
-                                }}
-                              />
-                            </div>
                           </div>
                         )}
                       {isStreaming &&

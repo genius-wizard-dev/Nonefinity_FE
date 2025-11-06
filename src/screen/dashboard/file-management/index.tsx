@@ -1,13 +1,15 @@
 "use client";
 
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { DeleteConfirmationModal } from "./components/delete-confirmation-modal";
+import { DriveImportModal } from "./components/drive-import-modal";
 import { FileGrid } from "./components/file-grid";
 import { FileStats } from "./components/file-stats";
 import { FileToolbar } from "./components/file-toolbar";
+import { GoogleConnectionDialog } from "./components/google-connection-dialog";
 import { KeyboardShortcuts } from "./components/keyboard-shortcuts";
 import { UploadZone } from "./components/upload-zone";
 import { useBatchDelete } from "./hooks";
@@ -16,6 +18,8 @@ import type { ViewMode } from "./types";
 
 export default function FileManagement() {
   const { getToken } = useAuth();
+  const { user } = useUser();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     files,
@@ -45,11 +49,47 @@ export default function FileManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [showUploadZone, setShowUploadZone] = useState(false);
+  const [showDriveImport, setShowDriveImport] = useState(false);
+  const [showGoogleConnectionDialog, setShowGoogleConnectionDialog] =
+    useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
+
+  // Check if user has Google OAuth connection
+  // Check externalAccounts with provider === "google" (not oauthAccounts with oauth_google)
+  const hasGoogleConnection = user?.externalAccounts?.some(
+    (account) => account.provider === "google"
+  );
+
+  // Handle Drive Import button click
+  const handleDriveImportClick = useCallback(() => {
+    if (!hasGoogleConnection) {
+      // Show Google connection dialog if user doesn't have Google connected
+      setShowGoogleConnectionDialog(true);
+    } else {
+      // Open Drive import modal if user has Google connected
+      setShowDriveImport(true);
+    }
+  }, [hasGoogleConnection]);
+
+  // Check if user just connected Google (after closing UserProfile modal)
+  useEffect(() => {
+    // If user has Google connection and Google connection dialog was shown,
+    // it means user just connected Google, so open Drive import modal
+    if (hasGoogleConnection && showGoogleConnectionDialog) {
+      setShowGoogleConnectionDialog(false);
+      setShowDriveImport(true);
+    }
+  }, [hasGoogleConnection, showGoogleConnectionDialog]);
+
+  // Handle when Google is connected from UserProfile modal
+  const handleGoogleConnected = useCallback(() => {
+    setShowGoogleConnectionDialog(false);
+    setShowDriveImport(true);
+  }, []);
 
   // Handle search
   const handleSearch = useCallback(
@@ -65,7 +105,6 @@ export default function FileManagement() {
         clearSearch();
         // Refresh the file list to show all files
         await fetchFiles(token, true);
-        console.log("🔍 Search cleared - refreshed file list");
       }
     },
     [getToken, searchFiles, clearSearch, fetchFiles]
@@ -93,7 +132,7 @@ export default function FileManagement() {
         // Load files first (most important), then stats)
         await fetchFiles(token);
         // Load stats in background (less critical)
-        fetchStats(token).catch(console.warn);
+        fetchStats(token).catch(() => {});
       }
     };
     loadData();
@@ -102,31 +141,10 @@ export default function FileManagement() {
   // Use search results if we're in search mode, otherwise use all files
   const displayFiles = isInSearchMode ? searchResults : files;
 
-  // Debug logging (only in development and when there are actual changes)
-  if (
-    process.env.NODE_ENV === "development" &&
-    (isSearching || isInSearchMode)
-  ) {
-    console.log("🔍 Search Debug:", {
-      isSearching,
-      isInSearchMode,
-      searchResultsCount: searchResults.length,
-      filesCount: files.length,
-      displayFilesCount: displayFiles.length,
-    });
-  }
-
   const handleFileUpload = useCallback(
     async (filesToUpload: File[]) => {
-      console.log(
-        "🚀 Starting file upload process:",
-        filesToUpload.length,
-        "files"
-      );
-
       const token = await getToken();
       if (!token) {
-        console.error("❌ No token available for upload");
         toast.error("Authentication required for upload");
         return;
       }
@@ -145,8 +163,6 @@ export default function FileManagement() {
 
       // Upload files with progress tracking (smallest files first)
       for (const file of sortedFiles) {
-        console.log("📁 Processing file:", file.name);
-
         // Get the upload file item from the store after it's been created
         const currentUploadFiles = useFileStore.getState().uploadFiles;
         const uploadFileItem = currentUploadFiles.find(
@@ -154,12 +170,9 @@ export default function FileManagement() {
         );
 
         if (!uploadFileItem) {
-          console.error("❌ Upload file item not found for:", file.name);
           errorCount++;
           continue;
         }
-
-        console.log("✅ Found upload file item:", uploadFileItem.id);
 
         // Create individual toast for this file with progress bar
         const fileToastId = toast.loading(
@@ -183,7 +196,6 @@ export default function FileManagement() {
         );
 
         try {
-          console.log("🔄 Starting upload for:", file.name);
           const result = await uploadFile(file, token, (progress) => {
             // Update progress in the store
             const { updateUploadProgress } = useFileStore.getState();
@@ -213,10 +225,8 @@ export default function FileManagement() {
               }
             );
           });
-          console.log("📤 Upload result:", result);
 
           if (result) {
-            console.log("✅ Upload completed successfully for:", file.name);
             completeUpload(uploadFileItem.id);
             completedCount++;
 
@@ -275,7 +285,6 @@ export default function FileManagement() {
             );
           }
         } catch (error) {
-          console.error("Upload error for:", file.name, error);
           failUpload(
             uploadFileItem.id,
             error instanceof Error ? error.message : "Upload failed"
@@ -385,7 +394,6 @@ export default function FileManagement() {
       startUpload,
       completeUpload,
       failUpload,
-      fetchFiles,
       clearUploads,
     ]
   );
@@ -413,30 +421,26 @@ export default function FileManagement() {
           setSelectedFiles([]);
           // No need to refresh - store already updated
         },
-        onError: (error, failedIds) => {
-          console.error("Batch delete error:", error, failedIds);
+        onError: () => {
+          // Error handled by toast notification
         },
       });
     }
 
     setShowDeleteConfirm(false);
     setFilesToDelete([]);
-  }, [filesToDelete, getToken, deleteFile, deleteBatch, fetchFiles]);
+  }, [filesToDelete, getToken, deleteFile, deleteBatch]);
 
   const handleRename = useCallback(
     async (fileId: string, newName: string) => {
       const token = await getToken();
       if (!token) return;
 
-      const success = await renameFile(fileId, newName, token);
-      if (success) {
-        // No need to refresh - store already updated
-      } else {
-        console.error("Rename failed");
-      }
+      await renameFile(fileId, newName, token);
+      // No need to refresh - store already updated
       setRenamingFileId(null); // Clear renaming state after rename
     },
-    [getToken, renameFile, fetchFiles]
+    [getToken, renameFile]
   );
 
   const handleStartRename = useCallback((fileId: string) => {
@@ -452,10 +456,7 @@ export default function FileManagement() {
       const token = await getToken();
       if (!token) return;
 
-      const success = await downloadFile(fileId, token);
-      if (!success) {
-        console.error("Download failed");
-      }
+      await downloadFile(fileId, token);
     },
     [getToken, downloadFile]
   );
@@ -548,10 +549,8 @@ export default function FileManagement() {
         setSearchParams({});
       }
 
-      // Trigger search with debounce
-      if (query.trim()) {
-        handleSearch(query);
-      }
+      // Trigger search (or fetch list if query is empty)
+      handleSearch(query);
     },
     [handleSearch, setSearchParams]
   );
@@ -588,6 +587,7 @@ export default function FileManagement() {
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onUploadClick={() => setShowUploadZone(true)}
+        onDriveImportClick={handleDriveImportClick}
         onShowShortcuts={() => setShowShortcuts(true)}
         selectedCount={selectedFiles.length}
         onDeleteSelected={() => handleDeleteRequest(selectedFiles)}
@@ -620,6 +620,27 @@ export default function FileManagement() {
         <UploadZone
           onUpload={handleFileUpload}
           onClose={() => setShowUploadZone(false)}
+        />
+      )}
+
+      {showGoogleConnectionDialog && (
+        <GoogleConnectionDialog
+          open={showGoogleConnectionDialog}
+          onOpenChange={setShowGoogleConnectionDialog}
+          onGoogleConnected={handleGoogleConnected}
+        />
+      )}
+
+      {showDriveImport && (
+        <DriveImportModal
+          open={showDriveImport}
+          onOpenChange={setShowDriveImport}
+          onImportSuccess={async () => {
+            const token = await getToken();
+            if (token) {
+              await fetchFiles(token, true);
+            }
+          }}
         />
       )}
 
