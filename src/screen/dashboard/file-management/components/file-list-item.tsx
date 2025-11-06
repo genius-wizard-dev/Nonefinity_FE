@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -7,7 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Check, Download, Edit2, MoreVertical, Trash2 } from "lucide-react";
+import { Check, Download, Edit2, MoreVertical, Trash2, Cloud, Upload } from "lucide-react";
 import { useState } from "react";
 import type { FileItem } from "../types";
 import { FileIcon } from "./file-icon";
@@ -126,6 +127,22 @@ export function FileListItem({
                     </Button>
 
                     <FileIcon fileName={file.name} fileExt={file.ext} />
+                    <Badge
+                        variant="secondary"
+                        className="h-5 text-xs gap-1"
+                    >
+                        {file.sourceFile === "drive" ? (
+                            <>
+                                <Cloud className="h-3 w-3" />
+                                Drive
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="h-3 w-3" />
+                                Upload
+                            </>
+                        )}
+                    </Badge>
                     {isRenaming ? (
                         <div className="flex items-center gap-1 min-w-0 flex-1">
                             <Input

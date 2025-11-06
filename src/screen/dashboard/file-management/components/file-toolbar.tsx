@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Cloud,
   Grid3x3,
   Keyboard,
   List,
   Search,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { LogoSpinner } from "@/components/shared";
 import type { ViewMode } from "../types";
@@ -17,6 +19,7 @@ interface FileToolbarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onUploadClick: () => void;
+  onDriveImportClick: () => void;
   onShowShortcuts: () => void;
   selectedCount: number;
   onDeleteSelected: () => void;
@@ -29,6 +32,7 @@ export function FileToolbar({
   searchQuery,
   onSearchChange,
   onUploadClick,
+  onDriveImportClick,
   onShowShortcuts,
   selectedCount,
   onDeleteSelected,
@@ -45,8 +49,17 @@ export function FileToolbar({
               placeholder="Search files..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10"
+              className="pl-10 pr-10"
             />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -90,6 +103,16 @@ export function FileToolbar({
                 <List className="h-4 w-4" />
               </Button>
             </div>
+
+            <Button
+              onClick={onDriveImportClick}
+              variant="outline"
+              className="gap-2"
+              disabled={isLoading}
+            >
+              <Cloud className="h-4 w-4" />
+              <span className="hidden md:inline">Import from Drive</span>
+            </Button>
 
             <Button
               onClick={onUploadClick}

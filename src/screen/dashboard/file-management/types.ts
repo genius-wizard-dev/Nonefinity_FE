@@ -4,6 +4,7 @@ export interface FileItem {
   name: string;
   type: string;
   size: number;
+  sourceFile: string; // 'upload' or 'drive'
   createdAt: string;
   updatedAt: string;
   modified: Date; // For UI compatibility
@@ -25,6 +26,7 @@ export interface BackendFileItem {
   file_ext: string;
   file_type: string;
   file_size: number;
+  source_file: string;
   created_at: string;
   updated_at: string;
   tags?: string[];
@@ -417,6 +419,7 @@ export const mapFileItem = (item: BackendFileItem): FileItem => {
     name: item.file_name,
     type: getFileType(item.file_ext, item.file_name),
     size: item.file_size,
+    sourceFile: item.source_file || "upload",
     createdAt: item.created_at,
     updatedAt: item.updated_at,
     modified: new Date(item.updated_at), // Convert to Date for UI

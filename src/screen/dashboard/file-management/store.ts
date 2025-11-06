@@ -132,7 +132,7 @@ export const useFileStore = create<FileStore>((set, get) => ({
           });
         }
       }
-    }, 300); // Reduced to 300ms for faster response
+    }, 500); // Debounce 500ms to avoid too many API calls
 
     set({ searchTimeout: timeoutId });
   },
