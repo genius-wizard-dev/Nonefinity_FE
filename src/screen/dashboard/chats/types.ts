@@ -49,7 +49,6 @@ export interface ChatConfig {
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
   id_alias?: string | null;
-  integrations?: Integration[] | null;
   is_used?: boolean;
   created_at: string;
   updated_at: string;
@@ -62,7 +61,6 @@ export interface ChatConfigCreate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string;
-  integrations?: Integration[] | null;
 }
 
 export interface ChatConfigUpdate {
@@ -72,7 +70,6 @@ export interface ChatConfigUpdate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
-  integrations?: Integration[] | null;
 }
 
 export interface ChatConfigListResponse {

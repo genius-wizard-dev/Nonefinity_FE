@@ -16,31 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  BookOpen,
-  Check,
-  Cloud,
-  Copy,
-  Database,
-  Edit,
-  MessageSquare,
-  Settings,
-  Trash2,
-} from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Copy, Edit, MessageSquare, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { DatasetService } from "../../dataset-management/services";
 import type { Dataset } from "../../dataset-management/types";
 import {
@@ -51,10 +29,7 @@ import { ModelService } from "../../models/service";
 import type { Model } from "../../models/type";
 import { useChatStore } from "../store";
 import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate } from "../types";
-import { DatasetSelector } from "./dataset-selector";
-import { IntegrationsSelector } from "./integrations-selector";
-import { KnowledgeStoreSelector } from "./knowledge-store-selector";
-import { ModelSelector } from "./model-selector";
+import { ConfigDialog } from "./config-dialog";
 
 interface CreateConfigDialogProps {
   open: boolean;
@@ -73,7 +48,6 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
-    integrations: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
@@ -111,7 +85,6 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
         knowledge_store_id: null,
         dataset_ids: null,
         instruction_prompt: "",
-        integrations: null,
       });
       loadModelsAndStores();
     } else if (!open) {
@@ -173,13 +146,6 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
     formData.knowledge_store_id,
   ]);
 
-  const handleDatasetSelectionChange = useCallback((selectedIds: string[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      dataset_ids: selectedIds.length > 0 ? selectedIds : null,
-    }));
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.chat_model_id) {
@@ -211,8 +177,6 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       });
 
       if (config) {
-        // Update store directly without refetching (no UI flicker)
-        // Store already updated via createConfig action
         onOpenChange(false);
       }
     } catch (error) {
@@ -223,198 +187,23 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Create Chat Config</DialogTitle>
-          <DialogDescription>
-            Configure a new chat configuration with AI model and optional
-            knowledge store
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {!dataLoaded ? (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-36" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-24 w-full" />
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <Tabs
-                defaultValue="basic"
-                className="flex flex-col flex-1 min-h-0"
-              >
-                <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="basic" className="gap-2">
-                    <Settings className="w-4 h-4" />
-                    Basic
-                  </TabsTrigger>
-                  <TabsTrigger value="integrate" className="gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    Integrate
-                  </TabsTrigger>
-                  <TabsTrigger value="store" className="gap-2">
-                    <BookOpen className="w-4 h-4" />
-                    Store
-                  </TabsTrigger>
-                  <TabsTrigger value="dataset" className="gap-2">
-                    <Database className="w-4 h-4" />
-                    Dataset
-                  </TabsTrigger>
-                </TabsList>
-
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  <TabsContent value="basic" className="space-y-4 mt-0">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        placeholder="My Chat Config"
-                        required
-                      />
-                    </div>
-
-                    <ModelSelector
-                      label="Chat Model *"
-                      value={formData.chat_model_id || null}
-                      onChange={(value) =>
-                        setFormData({ ...formData, chat_model_id: value || "" })
-                      }
-                      models={chatModels}
-                      loading={modelsLoading}
-                      required
-                      placeholder="Select chat model"
-                      id="chat_model"
-                    />
-
-                    <div className="space-y-2">
-                      <Label htmlFor="instruction_prompt">
-                        Instruction Prompt (Optional)
-                      </Label>
-                      <Textarea
-                        id="instruction_prompt"
-                        value={formData.instruction_prompt || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            instruction_prompt: e.target.value,
-                          })
-                        }
-                        placeholder="Custom instructions for the AI..."
-                        rows={4}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="integrate" className="space-y-4 mt-0">
-                    <IntegrationsSelector
-                      value={formData.integrations || null}
-                      onChange={(value) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          integrations: value,
-                        }));
-                      }}
-                      loading={modelsLoading}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="store" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-2 gap-4">
-                      <ModelSelector
-                        label="Embedding Model (Optional)"
-                        value={formData.embedding_model_id || null}
-                        onChange={(value) => {
-                          setFormData({
-                            ...formData,
-                            embedding_model_id: value,
-                            knowledge_store_id:
-                              value === null
-                                ? null
-                                : formData.knowledge_store_id || null,
-                          });
-                        }}
-                        models={embeddingModels}
-                        loading={modelsLoading}
-                        placeholder="Select embedding model (optional)"
-                        id="embedding_model"
-                        allowNone
-                      />
-
-                      <KnowledgeStoreSelector
-                        value={formData.knowledge_store_id || null}
-                        onChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            knowledge_store_id: value,
-                          })
-                        }
-                        stores={filteredKnowledgeStores}
-                        loading={modelsLoading}
-                        disabled={!formData.embedding_model_id}
-                        id="knowledge_store"
-                        selectedEmbeddingModel={selectedEmbeddingModel}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="dataset" className="space-y-4 mt-0">
-                    <DatasetSelector
-                      datasets={datasets}
-                      selectedIds={formData.dataset_ids || null}
-                      onSelectionChange={handleDatasetSelectionChange}
-                      loading={modelsLoading}
-                      idPrefix="dataset"
-                    />
-                  </TabsContent>
-                </div>
-              </Tabs>
-
-              <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting || !formData.name}>
-                  {submitting ? "Creating..." : "Create"}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ConfigDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Chat Config"
+      description="Configure a new chat configuration with AI model and optional knowledge store"
+      formData={formData}
+      onFormDataChange={(data) => setFormData(data as ChatConfigCreate)}
+      chatModels={chatModels}
+      embeddingModels={embeddingModels}
+      datasets={datasets}
+      filteredKnowledgeStores={filteredKnowledgeStores}
+      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
+      modelsLoading={modelsLoading}
+      dataLoaded={dataLoaded}
+      submitting={submitting}
+      onSubmit={handleSubmit}
+    />
   );
 };
 
@@ -437,7 +226,6 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
-    integrations: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
@@ -475,7 +263,6 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
         knowledge_store_id: config.knowledge_store_id || null,
         dataset_ids: config.dataset_ids || null,
         instruction_prompt: config.instruction_prompt || "",
-        integrations: config.integrations || null,
       });
       loadModelsAndStores();
     } else if (!open) {
@@ -537,13 +324,6 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
     formData.knowledge_store_id,
   ]);
 
-  const handleDatasetSelectionChange = useCallback((selectedIds: string[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      dataset_ids: selectedIds.length > 0 ? selectedIds : null,
-    }));
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!config || !formData.name || !formData.chat_model_id) {
@@ -575,8 +355,6 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       });
 
       if (updatedConfig) {
-        // Update store directly without refetching (no UI flicker)
-        // Store already updated via updateConfig action
         onOpenChange(false);
       }
     } catch (error) {
@@ -589,197 +367,24 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   if (!config) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Edit Chat Config</DialogTitle>
-          <DialogDescription>
-            Update the chat configuration settings
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {!dataLoaded ? (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-36" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-24 w-full" />
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <Tabs
-                defaultValue="basic"
-                className="flex flex-col flex-1 min-h-0"
-              >
-                <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="basic" className="gap-2">
-                    <Settings className="w-4 h-4" />
-                    Basic
-                  </TabsTrigger>
-                  <TabsTrigger value="integrate" className="gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    Integrate
-                  </TabsTrigger>
-                  <TabsTrigger value="store" className="gap-2">
-                    <BookOpen className="w-4 h-4" />
-                    Store
-                  </TabsTrigger>
-                  <TabsTrigger value="dataset" className="gap-2">
-                    <Database className="w-4 h-4" />
-                    Dataset
-                  </TabsTrigger>
-                </TabsList>
-
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  <TabsContent value="basic" className="space-y-4 mt-0">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-name">Name *</Label>
-                      <Input
-                        id="edit-name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        placeholder="My Chat Config"
-                        required
-                      />
-                    </div>
-
-                    <ModelSelector
-                      label="Chat Model *"
-                      value={formData.chat_model_id || null}
-                      onChange={(value) =>
-                        setFormData({ ...formData, chat_model_id: value || "" })
-                      }
-                      models={chatModels}
-                      loading={modelsLoading}
-                      required
-                      placeholder="Select chat model"
-                      id="edit-chat_model"
-                    />
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-instruction_prompt">
-                        Instruction Prompt (Optional)
-                      </Label>
-                      <Textarea
-                        id="edit-instruction_prompt"
-                        value={formData.instruction_prompt || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            instruction_prompt: e.target.value,
-                          })
-                        }
-                        placeholder="Custom instructions for the AI..."
-                        rows={4}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="integrate" className="space-y-4 mt-0">
-                    <IntegrationsSelector
-                      value={formData.integrations || null}
-                      onChange={(value) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          integrations: value,
-                        }));
-                      }}
-                      loading={modelsLoading}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="store" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-2 gap-4">
-                      <ModelSelector
-                        label="Embedding Model (Optional)"
-                        value={formData.embedding_model_id || null}
-                        onChange={(value) => {
-                          setFormData({
-                            ...formData,
-                            embedding_model_id: value,
-                            knowledge_store_id:
-                              value === null
-                                ? null
-                                : formData.knowledge_store_id || null,
-                          });
-                        }}
-                        models={embeddingModels}
-                        loading={modelsLoading}
-                        placeholder="Select embedding model (optional)"
-                        id="edit-embedding_model"
-                        allowNone
-                      />
-
-                      <KnowledgeStoreSelector
-                        value={formData.knowledge_store_id || null}
-                        onChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            knowledge_store_id: value,
-                          })
-                        }
-                        stores={filteredKnowledgeStores}
-                        loading={modelsLoading}
-                        disabled={!formData.embedding_model_id}
-                        id="edit-knowledge_store"
-                        selectedEmbeddingModel={selectedEmbeddingModel}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="dataset" className="space-y-4 mt-0">
-                    <DatasetSelector
-                      datasets={datasets}
-                      selectedIds={formData.dataset_ids || null}
-                      onSelectionChange={handleDatasetSelectionChange}
-                      loading={modelsLoading}
-                      idPrefix="edit-dataset"
-                    />
-                  </TabsContent>
-                </div>
-              </Tabs>
-
-              <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting || !formData.name}>
-                  {submitting ? "Updating..." : "Update"}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ConfigDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit Chat Config"
+      description="Update the chat configuration settings"
+      formData={formData}
+      onFormDataChange={(data) => setFormData(data as ChatConfigUpdate)}
+      chatModels={chatModels}
+      embeddingModels={embeddingModels}
+      datasets={datasets}
+      filteredKnowledgeStores={filteredKnowledgeStores}
+      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
+      modelsLoading={modelsLoading}
+      dataLoaded={dataLoaded}
+      submitting={submitting}
+      onSubmit={handleSubmit}
+      idPrefix="edit-"
+    />
   );
 };
 
@@ -886,32 +491,6 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
             {config.knowledge_store_id && <p>✓ Knowledge store configured</p>}
             {config.dataset_ids && config.dataset_ids.length > 0 && (
               <p>✓ {config.dataset_ids.length} dataset(s) configured</p>
-            )}
-            {config.integrations && config.integrations.length > 0 && (
-              <div className="space-y-2">
-                {config.integrations.map((integration, index) => (
-                  <div key={index} className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Cloud className="w-3 h-3" />
-                      <p>
-                        {integration.provider === "google" && "Google"}
-                        {integration.enable ? " (enabled)" : " (disabled)"}
-                      </p>
-                    </div>
-                    {integration.provider === "google" &&
-                      integration.resources && (
-                        <div className="ml-4 space-y-0.5 text-xs text-muted-foreground">
-                          {integration.resources.sheets?.sheet_name && (
-                            <p>• Sheet: {integration.resources.sheets.sheet_name}</p>
-                          )}
-                          {integration.resources.pdfs?.pdf_name && (
-                            <p>• PDF: {integration.resources.pdfs.pdf_name}</p>
-                          )}
-                        </div>
-                      )}
-                  </div>
-                ))}
-              </div>
             )}
             {config.instruction_prompt && <p>✓ Custom instructions set</p>}
           </div>
