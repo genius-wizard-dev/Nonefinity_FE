@@ -198,6 +198,26 @@ export class ChatService {
     }
   }
 
+  static async deleteSessions(sessionIds: string[]): Promise<number> {
+    try {
+      const response = await httpClient.delete<{ deleted_count: number }>(
+        ENDPOINTS.CHATS.SESSIONS.DELETE_MULTIPLE,
+        { session_ids: sessionIds }
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to delete chat sessions:", response.message);
+        return 0;
+      }
+
+      const data = response.getData();
+      return data?.deleted_count || 0;
+    } catch (error) {
+      console.error("❌ Failed to delete chat sessions:", error);
+      return 0;
+    }
+  }
+
   static async clearSessionMessages(id: string): Promise<boolean> {
     try {
       const response = await httpClient.delete(

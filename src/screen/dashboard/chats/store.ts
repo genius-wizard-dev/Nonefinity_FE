@@ -198,6 +198,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  deleteSessions: async (ids: string[]) => {
+    try {
+      const deletedCount = await ChatService.deleteSessions(ids);
+      if (deletedCount > 0) {
+        set((state) => ({
+          sessions: state.sessions.filter((s) => !ids.includes(s.id)),
+          selectedSession:
+            state.selectedSession && ids.includes(state.selectedSession.id)
+              ? null
+              : state.selectedSession,
+        }));
+      }
+      return deletedCount;
+    } catch (error) {
+      console.error("Failed to delete sessions:", error);
+      return 0;
+    }
+  },
+
   fetchSessionMessages: async (sessionId: string) => {
     set({ messagesLoading: true });
     try {

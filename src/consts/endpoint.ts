@@ -127,6 +127,7 @@ export const ENDPOINTS = {
       CREATE: "/chats/sessions",
       GET: (id: string) => `/chats/sessions/${id}`,
       DELETE: (id: string) => `/chats/sessions/${id}`,
+      DELETE_MULTIPLE: "/chats/sessions",
       CLEAR_MESSAGES: (id: string) => `/chats/sessions/${id}/messages`,
       STREAM: (id: string) => `/chats/sessions/${id}/stream`,
       SAVE_CONVERSATION: (id: string) =>

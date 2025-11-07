@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -14,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,15 +127,19 @@ export const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
 interface SessionCardProps {
   session: ChatSession;
   isSelected: boolean;
+  isChecked: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onToggleCheck: (checked: boolean) => void;
 }
 
 export const SessionCard: React.FC<SessionCardProps> = ({
   session,
   isSelected,
+  isChecked,
   onSelect,
   onDelete,
+  onToggleCheck,
 }) => {
   return (
     <Card
@@ -135,11 +150,19 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     >
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <CardTitle className="text-lg">
-              {session.name || "Untitled Session"}
-            </CardTitle>
+          <div className="flex items-center gap-2 flex-1">
+            <Checkbox
+              checked={isChecked}
+              onCheckedChange={onToggleCheck}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1"
+            />
+            <div className="flex items-center gap-2 flex-1" onClick={onSelect}>
+              <MessageSquare className="w-5 h-5 text-primary" />
+              <CardTitle className="text-lg">
+                {session.name || "Untitled Session"}
+              </CardTitle>
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -178,9 +201,14 @@ export const SessionList: React.FC<SessionListProps> = ({
   onSessionSelect,
   selectedSessionId,
 }) => {
-  const { sessions, sessionsLoading, fetchSessions, deleteSession } =
+  const { sessions, sessionsLoading, fetchSessions, deleteSession, deleteSessions } =
     useChatStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (configId) {
@@ -191,6 +219,39 @@ export const SessionList: React.FC<SessionListProps> = ({
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this session?")) {
       await deleteSession(id);
+    }
+  };
+
+  const handleToggleCheck = (sessionId: string, checked: boolean) => {
+    setSelectedSessionIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(sessionId);
+      } else {
+        next.delete(sessionId);
+      }
+      return next;
+    });
+  };
+
+  const handleClearAll = () => {
+    const filteredSessionIds = filteredSessions.map((s) => s.id);
+    setSelectedSessionIds(new Set(filteredSessionIds));
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedSessionIds.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const ids = Array.from(selectedSessionIds);
+      await deleteSessions(ids);
+      setSelectedSessionIds(new Set());
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to delete sessions:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -220,10 +281,34 @@ export const SessionList: React.FC<SessionListProps> = ({
     <>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Chat Sessions</h3>
-        <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          New Session
-        </Button>
+        <div className="flex gap-2">
+          {filteredSessions.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAll}
+                disabled={selectedSessionIds.size === filteredSessions.length}
+              >
+                Select All
+              </Button>
+              {selectedSessionIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Selected ({selectedSessionIds.size})
+                </Button>
+              )}
+            </>
+          )}
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            New Session
+          </Button>
+        </div>
       </div>
 
       {filteredSessions.length === 0 ? (
@@ -245,8 +330,12 @@ export const SessionList: React.FC<SessionListProps> = ({
               key={session.id}
               session={session}
               isSelected={session.id === selectedSessionId}
+              isChecked={selectedSessionIds.has(session.id)}
               onSelect={() => onSessionSelect(session)}
               onDelete={() => handleDelete(session.id)}
+              onToggleCheck={(checked) =>
+                handleToggleCheck(session.id, checked)
+              }
             />
           ))}
         </div>
@@ -257,6 +346,34 @@ export const SessionList: React.FC<SessionListProps> = ({
         onOpenChange={setCreateDialogOpen}
         configId={configId}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Sessions</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedSessionIds.size} session(s)?
+              This action cannot be undone and will also delete all associated
+              messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="bg-destructive text-white hover:bg-destructive/90 disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
