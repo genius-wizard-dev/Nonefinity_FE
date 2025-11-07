@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import { PDFService } from "./services";
-import type {
-  GooglePDF,
-  PDFStoreActions,
-  PDFStoreState,
-} from "./types";
+import type { PDFStoreActions, PDFStoreState } from "./types";
 
 interface PDFStore extends PDFStoreState, PDFStoreActions {}
 
@@ -201,4 +197,3 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
     });
   },
 }));
-

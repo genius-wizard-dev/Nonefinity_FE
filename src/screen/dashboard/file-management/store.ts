@@ -70,9 +70,7 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
     // If query is empty, clear search immediately
     if (!query || query.trim() === "") {
-      if (process.env.NODE_ENV === "development") {
-        console.log("🔍 Empty query, clearing search");
-      }
+
       set({
         searchResults: [],
         isSearching: false,
@@ -90,15 +88,9 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
     // Create new timeout for debounce
     const timeoutId = setTimeout(async () => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("🔍 Executing search for:", trimmedQuery);
-      }
 
       try {
         const files = await FileService.searchFiles(trimmedQuery, token);
-        if (process.env.NODE_ENV === "development") {
-          console.log("🔍 Search results received:", files.length, "files");
-        }
 
         // Only update if this is still the current search
         const currentTimeout = get().searchTimeout;
@@ -109,16 +101,10 @@ export const useFileStore = create<FileStore>((set, get) => ({
             searchTimeout: null,
             error: null,
           });
-          if (process.env.NODE_ENV === "development") {
-            console.log("🔍 Search completed successfully");
-          }
-        } else {
-          if (process.env.NODE_ENV === "development") {
-            console.log("🔍 Search cancelled, newer search in progress");
-          }
-        }
+
+        } 
       } catch (error: any) {
-        console.error("🔍 Search error:", error);
+        console.error("Search error:", error);
         const errorMessage =
           error?.response?.data?.message || "Failed to search files";
 
@@ -162,7 +148,6 @@ export const useFileStore = create<FileStore>((set, get) => ({
   ) => {
     try {
       // Don't set global loading state - use progress modal instead
-      console.log("🔄 Starting upload process for:", file.name);
 
       // Use the complete upload flow with progress tracking
       const uploadedFile = await FileService.uploadFile(
@@ -190,20 +175,16 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
   deleteFile: async (fileId: string, token: string) => {
     try {
-      console.log("🏪 Store: Starting delete for file:", fileId);
       const success = await FileService.deleteFile(fileId, token);
-      console.log("🏪 Store: Delete result:", success);
 
       if (success) {
         set((state) => {
           const newFiles = state.files.filter((file) => file.id !== fileId);
-          console.log("🏪 Store: Files after delete:", newFiles.length);
           return { files: newFiles };
         });
       }
       return success;
     } catch (error: any) {
-      console.error("🏪 Store: Delete error:", error);
       const errorMessage =
         error?.response?.data?.message || "Failed to delete file";
       set({ error: errorMessage });
@@ -295,14 +276,8 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
   clearSearch: () => {
     const { searchTimeout } = get();
-    if (process.env.NODE_ENV === "development") {
-      console.log("🔍 Clearing search");
-    }
     if (searchTimeout) {
       clearTimeout(searchTimeout);
-      if (process.env.NODE_ENV === "development") {
-        console.log("🔍 Timeout cleared");
-      }
     }
     set({
       searchResults: [],
@@ -388,11 +363,7 @@ export const useFileStore = create<FileStore>((set, get) => ({
     });
   },
 
-  addFile: (fileData: FileItem) => {
-    set((state) => ({
-      files: [fileData, ...state.files],
-    }));
-  },
+
 
   reset: () => {
     const { searchTimeout } = get();

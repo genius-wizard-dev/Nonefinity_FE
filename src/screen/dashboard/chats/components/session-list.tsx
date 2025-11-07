@@ -201,7 +201,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   onSessionSelect,
   selectedSessionId,
 }) => {
-  const { sessions, sessionsLoading, fetchSessions, deleteSession, deleteSessions } =
+  const { sessions, sessionsLoading, fetchSessions, deleteSession,  deleteSessions } =
     useChatStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(

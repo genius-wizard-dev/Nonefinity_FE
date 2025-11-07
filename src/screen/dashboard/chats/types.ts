@@ -1,14 +1,43 @@
 // Integration Provider Types
 export type IntegrationProvider = "google";
 
-export interface GoogleIntegration {
-  provider: "google";
+// Resource types for each provider
+export type GoogleResourceType = "sheets" | "pdfs";
+
+// Base integration config structure
+export interface BaseIntegrationConfig {
+  provider: IntegrationProvider;
   enable: boolean;
+}
+
+// Google Sheets config
+export interface GoogleSheetsConfig {
+  type: "sheets";
   sheet_id: string;
   sheet_name?: string;
 }
 
+// Google PDFs config
+export interface GooglePDFsConfig {
+  type: "pdfs";
+  pdf_id: string;
+  pdf_name?: string;
+}
+
+// Google integration with multiple resource configs
+export interface GoogleIntegration extends BaseIntegrationConfig {
+  provider: "google";
+  resources: {
+    sheets?: GoogleSheetsConfig | null;
+    pdfs?: GooglePDFsConfig | null;
+  };
+}
+
+// Union type for all integrations
 export type Integration = GoogleIntegration;
+
+// Integrations is an array to support multiple providers
+export type IntegrationsConfig = Integration[];
 
 // Chat Config Types
 export interface ChatConfig {
@@ -20,7 +49,7 @@ export interface ChatConfig {
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
   id_alias?: string | null;
-  integrations?: Integration | null;
+  integrations?: Integration[] | null;
   is_used?: boolean;
   created_at: string;
   updated_at: string;
@@ -33,7 +62,7 @@ export interface ChatConfigCreate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string;
-  integrations?: Integration | null;
+  integrations?: Integration[] | null;
 }
 
 export interface ChatConfigUpdate {
@@ -43,7 +72,7 @@ export interface ChatConfigUpdate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
-  integrations?: Integration | null;
+  integrations?: Integration[] | null;
 }
 
 export interface ChatConfigListResponse {

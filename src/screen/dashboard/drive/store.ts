@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import { DriveService } from "./services";
-import type {
-  DriveStoreActions,
-  DriveStoreState,
-  GoogleSheet,
-} from "./types";
+import type { DriveStoreActions, DriveStoreState } from "./types";
 
 interface DriveStore extends DriveStoreState, DriveStoreActions {}
 
@@ -201,4 +197,3 @@ export const useDriveStore = create<DriveStore>((set, get) => ({
     });
   },
 }));
-

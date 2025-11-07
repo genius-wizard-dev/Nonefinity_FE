@@ -65,7 +65,7 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { createConfig, fetchConfigs } = useChatStore();
+  const { createConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigCreate>({
     name: "",
     chat_model_id: "",
@@ -211,7 +211,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       });
 
       if (config) {
-        await fetchConfigs();
+        // Update store directly without refetching (no UI flicker)
+        // Store already updated via createConfig action
         onOpenChange(false);
       }
     } catch (error) {
@@ -335,12 +336,12 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
                   <TabsContent value="integrate" className="space-y-4 mt-0">
                     <IntegrationsSelector
                       value={formData.integrations || null}
-                      onChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onChange={(value) => {
+                        setFormData((prev) => ({
+                          ...prev,
                           integrations: value,
-                        })
-                      }
+                        }));
+                      }}
                       loading={modelsLoading}
                     />
                   </TabsContent>
@@ -428,7 +429,7 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   onOpenChange,
   config,
 }) => {
-  const { updateConfig, fetchConfigs } = useChatStore();
+  const { updateConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigUpdate>({
     name: "",
     chat_model_id: "",
@@ -574,7 +575,8 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       });
 
       if (updatedConfig) {
-        await fetchConfigs();
+        // Update store directly without refetching (no UI flicker)
+        // Store already updated via updateConfig action
         onOpenChange(false);
       }
     } catch (error) {
@@ -699,12 +701,12 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
                   <TabsContent value="integrate" className="space-y-4 mt-0">
                     <IntegrationsSelector
                       value={formData.integrations || null}
-                      onChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onChange={(value) => {
+                        setFormData((prev) => ({
+                          ...prev,
                           integrations: value,
-                        })
-                      }
+                        }));
+                      }}
                       loading={modelsLoading}
                     />
                   </TabsContent>
@@ -885,15 +887,30 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
             {config.dataset_ids && config.dataset_ids.length > 0 && (
               <p>✓ {config.dataset_ids.length} dataset(s) configured</p>
             )}
-            {config.integrations && (
-              <div className="flex items-center gap-1">
-                <Cloud className="w-3 h-3" />
-                <p>
-                  {config.integrations.provider === "google" && "Google Sheets"}
-                  {config.integrations.enable ? " (enabled)" : " (disabled)"}
-                  {config.integrations.sheet_name &&
-                    `: ${config.integrations.sheet_name}`}
-                </p>
+            {config.integrations && config.integrations.length > 0 && (
+              <div className="space-y-2">
+                {config.integrations.map((integration, index) => (
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <Cloud className="w-3 h-3" />
+                      <p>
+                        {integration.provider === "google" && "Google"}
+                        {integration.enable ? " (enabled)" : " (disabled)"}
+                      </p>
+                    </div>
+                    {integration.provider === "google" &&
+                      integration.resources && (
+                        <div className="ml-4 space-y-0.5 text-xs text-muted-foreground">
+                          {integration.resources.sheets?.sheet_name && (
+                            <p>• Sheet: {integration.resources.sheets.sheet_name}</p>
+                          )}
+                          {integration.resources.pdfs?.pdf_name && (
+                            <p>• PDF: {integration.resources.pdfs.pdf_name}</p>
+                          )}
+                        </div>
+                      )}
+                  </div>
+                ))}
               </div>
             )}
             {config.instruction_prompt && <p>✓ Custom instructions set</p>}

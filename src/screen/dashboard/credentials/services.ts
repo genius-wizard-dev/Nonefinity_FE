@@ -19,7 +19,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider[]> {
     try {
-      console.log("🔧 Fetching providers:", { activeOnly });
 
       const response = await httpClient.get<ProviderListResponse>(
         ENDPOINTS.PROVIDERS.LIST,
@@ -33,7 +32,6 @@ export class ProviderService {
       }
 
       const data = response.getData();
-      console.log("📥 Providers response:", data);
 
       return data.providers || [];
     } catch (error) {
@@ -51,7 +49,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider[]> {
     try {
-      console.log("🔧 Fetching providers by task:", { taskType, activeOnly });
 
       const response = await httpClient.get<ProviderListResponse>(
         ENDPOINTS.PROVIDERS.LIST_BY_TASK(taskType),
@@ -68,7 +65,6 @@ export class ProviderService {
       }
 
       const data = response.getData();
-      console.log("📥 Providers by task response:", data);
 
       return data.providers || [];
     } catch (error) {
@@ -86,7 +82,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider | null> {
     try {
-      console.log("🔧 Fetching provider:", { providerName, activeOnly });
 
       const response = await httpClient.get<Provider>(
         ENDPOINTS.PROVIDERS.GET(providerName),
@@ -100,7 +95,6 @@ export class ProviderService {
       }
 
       const data = response.getData();
-      console.log("📥 Provider response:", data);
 
       return data;
     } catch (error) {
@@ -118,10 +112,6 @@ export class ProviderService {
     token?: string
   ) {
     try {
-      console.log("🔧 Fetching provider task config:", {
-        providerName,
-        taskType,
-      });
 
       const response = await httpClient.get(
         ENDPOINTS.PROVIDERS.GET_TASK_CONFIG(providerName, taskType),
@@ -138,7 +128,6 @@ export class ProviderService {
       }
 
       const data = response.getData();
-      console.log("📥 Provider task config response:", data);
 
       return data;
     } catch (error) {
@@ -159,7 +148,6 @@ export class CredentialService {
     token?: string
   ): Promise<CredentialListResponse | null> {
     try {
-      console.log("🔑 Fetching credentials:", { skip, limit });
 
       const response = await httpClient.get<CredentialListResponse>(
         ENDPOINTS.CREDENTIALS.LIST,
@@ -173,7 +161,6 @@ export class CredentialService {
       }
 
       const data = response.getData();
-      console.log("📥 Credentials response:", data);
 
       return data;
     } catch (error) {
@@ -190,7 +177,6 @@ export class CredentialService {
     token?: string
   ): Promise<Credential | null> {
     try {
-      console.log("🔑 Fetching credential:", { id });
 
       const response = await httpClient.get<Credential>(
         ENDPOINTS.CREDENTIALS.GET(id),
@@ -204,7 +190,6 @@ export class CredentialService {
       }
 
       const data = response.getData();
-      console.log("📥 Credential response:", data);
 
       return data;
     } catch (error) {
@@ -221,10 +206,6 @@ export class CredentialService {
     token?: string
   ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
-      console.log("🔑 Creating credential:", {
-        name: data.name,
-        provider_id: data.provider_id,
-      });
 
       // Prepare JSON body, only including defined fields
       const body: Record<string, any> = {
@@ -251,7 +232,6 @@ export class CredentialService {
       }
 
       const createdCredential = response.getData();
-      console.log("✅ Credential created successfully");
       return {
         success: true,
         data: createdCredential,
@@ -298,7 +278,6 @@ export class CredentialService {
       }
 
       const updatedCredential = response.getData();
-      console.log("✅ Credential updated successfully");
       return {
         success: true,
         data: updatedCredential,
@@ -317,7 +296,6 @@ export class CredentialService {
     token?: string
   ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
-      console.log("🔑 Deleting credential:", { id });
 
       const response = await httpClient.delete<Credential>(
         ENDPOINTS.CREDENTIALS.DELETE(id),
@@ -334,7 +312,6 @@ export class CredentialService {
       }
 
       const deletedCredential = response.getData();
-      console.log("✅ Credential deleted successfully");
       return {
         success: true,
         data: deletedCredential,
@@ -353,7 +330,6 @@ export class CredentialService {
     token?: string
   ): Promise<CredentialListResponse | null> {
     try {
-      console.log("🔑 Fetching credentials by provider:", { providerName });
 
       const response = await httpClient.get<CredentialListResponse>(
         ENDPOINTS.CREDENTIALS.LIST_BY_PROVIDER(providerName),
@@ -370,7 +346,6 @@ export class CredentialService {
       }
 
       const data = response.getData();
-      console.log("📥 Credentials by provider response:", data);
 
       return data;
     } catch (error) {

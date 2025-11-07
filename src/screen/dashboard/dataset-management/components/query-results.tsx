@@ -1,4 +1,12 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   TableBody,
   TableCell,
@@ -6,11 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle2, Database, XCircle, Maximize2, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  Database,
+  Download,
+  Maximize2,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface QueryResultsProps {
@@ -25,13 +36,8 @@ interface QueryResultsProps {
 
 export function QueryResults({ results }: QueryResultsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  console.log("📊 QueryResults component received results:", results);
-  console.log("📊 Results type:", typeof results);
-  console.log("📊 Has results:", !!results);
-  
+
   if (!results) {
-    console.log("📊 No results to display");
     return (
       <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center">
@@ -46,10 +52,6 @@ export function QueryResults({ results }: QueryResultsProps) {
 
   const hasError = results.error;
   const hasData = results.rows && results.rows.length > 0;
-  
-  console.log("📊 Has error:", hasError);
-  console.log("📊 Has data:", hasData);
-  console.log("📊 Row count:", results.rows?.length);
 
   const exportToCSV = () => {
     try {
@@ -85,16 +87,25 @@ export function QueryResults({ results }: QueryResultsProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success("CSV exported successfully");
     } catch (error) {
-      console.error("Error exporting CSV:", error);
-      toast.error("Failed to export CSV");
+      toast.error("Failed to export CSV", {
+        description:
+          error instanceof Error ? error.message : "Failed to export CSV",
+        duration: 5000,
+      });
     }
   };
 
   const ResultsTable = ({ fullScreen = false }: { fullScreen?: boolean }) => (
-    <div className={fullScreen ? "w-full h-full overflow-hidden" : "flex-1 overflow-hidden min-h-0"}>
+    <div
+      className={
+        fullScreen
+          ? "w-full h-full overflow-hidden"
+          : "flex-1 overflow-hidden min-h-0"
+      }
+    >
       <ScrollArea className="h-full w-full">
         <div className="min-w-max">
           <table className="w-full caption-bottom text-sm min-w-full">
@@ -210,7 +221,10 @@ export function QueryResults({ results }: QueryResultsProps) {
 
       {/* Expanded View Dialog */}
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-        <DialogContent className="max-w-[98vw] sm:!max-w-[98vw] w-[98vw] max-h-[95vh] h-[95vh] flex flex-col p-0" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent
+          className="max-w-[98vw] sm:!max-w-[98vw] w-[98vw] max-h-[95vh] h-[95vh] flex flex-col p-0"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader className="px-6 py-5 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between w-full gap-6 pr-12">
               <div className="flex items-center gap-4 flex-1">

@@ -26,13 +26,8 @@ interface EditKnowledgeStoreDialogProps {
 export const EditKnowledgeStoreDialog: React.FC<
   EditKnowledgeStoreDialogProps
 > = ({ open, onOpenChange, knowledgeStore }) => {
-  const {
-    nameValidation,
-    loading,
-    error,
-    updateKnowledgeStore,
-    checkNameAvailability,
-  } = useKnowledgeStoreStore();
+  const { nameValidation, error, updateKnowledgeStore, checkNameAvailability } =
+    useKnowledgeStoreStore();
 
   const [formData, setFormData] = useState<KnowledgeStoreUpdateRequest>({
     name: "",
@@ -59,7 +54,7 @@ export const EditKnowledgeStoreDialog: React.FC<
       formData.name !== knowledgeStore.name
     ) {
       const timeoutId = setTimeout(() => {
-        if (formData.name.trim() !== "") {
+        if (formData.name && formData.name.trim() !== "") {
           checkNameAvailability(formData.name as string);
         }
       }, 500);
@@ -101,9 +96,10 @@ export const EditKnowledgeStoreDialog: React.FC<
   };
 
   const isNameChanged = knowledgeStore && formData.name !== knowledgeStore.name;
-  const isFormValid =
+  const isFormValid = Boolean(
     formData.name &&
-    (isNameChanged ? nameValidation.isAvailable !== false : true);
+      (isNameChanged ? nameValidation.isAvailable !== false : true)
+  );
 
   if (!knowledgeStore) {
     return null;
@@ -164,7 +160,10 @@ export const EditKnowledgeStoreDialog: React.FC<
               id="description"
               value={formData.description}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, description: e.target.value }))
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
               }
               placeholder="Enter description (optional)"
               rows={3}
@@ -212,11 +211,11 @@ export const EditKnowledgeStoreDialog: React.FC<
             </Button>
             <Button
               type="submit"
-              disabled={
+              disabled={Boolean(
                 !isFormValid ||
-                isSubmitting ||
-                (isNameChanged && nameValidation.isChecking)
-              }
+                  isSubmitting ||
+                  (isNameChanged && nameValidation.isChecking)
+              )}
             >
               {isSubmitting && <LogoSpinner size="sm" className="mr-2" />}
               Update Knowledge Store
