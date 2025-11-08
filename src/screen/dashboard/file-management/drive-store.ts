@@ -1,6 +1,6 @@
-import { DriveService, PDFService } from "@/screen/dashboard/drive/services";
-import type { GooglePDF, GoogleSheet } from "@/screen/dashboard/drive/types";
 import { create } from "zustand";
+import { DriveService, PDFService } from "./services";
+import type { GooglePDF, GoogleSheet } from "./types";
 
 interface DriveImportStoreState {
   // Data

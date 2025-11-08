@@ -156,6 +156,14 @@ export const ENDPOINTS = {
     LIST_PDFS: "/google/list-pdfs",
     SEARCH_PDFS: "/google/search-pdfs",
   },
+
+  // Integration endpoints
+  INTEGRATIONS: {
+    LIST: "/intergrates",
+    CONNECT: "/intergrates/connect",
+    GET_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
+    ADD_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
+  },
 } as const;
 
 // Helper function to build full endpoint URL

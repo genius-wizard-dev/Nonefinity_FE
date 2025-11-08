@@ -433,3 +433,84 @@ export const mapFileItem = (item: BackendFileItem): FileItem => {
 
   return mappedItem;
 };
+
+// Google Drive types
+export interface GoogleSheet {
+  id: string;
+  name: string;
+}
+
+export interface GooglePDF {
+  id: string;
+  name: string;
+}
+
+export interface ListSheetsResponse {
+  files: GoogleSheet[];
+  next_page_token: string | null;
+  has_more: boolean;
+}
+
+export interface ListPDFsResponse {
+  files: GooglePDF[];
+  next_page_token: string | null;
+  has_more: boolean;
+}
+
+// Store state types for Sheets
+export interface DriveStoreState {
+  sheets: GoogleSheet[];
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  error: string | null;
+  searchResults: GoogleSheet[];
+  isSearching: boolean;
+  searchTimeout: NodeJS.Timeout | null;
+  nextPageToken: string | null;
+  hasMore: boolean;
+  lastFetchTime: number | null;
+}
+
+// Store state types for PDFs
+export interface PDFStoreState {
+  pdfs: GooglePDF[];
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  error: string | null;
+  searchResults: GooglePDF[];
+  isSearching: boolean;
+  searchTimeout: NodeJS.Timeout | null;
+  nextPageToken: string | null;
+  hasMore: boolean;
+  lastFetchTime: number | null;
+}
+
+// Store action types for Sheets
+export interface DriveStoreActions {
+  fetchSheets: (
+    token: string,
+    pageToken?: string,
+    pageSize?: number,
+    force?: boolean
+  ) => Promise<void>;
+  searchSheets: (query: string, token: string) => Promise<void>;
+  clearSearch: () => void;
+  clearError: () => void;
+  loadMoreSheets: (token: string) => Promise<void>;
+  reset: () => void;
+}
+
+// Store action types for PDFs
+export interface PDFStoreActions {
+  fetchPDFs: (
+    token: string,
+    pageToken?: string,
+    pageSize?: number,
+    force?: boolean
+  ) => Promise<void>;
+  searchPDFs: (query: string, token: string) => Promise<void>;
+  clearSearch: () => void;
+  clearError: () => void;
+  loadMorePDFs: (token: string) => Promise<void>;
+  reset: () => void;
+}

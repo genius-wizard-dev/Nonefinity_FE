@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { DriveService, PDFService } from "../file-management/services";
+import type { GooglePDF, GoogleSheet } from "../file-management/types";
 import { ChatService } from "./services";
 import type {
   ChatConfig,
@@ -8,7 +10,6 @@ import type {
   ChatSession,
   ChatSessionCreate,
 } from "./types";
-import type { GoogleSheet, GooglePDF } from "../drive/types";
 
 interface ChatState {
   // Chat Configs
@@ -38,7 +39,10 @@ interface ChatState {
   // Actions
   fetchConfigs: () => Promise<void>;
   createConfig: (data: ChatConfigCreate) => Promise<ChatConfig | null>;
-  updateConfig: (id: string, data: ChatConfigUpdate) => Promise<ChatConfig | null>;
+  updateConfig: (
+    id: string,
+    data: ChatConfigUpdate
+  ) => Promise<ChatConfig | null>;
   selectConfig: (config: ChatConfig | null) => void;
   deleteConfig: (id: string) => Promise<void>;
 
@@ -271,7 +275,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     // Don't fetch if already loading or if we have cached data and not forcing
     if (state.googleSheetsLoading) return;
-    if (!force && state.googleSheets.length > 0 && state.googleSheetsLastFetch) {
+    if (
+      !force &&
+      state.googleSheets.length > 0 &&
+      state.googleSheetsLastFetch
+    ) {
       // Cache is valid for 5 minutes
       const cacheAge = Date.now() - state.googleSheetsLastFetch;
       if (cacheAge < 5 * 60 * 1000) return;
@@ -279,7 +287,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({ googleSheetsLoading: true });
     try {
-      const { DriveService } = await import("../drive/services");
       const response = await DriveService.listSheets(token, undefined, 100);
       set({
         googleSheets: response.files || [],
@@ -305,7 +312,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({ googlePDFsLoading: true });
     try {
-      const { PDFService } = await import("../drive/services");
       const response = await PDFService.listPDFs(token, undefined, 100);
       set({
         googlePDFs: response.files || [],
@@ -370,7 +376,8 @@ export const useChatMessages = () => useChatStore((state) => state.messages);
 export const useMessagesLoading = () =>
   useChatStore((state) => state.messagesLoading);
 
-export const useGoogleSheets = () => useChatStore((state) => state.googleSheets);
+export const useGoogleSheets = () =>
+  useChatStore((state) => state.googleSheets);
 export const useGoogleSheetsLoading = () =>
   useChatStore((state) => state.googleSheetsLoading);
 export const useGooglePDFs = () => useChatStore((state) => state.googlePDFs);

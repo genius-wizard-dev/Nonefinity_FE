@@ -12,8 +12,10 @@ import {
   FileText,
   Key,
   LayoutDashboard,
+  Link as LinkIcon,
   Menu,
   MessageSquare,
+  Server,
   X,
   Zap,
 } from "lucide-react";
@@ -88,6 +90,16 @@ export function Layout() {
           name: "Embedding",
           href: "/dashboard/embeddings",
           icon: Zap,
+        },
+        {
+          name: "Integrate",
+          href: "/dashboard/integrate",
+          icon: LinkIcon,
+        },
+        {
+          name: "MCP",
+          href: "/dashboard/mcp",
+          icon: Server,
         },
       ],
     },
