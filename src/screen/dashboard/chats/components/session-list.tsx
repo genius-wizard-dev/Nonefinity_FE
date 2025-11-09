@@ -15,20 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { MessageSquare, Plus, Trash2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -199,6 +188,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             )}
           </Button>
         </div>
+      </div>
         <CardDescription>
           Created {new Date(session.created_at).toLocaleDateString()}
         </CardDescription>
@@ -228,14 +218,9 @@ export const SessionList: React.FC<SessionListProps> = ({
   onSessionSelect,
   selectedSessionId,
 }) => {
-  const { sessions, sessionsLoading, fetchSessions, deleteSession,  deleteSessions } =
+  const { sessions, sessionsLoading, fetchSessions, deleteSession } =
     useChatStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
@@ -402,9 +387,10 @@ export const SessionList: React.FC<SessionListProps> = ({
               key={session.id}
               session={session}
               isSelected={session.id === selectedSessionId}
-              isChecked={selectedSessionIds.has(session.id)}
+              isChecked={selectedSessions.has(session.id)}
               onSelect={() => onSessionSelect(session)}
               onDelete={() => handleDelete(session.id)}
+              onToggleCheck={(checked) => handleSessionSelectChange(session.id, checked)}
               isBulkSelected={selectedSessions.has(session.id)}
               onBulkSelectChange={(checked) => handleSessionSelectChange(session.id, checked)}
               isDeleting={deletingSessionId === session.id || (selectedSessions.has(session.id) && isDeleting)}

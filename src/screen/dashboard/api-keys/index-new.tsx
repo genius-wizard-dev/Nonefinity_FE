@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { APIKeyService } from "./services";
-import type { APIKey, APIKeyCreateResponse } from "./types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,13 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
+import { APIKeyService } from "./services";
+import type { APIKey, APIKeyCreateResponse } from "./types";
+
 import {
   Table,
   TableBody,
@@ -31,19 +25,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "sonner";
 import { format } from "date-fns";
 import {
+  AlertCircle,
+  Ban,
+  CheckCircle2,
+  Copy,
   Key,
   Plus,
   RefreshCw,
-  Copy,
   Trash2,
-  Ban,
-  CheckCircle2,
   XCircle,
-  AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function APIKeysManagement() {
   const { getToken } = useAuth();
@@ -52,9 +46,11 @@ export default function APIKeysManagement() {
   const [totalKeys, setTotalKeys] = useState(0);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showAPIKeyDialog, setShowAPIKeyDialog] = useState(false);
-  const [createdAPIKey, setCreatedAPIKey] = useState<APIKeyCreateResponse | null>(null);
+  const [createdAPIKey, setCreatedAPIKey] =
+    useState<APIKeyCreateResponse | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    chat_config_id: "",
     expires_in_days: "",
     permissions: ["chat:read", "chat:write"],
   });
@@ -64,7 +60,12 @@ export default function APIKeysManagement() {
     setLoading(true);
     try {
       const token = await getToken();
-      const result = await APIKeyService.list(0, 100, false, token);
+      const result = await APIKeyService.list(
+        0,
+        100,
+        false,
+        token || undefined
+      );
 
       if (result.success && result.data) {
         setApiKeys(result.data.api_keys);
@@ -96,10 +97,13 @@ export default function APIKeysManagement() {
       const result = await APIKeyService.create(
         {
           name: formData.name,
-          expires_in_days: formData.expires_in_days ? parseInt(formData.expires_in_days) : null,
+          chat_config_id: formData.chat_config_id,
+          expires_in_days: formData.expires_in_days
+            ? parseInt(formData.expires_in_days)
+            : null,
           permissions: formData.permissions,
         },
-        token
+        token || undefined
       );
 
       if (result.success && result.data) {
@@ -107,7 +111,12 @@ export default function APIKeysManagement() {
         setCreatedAPIKey(result.data);
         setShowAPIKeyDialog(true);
         setIsCreateDialogOpen(false);
-        setFormData({ name: "", expires_in_days: "", permissions: ["chat:read", "chat:write"] });
+        setFormData({
+          name: "",
+          chat_config_id: "",
+          expires_in_days: "",
+          permissions: ["chat:read", "chat:write"],
+        });
         fetchAPIKeys();
       } else {
         toast.error(result.error || "Failed to create API key");
@@ -120,13 +129,17 @@ export default function APIKeysManagement() {
 
   // Delete API key
   const handleDelete = async (keyId: string) => {
-    if (!confirm("Are you sure you want to delete this API key? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this API key? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     try {
       const token = await getToken();
-      const result = await APIKeyService.delete(keyId, token);
+      const result = await APIKeyService.delete(keyId, token || undefined);
 
       if (result.success) {
         toast.success("API key deleted successfully");
@@ -148,7 +161,7 @@ export default function APIKeysManagement() {
 
     try {
       const token = await getToken();
-      const result = await APIKeyService.revoke(keyId, token);
+      const result = await APIKeyService.revoke(keyId, token || undefined);
 
       if (result.success) {
         toast.success("API key revoked successfully");
@@ -206,7 +219,9 @@ export default function APIKeysManagement() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchAPIKeys} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -258,9 +273,9 @@ export default function APIKeysManagement() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>API Key Security:</strong> API keys provide full access to your account. Never share
-          your API keys publicly or commit them to version control. Use environment variables to store
-          them securely.
+          <strong>API Key Security:</strong> API keys provide full access to
+          your account. Never share your API keys publicly or commit them to
+          version control. Use environment variables to store them securely.
         </AlertDescription>
       </Alert>
 
@@ -281,7 +296,10 @@ export default function APIKeysManagement() {
           <TableBody>
             {apiKeys.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No API keys found. Create one to get started.
                 </TableCell>
               </TableRow>
@@ -291,7 +309,9 @@ export default function APIKeysManagement() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{key.name}</div>
-                      <div className="text-sm text-muted-foreground">{key.key_prefix}...</div>
+                      <div className="text-sm text-muted-foreground">
+                        {key.key_prefix}...
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(key)}</TableCell>
@@ -310,7 +330,9 @@ export default function APIKeysManagement() {
                       : "Never"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {key.expires_at ? format(new Date(key.expires_at), "MMM d, yyyy") : "Never"}
+                    {key.expires_at
+                      ? format(new Date(key.expires_at), "MMM d, yyyy")
+                      : "Never"}
                   </TableCell>
                   <TableCell className="text-sm">
                     {format(new Date(key.created_at), "MMM d, yyyy")}
@@ -358,7 +380,9 @@ export default function APIKeysManagement() {
                 id="name"
                 placeholder="e.g., Production Website"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </div>
             <div>
@@ -370,7 +394,9 @@ export default function APIKeysManagement() {
                 min="1"
                 max="365"
                 value={formData.expires_in_days}
-                onChange={(e) => setFormData({ ...formData, expires_in_days: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, expires_in_days: e.target.value })
+                }
               />
             </div>
             <div>
@@ -379,13 +405,19 @@ export default function APIKeysManagement() {
                 {["chat:read", "chat:write", "*"].map((perm) => (
                   <Badge
                     key={perm}
-                    variant={formData.permissions.includes(perm) ? "default" : "outline"}
+                    variant={
+                      formData.permissions.includes(perm)
+                        ? "default"
+                        : "outline"
+                    }
                     className="cursor-pointer"
                     onClick={() => {
                       if (formData.permissions.includes(perm)) {
                         setFormData({
                           ...formData,
-                          permissions: formData.permissions.filter((p) => p !== perm),
+                          permissions: formData.permissions.filter(
+                            (p) => p !== perm
+                          ),
                         });
                       } else {
                         setFormData({
@@ -402,7 +434,10 @@ export default function APIKeysManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreate}>Create</Button>
@@ -426,8 +461,8 @@ export default function APIKeysManagement() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  This is the only time you will see this API key. Make sure to save it in a secure
-                  location!
+                  This is the only time you will see this API key. Make sure to
+                  save it in a secure location!
                 </AlertDescription>
               </Alert>
 

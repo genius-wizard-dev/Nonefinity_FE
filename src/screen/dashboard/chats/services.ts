@@ -7,7 +7,6 @@ import type {
   ChatConfigUpdate,
   ChatSession,
   ChatSessionCreate,
-  ChatSessionDeleteResponse,
   ChatSessionListResponse,
   IntegrationConfig,
 } from "./types";
