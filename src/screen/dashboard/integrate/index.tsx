@@ -34,7 +34,7 @@ export default function Integrate() {
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pendingIntegrationId, setPendingIntegrationId] = useState<string | null>(null);
+  const [, setPendingIntegrationId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Load integrations on mount
