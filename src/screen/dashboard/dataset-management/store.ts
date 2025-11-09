@@ -40,7 +40,7 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      console.log("📊 Store: Fetching datasets");
+
       const datasets = await DatasetService.getDatasets(1, 100, token);
 
       set({
@@ -52,11 +52,9 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         activeTab: "sql", // Always switch to SQL tab when fetching datasets
       });
 
-      console.log("✅ Store: Datasets fetched successfully:", datasets.length);
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to fetch datasets";
-      console.error("❌ Store: Fetch datasets error:", errorMessage);
 
       set({
         error: errorMessage,
@@ -70,19 +68,54 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   // Get a specific dataset
   getDataset: async (datasetId: string, token: string) => {
     try {
-      console.log("📊 Store: Getting dataset:", datasetId);
       const dataset = await DatasetService.getDataset(datasetId, token);
 
       if (dataset) {
         set({ selectedDataset: dataset });
-        console.log("✅ Store: Dataset loaded:", dataset.name);
       }
 
       return dataset;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to get dataset";
-      console.error("❌ Store: Get dataset error:", errorMessage);
+      set({ error: errorMessage });
+      return null;
+    }
+  },
+
+  // Fetch and update schema for a specific dataset
+  fetchDatasetSchema: async (datasetId: string, token: string) => {
+    try {
+      const dataset = await DatasetService.getDataset(datasetId, token);
+
+      if (dataset) {
+        // Update only schema, preserve existing rowCount completely
+        set((state) => ({
+          datasets: state.datasets.map((d) =>
+            d.id === datasetId
+              ? {
+                  ...d,
+                  data_schema: dataset.data_schema,
+                  // Keep existing rowCount, don't update it
+                }
+              : d
+          ),
+          selectedDataset:
+            state.selectedDataset?.id === datasetId
+              ? {
+                  ...state.selectedDataset,
+                  data_schema: dataset.data_schema,
+                  // Keep existing rowCount, don't update it
+                }
+              : state.selectedDataset,
+        }));
+        return dataset;
+      }
+
+      return null;
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to fetch dataset schema";
       set({ error: errorMessage });
       return null;
     }
@@ -91,7 +124,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   // Delete a dataset
   deleteDataset: async (datasetId: string, token: string) => {
     try {
-      console.log("🗑️ Store: Deleting dataset:", datasetId);
       const result = await DatasetService.deleteDataset(datasetId, token);
 
       if (result.success) {
@@ -102,14 +134,12 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
           selectedDataset: null, // Always clear selected dataset when deleting
           activeTab: "sql", // Switch to SQL tab when deleting dataset
         }));
-        console.log("✅ Store: Dataset deleted successfully");
       }
 
       return result.success;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to delete dataset";
-      console.error("❌ Store: Delete dataset error:", errorMessage);
       set({
         error: errorMessage,
         selectedDataset: null, // Clear selected dataset even on error
@@ -122,7 +152,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   // Convert file to dataset
   convertDataset: async (request: ConvertDatasetRequest, token: string) => {
     try {
-      console.log("🔄 Store: Converting dataset:", request);
       set({ isLoading: true, error: null });
 
       const dataset = await DatasetService.convertDataset(request, token);
@@ -134,7 +163,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
           isLoading: false,
           error: null,
         }));
-        console.log("✅ Store: Dataset converted successfully:", dataset.name);
       } else {
         set({ isLoading: false, error: "Failed to convert dataset" });
       }
@@ -143,7 +171,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to convert dataset";
-      console.error("❌ Store: Convert dataset error:", errorMessage);
       set({ error: errorMessage, isLoading: false });
       return null;
     }
@@ -152,7 +179,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   // Execute SQL query
   executeQuery: async (query: string, token: string, limit: number = 100) => {
     try {
-      console.log("🔍 Store: Executing query:", { query, limit });
       set({ isExecutingQuery: true, error: null });
 
       const result = await DatasetService.executeQuery(query, limit, token);
@@ -163,12 +189,10 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         error: result?.error ? result.error : null,
       });
 
-      console.log("✅ Store: Query executed successfully");
       return result;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to execute query";
-      console.error("❌ Store: Execute query error:", errorMessage);
       set({
         error: errorMessage,
         isExecutingQuery: false,
@@ -186,25 +210,21 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
   // Set selected dataset
   setSelectedDataset: (dataset: Dataset | null) => {
-    console.log("📊 Store: Setting selected dataset:", dataset?.name || "none");
     set({ selectedDataset: dataset });
   },
 
   // Set selected table
   setSelectedTable: (tableName: string | null) => {
-    console.log("📊 Store: Setting selected table:", tableName || "none");
     set({ selectedTable: tableName });
   },
 
   // Set active tab
   setActiveTab: (tab: string) => {
-    console.log("📊 Store: Setting active tab:", tab);
     set({ activeTab: tab });
   },
 
   // Add dataset to store
   addDataset: (dataset: Dataset) => {
-    console.log("📊 Store: Adding dataset:", dataset.name);
     set((state) => ({
       datasets: [dataset, ...state.datasets],
     }));
@@ -212,7 +232,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
   // Update dataset in store
   updateDataset: (datasetId: string, updates: Partial<Dataset>) => {
-    console.log("📊 Store: Updating dataset:", datasetId);
     set((state) => ({
       datasets: state.datasets.map((dataset) =>
         dataset.id === datasetId ? { ...dataset, ...updates } : dataset
@@ -231,7 +250,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     token: string
   ) => {
     try {
-      console.log("📝 Store: Updating dataset info:", { datasetId, request });
       set({ isLoading: true, error: null });
 
       const result = await DatasetService.updateDatasetInfo(
@@ -253,7 +271,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
           isLoading: false,
           error: null,
         }));
-        console.log("✅ Store: Dataset info updated successfully");
         return true;
       } else {
         set({
@@ -265,7 +282,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to update dataset info";
-      console.error("❌ Store: Update dataset info error:", errorMessage);
       set({ error: errorMessage, isLoading: false });
       return false;
     }
@@ -278,7 +294,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     token: string
   ) => {
     try {
-      console.log("📝 Store: Updating dataset schema:", { datasetId, request });
       set({ isLoading: true, error: null });
 
       const result = await DatasetService.updateDatasetSchema(
@@ -286,9 +301,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
         request,
         token
       );
-
-      console.log("📊 Store: Update schema result:", result);
-      console.log("📊 Store: Result success:", result.success);
 
       if (result.success) {
         // Update the dataset schema in the store with the new descriptions
@@ -332,9 +344,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
             error: null,
           };
         });
-        console.log(
-          "✅ Store: Dataset schema updated successfully and state synced"
-        );
         return true;
       } else {
         set({
@@ -346,7 +355,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || "Failed to update dataset schema";
-      console.error("❌ Store: Update dataset schema error:", errorMessage);
       set({ error: errorMessage, isLoading: false });
       return false;
     }
@@ -354,7 +362,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
   // Remove dataset from store
   removeDataset: (datasetId: string) => {
-    console.log("📊 Store: Removing dataset:", datasetId);
     set((state) => ({
       datasets: state.datasets.filter((dataset) => dataset.id !== datasetId),
       selectedDataset:
@@ -364,20 +371,17 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
   // Clear error
   clearError: () => {
-    console.log("📊 Store: Clearing error");
     set({ error: null });
   },
 
   // Refresh all data
   refreshData: async (token: string) => {
-    console.log("📊 Store: Refreshing data");
     const { fetchDatasets } = get();
     await fetchDatasets(token, true); // Force refresh
   },
 
   // Reset store
   reset: () => {
-    console.log("📊 Store: Resetting store");
     set({
       datasets: [],
       isLoading: false,
@@ -394,7 +398,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
   // Table management methods (for compatibility with existing UI)
   handleRenameTable: (oldName: string, newName: string) => {
-    console.log("📊 Store: Renaming table:", oldName, "->", newName);
     set((state) => ({
       tables: state.tables.map((table) =>
         table.name === oldName ? { ...table, name: newName } : table
@@ -405,7 +408,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   },
 
   handleDeleteTable: (tableName: string) => {
-    console.log("📊 Store: Deleting table:", tableName);
     set((state) => ({
       tables: state.tables.filter((table) => table.name !== tableName),
       selectedTable:
@@ -414,7 +416,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   },
 
   handleUpdateTableDescription: (tableName: string, description: string) => {
-    console.log("📊 Store: Updating table description:", tableName);
     set((state) => ({
       tables: state.tables.map((table) =>
         table.name === tableName ? { ...table, description } : table
@@ -427,11 +428,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
     columnName: string,
     description: string
   ) => {
-    console.log(
-      "📊 Store: Updating column description:",
-      tableName,
-      columnName
-    );
     set((state) => ({
       tables: state.tables.map((table) =>
         table.name === tableName
@@ -447,12 +443,10 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   },
 
   handleShowTableInfo: (tableName: string) => {
-    console.log("📊 Store: Showing table info:", tableName);
     set({ selectedTable: tableName, activeTab: "table-info" });
   },
 
   handleImportFile: (fileName: string) => {
-    console.log("📊 Store: Importing file:", fileName);
     const tableName = fileName.split(".")[0];
     const newTable: Table = {
       name: tableName,
@@ -484,7 +478,6 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
   },
 
   handleCreateTable: (tableName: string, columns: Column[]) => {
-    console.log("📊 Store: Creating table:", tableName);
     const newTable: Table = {
       name: tableName,
       rowCount: 0,

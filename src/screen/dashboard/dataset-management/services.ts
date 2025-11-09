@@ -25,8 +25,6 @@ export class DatasetService {
     token?: string
   ): Promise<Dataset[]> {
     try {
-      console.log("📊 Fetching datasets:", { page, limit });
-
       const response = await httpClient.get<BackendDatasetListResponse>(
         ENDPOINTS.DATASETS.LIST,
         { page, limit },
@@ -39,7 +37,7 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Datasets response:", data);
+
 
       // Handle different response structures
       let datasetsArray: BackendDataset[] = [];
@@ -53,7 +51,6 @@ export class DatasetService {
 
       // Map backend datasets to frontend format
       const datasets = datasetsArray.map(mapDataset);
-      console.log("✅ Mapped datasets:", datasets.length);
 
       return datasets;
     } catch (error) {
@@ -82,7 +79,6 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Dataset response:", data);
 
       return mapDataset(data);
     } catch (error) {
@@ -99,7 +95,7 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-      console.log("🗑️ Deleting dataset:", datasetId);
+
 
       const response = await httpClient.delete<Dataset>(
         ENDPOINTS.DATASETS.DELETE(datasetId),
@@ -107,8 +103,6 @@ export class DatasetService {
         token
       );
 
-      console.log("📊 Delete response:", response.statusCode);
-      console.log("📊 Delete success:", response.isSuccess);
 
       if (!response.isSuccess) {
         console.error("❌ Failed to delete dataset:", response.message);
@@ -119,10 +113,9 @@ export class DatasetService {
       }
 
       const deletedDataset = response.getData();
-      console.log("✅ Dataset deleted successfully:", datasetId);
       return {
         success: true,
-        data: deletedDataset ? mapDataset(deletedDataset) : undefined,
+        data: deletedDataset ? mapDataset(deletedDataset as BackendDataset) : undefined,
       };
     } catch (error) {
       console.error("❌ Failed to delete dataset:", error);
@@ -144,7 +137,7 @@ export class DatasetService {
     token?: string
   ): Promise<DatasetData | null> {
     try {
-      console.log("📊 Fetching dataset data:", { datasetId, skip, limit });
+
 
       const response = await httpClient.get<BackendDatasetData>(
         ENDPOINTS.DATASETS.DATA(datasetId),
@@ -158,7 +151,7 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Dataset data response:", data);
+
 
       return {
         data: data.data || [],
@@ -213,7 +206,6 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Create dataset response:", data);
 
       return { success: true, data: mapDataset(data) };
     } catch (error) {
@@ -230,7 +222,6 @@ export class DatasetService {
     token?: string
   ): Promise<Dataset | null> {
     try {
-      console.log("🔄 Converting dataset:", request);
 
       // Use JSON body instead of form data
       const jsonBody = {
@@ -251,7 +242,6 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Convert response:", data);
 
       return mapDataset(data);
     } catch (error) {
@@ -269,7 +259,6 @@ export class DatasetService {
     token?: string
   ): Promise<QueryResult | null> {
     try {
-      console.log("🔍 Executing SQL query:", { query, limit });
 
       const startTime = Date.now();
 
@@ -300,9 +289,6 @@ export class DatasetService {
       }
 
       const responseData = response.getData();
-      console.log("📥 Query response:", responseData);
-      console.log("📥 Response data type:", typeof responseData);
-      console.log("📥 Is array:", Array.isArray(responseData));
 
       // The responseData should be the data array directly
       // But let's handle both cases: direct array or nested data property
@@ -311,7 +297,6 @@ export class DatasetService {
       if (Array.isArray(responseData)) {
         // Direct array response
         data = responseData;
-        console.log("📥 Direct array response, data length:", data.length);
       } else if (
         responseData &&
         typeof responseData === "object" &&
@@ -319,20 +304,14 @@ export class DatasetService {
       ) {
         // Nested data property
         data = (responseData as any).data || [];
-        console.log("📥 Nested data response, data length:", data.length);
       } else {
         // Fallback
         data = [];
-        console.log("📥 Fallback: empty data");
       }
 
       // Extract columns from the first row if data exists
       const columns = data.length > 0 ? Object.keys(data[0]) : [];
       const rowCount = data.length;
-
-      console.log("📥 Columns:", columns);
-      console.log("📥 Row count:", rowCount);
-      console.log("📥 First row sample:", data[0]);
 
       const result: QueryResult = {
         columns,
@@ -341,7 +320,6 @@ export class DatasetService {
         executionTime,
       };
 
-      console.log("✅ Query executed successfully:", result);
       return result;
     } catch (error) {
       console.error("❌ Query execution error:", error);
@@ -364,7 +342,6 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-      console.log("📝 Updating dataset info:", { datasetId, request });
 
       // Prepare JSON body
       const jsonBody: Record<string, string> = {};
@@ -390,10 +367,9 @@ export class DatasetService {
       }
 
       const updatedDataset = response.getData();
-      console.log("✅ Dataset updated successfully:", datasetId);
       return {
         success: true,
-        data: updatedDataset ? mapDataset(updatedDataset) : undefined,
+        data: updatedDataset ? mapDataset(updatedDataset as BackendDataset) : undefined,
       };
     } catch (error) {
       console.error("❌ Dataset update error:", error);
@@ -410,11 +386,9 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-      console.log("📝 Updating dataset schema:", { datasetId, request });
 
       // Prepare JSON body - try sending descriptions directly
       const jsonBody = request.descriptions;
-      console.log("📤 Sending JSON body:", jsonBody);
 
       const response = await httpClient.put<{
         success: boolean;
@@ -430,18 +404,12 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Update schema response:", data);
-      console.log("📥 Data type:", typeof data);
-      console.log("📥 Data success:", data?.success);
-      console.log("📥 Data message:", data?.message);
 
       // Handle the new response format with success and message
       // The API returns {success: true, message: "..."} directly
       if (data && data.success) {
-        console.log("✅ Schema updated successfully:", data.message);
         return { success: true };
       } else {
-        console.log("❌ Schema update failed:", data);
         return {
           success: false,
           error: data?.message || "Failed to update dataset schema",
@@ -462,7 +430,6 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      console.log("📥 Inserting data from file:", { datasetId, fileId });
 
       const response = await httpClient.post<{
         success: boolean;
@@ -485,7 +452,6 @@ export class DatasetService {
       }
 
       const data = response.getData();
-      console.log("📥 Insert data response:", data);
 
       return { success: true, data };
     } catch (error) {
@@ -502,8 +468,7 @@ export class DatasetService {
     totalRows: number;
     averageRows: number;
   } | null> {
-    try {
-      console.log("📊 Fetching dataset stats");
+    try { 
 
       // For now, return mock stats
       // In a real implementation, this would call a stats endpoint

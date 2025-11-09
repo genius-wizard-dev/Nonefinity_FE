@@ -36,7 +36,6 @@ export const CreateKnowledgeStoreDialog: React.FC<
   const {
     formData,
     nameValidation,
-    loading,
     error,
     setFormData,
     resetFormData,

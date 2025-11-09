@@ -38,9 +38,9 @@ export function usePerformance() {
     if (isCacheHit) {
       cacheHits.current += 1;
     }
-    
-    const cacheHitRate = apiCalls.current > 0 
-      ? (cacheHits.current / apiCalls.current) * 100 
+
+    const cacheHitRate = apiCalls.current > 0
+      ? (cacheHits.current / apiCalls.current) * 100
       : 0;
 
     setMetrics(prev => ({
@@ -89,7 +89,7 @@ export function usePerformance() {
 }
 
 // Hook for monitoring component performance
-export function useComponentPerformance(componentName: string) {
+export function useComponentPerformance() {
   const { startRender, endRender, trackApiCall } = usePerformance();
   const [isLoading, setIsLoading] = useState(true);
 

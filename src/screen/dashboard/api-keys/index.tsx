@@ -5,7 +5,7 @@ import type { APIKey, APIKeyCreateResponse } from "./types";
 import { ChatService } from "../chats/services";
 import type { ChatConfig } from "../chats/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -125,7 +125,7 @@ export default function APIKeysManagement() {
     try {
       const token = (await getToken()) || undefined;
       const expiresInDays = formData.expires_in_days ? parseInt(formData.expires_in_days) : undefined;
-      
+
       const result = await APIKeyService.create(
         {
           name: formData.name,
@@ -207,7 +207,7 @@ export default function APIKeysManagement() {
 
   const getStatusBadge = (apiKey: APIKey) => {
     const isExpired = apiKey.expires_at && new Date(apiKey.expires_at) < new Date();
-    
+
     if (isExpired) {
       return (
         <Badge variant="destructive" className="gap-1">
@@ -216,7 +216,7 @@ export default function APIKeysManagement() {
         </Badge>
       );
     }
-    
+
     return apiKey.is_active ? (
       <Badge variant="default" className="gap-1 bg-green-600">
         <CheckCircle2 className="h-3 w-3" />

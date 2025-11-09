@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,28 +16,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { Database, Edit, MessageSquare, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Check, Copy, Edit, MessageSquare, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import { DatasetService } from "../../dataset-management/services";
 import type { Dataset } from "../../dataset-management/types";
 import {
@@ -37,7 +29,11 @@ import {
 import { ModelService } from "../../models/service";
 import type { Model } from "../../models/type";
 import { useChatStore } from "../store";
-import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate } from "../types";
+import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate, IntegrationConfig } from "../types";
+import { ChatService } from "../services";
+import { ConfigDialog } from "./config-dialog";
+import { MCPService } from "../../mcp/mcp-service";
+import type { MCPConfig } from "./mcp-selector";
 
 interface CreateConfigDialogProps {
   open: boolean;
@@ -48,7 +44,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { createConfig, fetchConfigs } = useChatStore();
+  const { getToken } = useAuth();
+  const { createConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigCreate>({
     name: "",
     chat_model_id: "",
@@ -56,12 +53,16 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
+    integration_ids: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+  const [mcps, setMcps] = useState<MCPConfig[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Use knowledge store store hooks
   const knowledgeStores = useKnowledgeStores();
@@ -83,6 +84,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      setDataLoaded(false);
+      setModelsLoading(true);
       setFormData({
         name: "",
         chat_model_id: "",
@@ -90,19 +93,28 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
         knowledge_store_id: null,
         dataset_ids: null,
         instruction_prompt: "",
+        integration_ids: null,
+        mcp_ids: null,
       });
       loadModelsAndStores();
+    } else if (!open) {
+      // Reset when dialog closes
+      setDataLoaded(false);
+      setModelsLoading(true);
     }
   }, [open]);
 
   const loadModelsAndStores = async () => {
     setModelsLoading(true);
     try {
-      const [chatModelsData, embeddingModelsData, datasetsData] =
+      const token = await getToken();
+      const [chatModelsData, embeddingModelsData, datasetsData, integrationsData, mcpsData] =
         await Promise.all([
           ModelService.listModels({ type: "chat", active_only: true }),
           ModelService.listModels({ type: "embedding", active_only: true }),
           DatasetService.getDatasets(1, 100),
+          ChatService.getIntegrationConfigs(),
+          token ? MCPService.getMCPs(token) : Promise.resolve(null),
         ]);
 
       if (chatModelsData) {
@@ -114,10 +126,24 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       if (datasetsData) {
         setDatasets(datasetsData || []);
       }
+      if (integrationsData) {
+        setIntegrations(integrationsData || []);
+      }
+      if (mcpsData) {
+        setMcps(mcpsData.map(mcp => ({
+          id: mcp.id,
+          name: mcp.name,
+          description: mcp.description,
+          server_name: mcp.server_name,
+          transport: mcp.transport,
+          tools_count: mcp.tools_count,
+        })));
+      }
     } catch (error) {
-      console.error("Failed to load models/datasets:", error);
+      console.error("Failed to load models/datasets/integrations/mcps:", error);
     } finally {
       setModelsLoading(false);
+      setDataLoaded(true);
     }
   };
 
@@ -174,10 +200,17 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
             ? formData.dataset_ids
             : null,
         instruction_prompt: formData.instruction_prompt || "",
+        integration_ids:
+          formData.integration_ids && formData.integration_ids.length > 0
+            ? formData.integration_ids
+            : null,
+        mcp_ids:
+          formData.mcp_ids && formData.mcp_ids.length > 0
+            ? formData.mcp_ids
+            : null,
       });
 
       if (config) {
-        await fetchConfigs();
         onOpenChange(false);
       }
     } catch (error) {
@@ -188,244 +221,25 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Create Chat Config</DialogTitle>
-          <DialogDescription>
-            Configure a new chat configuration with AI model and optional
-            knowledge store
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="My Chat Config"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="chat_model">Chat Model *</Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.chat_model_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, chat_model_id: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select chat model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chatModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="embedding_model">
-                Embedding Model (Optional)
-              </Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.embedding_model_id || "__none__"}
-                  onValueChange={(value) => {
-                    const newEmbeddingModelId =
-                      value === "__none__" ? null : value;
-                    // Clear knowledge store when embedding model is removed
-                    setFormData({
-                      ...formData,
-                      embedding_model_id: newEmbeddingModelId,
-                      knowledge_store_id:
-                        newEmbeddingModelId === null
-                          ? null
-                          : formData.knowledge_store_id,
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select embedding model (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {embeddingModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="knowledge_store">
-                Knowledge Store (Optional)
-              </Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.knowledge_store_id || "__none__"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      knowledge_store_id: value === "__none__" ? null : value,
-                    })
-                  }
-                  disabled={!formData.embedding_model_id}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        formData.embedding_model_id
-                          ? "Select knowledge store (optional)"
-                          : "Select embedding model first"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {filteredKnowledgeStores.length === 0 ? (
-                      <SelectItem value="__no_stores__" disabled>
-                        {selectedEmbeddingModel
-                          ? `No stores with dimension ${selectedEmbeddingModel.dimension}`
-                          : "Select embedding model first"}
-                      </SelectItem>
-                    ) : (
-                      filteredKnowledgeStores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name} (dim: {store.dimension})
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Datasets (Optional)</Label>
-              {modelsLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <div className="border rounded-md p-3 max-h-48 overflow-auto">
-                  {datasets.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No datasets available
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {datasets.map((dataset) => (
-                        <div
-                          key={dataset.id}
-                          className="flex items-center space-x-2 p-2 rounded hover:bg-accent/50 transition-colors"
-                        >
-                          <Checkbox
-                            id={`dataset-${dataset.id}`}
-                            checked={
-                              formData.dataset_ids?.includes(dataset.id) ||
-                              false
-                            }
-                            onCheckedChange={(checked) => {
-                              const currentIds = formData.dataset_ids || [];
-                              if (checked) {
-                                setFormData({
-                                  ...formData,
-                                  dataset_ids: [...currentIds, dataset.id],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  dataset_ids: currentIds.filter(
-                                    (id) => id !== dataset.id
-                                  ),
-                                });
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`dataset-${dataset.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Database className="w-4 h-4 text-muted-foreground" />
-                              <span>{dataset.name}</span>
-                            </div>
-                            {dataset.description && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {dataset.description}
-                              </p>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {formData.dataset_ids && formData.dataset_ids.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {formData.dataset_ids.length} dataset
-                  {formData.dataset_ids.length !== 1 ? "s" : ""} selected
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="instruction_prompt">
-                Instruction Prompt (Optional)
-              </Label>
-              <Textarea
-                id="instruction_prompt"
-                value={formData.instruction_prompt || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    instruction_prompt: e.target.value,
-                  })
-                }
-                placeholder="Custom instructions for the AI..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !formData.name}>
-              {submitting ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <ConfigDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Chat Config"
+      description="Configure a new chat configuration with AI model and optional knowledge store"
+      formData={formData}
+      onFormDataChange={(data) => setFormData(data as ChatConfigCreate)}
+      chatModels={chatModels}
+      embeddingModels={embeddingModels}
+      datasets={datasets}
+      filteredKnowledgeStores={filteredKnowledgeStores}
+      integrations={integrations}
+      mcps={mcps}
+      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
+      modelsLoading={modelsLoading}
+      dataLoaded={dataLoaded}
+      submitting={submitting}
+      onSubmit={handleSubmit}
+    />
   );
 };
 
@@ -440,7 +254,8 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   onOpenChange,
   config,
 }) => {
-  const { updateConfig, fetchConfigs } = useChatStore();
+  const { getToken } = useAuth();
+  const { updateConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigUpdate>({
     name: "",
     chat_model_id: "",
@@ -448,12 +263,16 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
+    integration_ids: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+  const [mcps, setMcps] = useState<MCPConfig[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Use knowledge store store hooks
   const knowledgeStores = useKnowledgeStores();
@@ -475,6 +294,8 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
 
   useEffect(() => {
     if (open && config) {
+      setDataLoaded(false);
+      setModelsLoading(true);
       setFormData({
         name: config.name,
         chat_model_id: config.chat_model_id,
@@ -482,19 +303,28 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
         knowledge_store_id: config.knowledge_store_id || null,
         dataset_ids: config.dataset_ids || null,
         instruction_prompt: config.instruction_prompt || "",
+        integration_ids: config.integration_ids || null,
+        mcp_ids: config.mcp_ids || null,
       });
       loadModelsAndStores();
+    } else if (!open) {
+      // Reset when dialog closes
+      setDataLoaded(false);
+      setModelsLoading(true);
     }
   }, [open, config]);
 
   const loadModelsAndStores = async () => {
     setModelsLoading(true);
     try {
-      const [chatModelsData, embeddingModelsData, datasetsData] =
+      const token = await getToken();
+      const [chatModelsData, embeddingModelsData, datasetsData, integrationsData, mcpsData] =
         await Promise.all([
           ModelService.listModels({ type: "chat", active_only: true }),
           ModelService.listModels({ type: "embedding", active_only: true }),
           DatasetService.getDatasets(1, 100),
+          ChatService.getIntegrationConfigs(),
+          token ? MCPService.getMCPs(token) : Promise.resolve(null),
         ]);
 
       if (chatModelsData) {
@@ -506,10 +336,24 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       if (datasetsData) {
         setDatasets(datasetsData || []);
       }
+      if (integrationsData) {
+        setIntegrations(integrationsData || []);
+      }
+      if (mcpsData) {
+        setMcps(mcpsData.map(mcp => ({
+          id: mcp.id,
+          name: mcp.name,
+          description: mcp.description,
+          server_name: mcp.server_name,
+          transport: mcp.transport,
+          tools_count: mcp.tools_count,
+        })));
+      }
     } catch (error) {
-      console.error("Failed to load models/datasets:", error);
+      console.error("Failed to load models/datasets/integrations/mcps:", error);
     } finally {
       setModelsLoading(false);
+      setDataLoaded(true);
     }
   };
 
@@ -566,10 +410,17 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
             ? formData.dataset_ids
             : null,
         instruction_prompt: formData.instruction_prompt || "",
+        integration_ids:
+          formData.integration_ids && formData.integration_ids.length > 0
+            ? formData.integration_ids
+            : null,
+        mcp_ids:
+          formData.mcp_ids && formData.mcp_ids.length > 0
+            ? formData.mcp_ids
+            : null,
       });
 
       if (updatedConfig) {
-        await fetchConfigs();
         onOpenChange(false);
       }
     } catch (error) {
@@ -582,242 +433,26 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   if (!config) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit Chat Config</DialogTitle>
-          <DialogDescription>
-            Update the chat configuration settings
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="My Chat Config"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-chat_model">Chat Model *</Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.chat_model_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, chat_model_id: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select chat model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chatModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-embedding_model">
-                Embedding Model (Optional)
-              </Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.embedding_model_id || "__none__"}
-                  onValueChange={(value) => {
-                    const newEmbeddingModelId =
-                      value === "__none__" ? null : value;
-                    setFormData({
-                      ...formData,
-                      embedding_model_id: newEmbeddingModelId,
-                      knowledge_store_id:
-                        newEmbeddingModelId === null
-                          ? null
-                          : formData.knowledge_store_id,
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select embedding model (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {embeddingModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-knowledge_store">
-                Knowledge Store (Optional)
-              </Label>
-              {modelsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={formData.knowledge_store_id || "__none__"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      knowledge_store_id: value === "__none__" ? null : value,
-                    })
-                  }
-                  disabled={!formData.embedding_model_id}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        formData.embedding_model_id
-                          ? "Select knowledge store (optional)"
-                          : "Select embedding model first"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {filteredKnowledgeStores.length === 0 ? (
-                      <SelectItem value="__no_stores__" disabled>
-                        {selectedEmbeddingModel
-                          ? `No stores with dimension ${selectedEmbeddingModel.dimension}`
-                          : "Select embedding model first"}
-                      </SelectItem>
-                    ) : (
-                      filteredKnowledgeStores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name} (dim: {store.dimension})
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Datasets (Optional)</Label>
-              {modelsLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <div className="border rounded-md p-3 max-h-48 overflow-auto">
-                  {datasets.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No datasets available
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {datasets.map((dataset) => (
-                        <div
-                          key={dataset.id}
-                          className="flex items-center space-x-2 p-2 rounded hover:bg-accent/50 transition-colors"
-                        >
-                          <Checkbox
-                            id={`edit-dataset-${dataset.id}`}
-                            checked={
-                              formData.dataset_ids?.includes(dataset.id) ||
-                              false
-                            }
-                            onCheckedChange={(checked) => {
-                              const currentIds = formData.dataset_ids || [];
-                              if (checked) {
-                                setFormData({
-                                  ...formData,
-                                  dataset_ids: [...currentIds, dataset.id],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  dataset_ids: currentIds.filter(
-                                    (id) => id !== dataset.id
-                                  ),
-                                });
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`edit-dataset-${dataset.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Database className="w-4 h-4 text-muted-foreground" />
-                              <span>{dataset.name}</span>
-                            </div>
-                            {dataset.description && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {dataset.description}
-                              </p>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {formData.dataset_ids && formData.dataset_ids.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {formData.dataset_ids.length} dataset
-                  {formData.dataset_ids.length !== 1 ? "s" : ""} selected
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-instruction_prompt">
-                Instruction Prompt (Optional)
-              </Label>
-              <Textarea
-                id="edit-instruction_prompt"
-                value={formData.instruction_prompt || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    instruction_prompt: e.target.value,
-                  })
-                }
-                placeholder="Custom instructions for the AI..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting || !formData.name}>
-              {submitting ? "Updating..." : "Update"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <ConfigDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit Chat Config"
+      description="Update the chat configuration settings"
+      formData={formData}
+      onFormDataChange={(data) => setFormData(data as ChatConfigUpdate)}
+      chatModels={chatModels}
+      embeddingModels={embeddingModels}
+      datasets={datasets}
+      filteredKnowledgeStores={filteredKnowledgeStores}
+      integrations={integrations}
+      mcps={mcps}
+      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
+      modelsLoading={modelsLoading}
+      dataLoaded={dataLoaded}
+      submitting={submitting}
+      onSubmit={handleSubmit}
+      idPrefix="edit-"
+    />
   );
 };
 
@@ -836,6 +471,21 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopyIdAlias = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (config.id_alias) {
+      try {
+        await navigator.clipboard.writeText(config.id_alias);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy:", error);
+      }
+    }
+  };
+
   return (
     <Card
       className={`cursor-pointer transition-all hover:shadow-md ${
@@ -867,6 +517,12 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
+              disabled={config.is_used}
+              title={
+                config.is_used
+                  ? "Cannot delete: config is being used by sessions"
+                  : "Delete"
+              }
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -877,13 +533,35 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-1 text-sm text-muted-foreground">
-          {config.embedding_model_id && <p>✓ Embedding model configured</p>}
-          {config.knowledge_store_id && <p>✓ Knowledge store configured</p>}
-          {config.dataset_ids && config.dataset_ids.length > 0 && (
-            <p>✓ {config.dataset_ids.length} dataset(s) configured</p>
+        <div className="space-y-2">
+          {config.id_alias && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {config.id_alias}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5"
+                onClick={handleCopyIdAlias}
+                title="Copy ID"
+              >
+                {copied ? (
+                  <Check className="w-3 h-3 text-green-600" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </Button>
+            </div>
           )}
-          {config.instruction_prompt && <p>✓ Custom instructions set</p>}
+          <div className="space-y-1 text-sm text-muted-foreground">
+            {config.embedding_model_id && <p>✓ Embedding model configured</p>}
+            {config.knowledge_store_id && <p>✓ Knowledge store configured</p>}
+            {config.dataset_ids && config.dataset_ids.length > 0 && (
+              <p>✓ {config.dataset_ids.length} dataset(s) configured</p>
+            )}
+            {config.instruction_prompt && <p>✓ Custom instructions set</p>}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -903,14 +581,38 @@ export const ConfigList: React.FC<ConfigListProps> = ({
     useChatStore();
   const [editingConfig, setEditingConfig] = useState<ChatConfig | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletingConfigId, setDeletingConfigId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchConfigs();
   }, [fetchConfigs]);
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this config?")) {
-      await deleteConfig(id);
+  const handleDeleteClick = (id: string) => {
+    setDeletingConfigId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deletingConfigId) {
+      setIsDeleting(true);
+      try {
+        await deleteConfig(deletingConfigId);
+        setDeletingConfigId(null);
+        setIsDeleteDialogOpen(false);
+      } catch (error) {
+        console.error("Failed to delete config:", error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setDeletingConfigId(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -964,7 +666,7 @@ export const ConfigList: React.FC<ConfigListProps> = ({
             isSelected={config.id === selectedConfigId}
             onSelect={() => onConfigSelect(config)}
             onEdit={() => handleEdit(config)}
-            onDelete={() => handleDelete(config.id)}
+            onDelete={() => handleDeleteClick(config.id)}
           />
         ))}
       </div>
@@ -974,6 +676,37 @@ export const ConfigList: React.FC<ConfigListProps> = ({
         onOpenChange={handleCloseEditDialog}
         config={editingConfig}
       />
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Chat Config</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this chat configuration? This
+              action cannot be undone and will also delete all associated chat
+              sessions and messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-white hover:bg-destructive/90 disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

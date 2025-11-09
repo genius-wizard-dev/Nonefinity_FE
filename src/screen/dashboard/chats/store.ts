@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { DriveService, PDFService } from "../file-management/services";
+import type { GooglePDF, GoogleSheet } from "../file-management/types";
 import { ChatService } from "./services";
 import type {
   ChatConfig,
@@ -26,10 +28,21 @@ interface ChatState {
   messages: ChatMessage[];
   messagesLoading: boolean;
 
+  // Google resources cache
+  googleSheets: GoogleSheet[];
+  googleSheetsLoading: boolean;
+  googleSheetsLastFetch: number | null;
+  googlePDFs: GooglePDF[];
+  googlePDFsLoading: boolean;
+  googlePDFsLastFetch: number | null;
+
   // Actions
   fetchConfigs: () => Promise<void>;
   createConfig: (data: ChatConfigCreate) => Promise<ChatConfig | null>;
-  updateConfig: (id: string, data: ChatConfigUpdate) => Promise<ChatConfig | null>;
+  updateConfig: (
+    id: string,
+    data: ChatConfigUpdate
+  ) => Promise<ChatConfig | null>;
   selectConfig: (config: ChatConfig | null) => void;
   deleteConfig: (id: string) => Promise<void>;
 
@@ -37,10 +50,17 @@ interface ChatState {
   createSession: (data: ChatSessionCreate) => Promise<ChatSession | null>;
   selectSession: (session: ChatSession | null) => void;
   deleteSession: (id: string) => Promise<void>;
+  deleteSessions: (ids: string[]) => Promise<number>;
 
   fetchSessionMessages: (sessionId: string) => Promise<void>;
   addMessage: (message: ChatMessage) => void;
   clearMessages: () => void;
+
+  fetchGoogleSheets: (token: string, force?: boolean) => Promise<void>;
+  fetchGooglePDFs: (token: string, force?: boolean) => Promise<void>;
+  clearGoogleSheets: () => void;
+  clearGooglePDFs: () => void;
+  clearGoogleResources: () => void;
 
   reset: () => void;
 }
@@ -56,6 +76,12 @@ const initialState = {
   sessionsError: null,
   messages: [],
   messagesLoading: false,
+  googleSheets: [],
+  googleSheetsLoading: false,
+  googleSheetsLastFetch: null,
+  googlePDFs: [],
+  googlePDFsLoading: false,
+  googlePDFsLastFetch: null,
 };
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -198,6 +224,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  deleteSessions: async (ids: string[]) => {
+    try {
+      const deletedCount = await ChatService.deleteSessions(ids);
+      if (deletedCount > 0) {
+        set((state) => ({
+          sessions: state.sessions.filter((s) => !ids.includes(s.id)),
+          selectedSession:
+            state.selectedSession && ids.includes(state.selectedSession.id)
+              ? null
+              : state.selectedSession,
+        }));
+      }
+      return deletedCount;
+    } catch (error) {
+      console.error("Failed to delete sessions:", error);
+      return 0;
+    }
+  },
+
   fetchSessionMessages: async (sessionId: string) => {
     set({ messagesLoading: true });
     try {
@@ -226,6 +271,85 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ messages: [] });
   },
 
+  fetchGoogleSheets: async (token: string, force = false) => {
+    const state = get();
+    // Don't fetch if already loading or if we have cached data and not forcing
+    if (state.googleSheetsLoading) return;
+    if (
+      !force &&
+      state.googleSheets.length > 0 &&
+      state.googleSheetsLastFetch
+    ) {
+      // Cache is valid for 5 minutes
+      const cacheAge = Date.now() - state.googleSheetsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ googleSheetsLoading: true });
+    try {
+      const response = await DriveService.listSheets(token, undefined, 100);
+      set({
+        googleSheets: response.files || [],
+        googleSheetsLoading: false,
+        googleSheetsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch Google Sheets:", error);
+      set({
+        googleSheets: [],
+        googleSheetsLoading: false,
+      });
+    }
+  },
+
+  fetchGooglePDFs: async (token: string, force = false) => {
+    const state = get();
+    if (state.googlePDFsLoading) return;
+    if (!force && state.googlePDFs.length > 0 && state.googlePDFsLastFetch) {
+      const cacheAge = Date.now() - state.googlePDFsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ googlePDFsLoading: true });
+    try {
+      const response = await PDFService.listPDFs(token, undefined, 100);
+      set({
+        googlePDFs: response.files || [],
+        googlePDFsLoading: false,
+        googlePDFsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch Google PDFs:", error);
+      set({
+        googlePDFs: [],
+        googlePDFsLoading: false,
+      });
+    }
+  },
+
+  clearGoogleSheets: () => {
+    set({
+      googleSheets: [],
+      googleSheetsLastFetch: null,
+    });
+  },
+
+  clearGooglePDFs: () => {
+    set({
+      googlePDFs: [],
+      googlePDFsLastFetch: null,
+    });
+  },
+
+  clearGoogleResources: () => {
+    set({
+      googleSheets: [],
+      googleSheetsLastFetch: null,
+      googlePDFs: [],
+      googlePDFsLastFetch: null,
+    });
+  },
+
   reset: () => {
     set(initialState);
   },
@@ -251,3 +375,11 @@ export const useSessionsError = () =>
 export const useChatMessages = () => useChatStore((state) => state.messages);
 export const useMessagesLoading = () =>
   useChatStore((state) => state.messagesLoading);
+
+export const useGoogleSheets = () =>
+  useChatStore((state) => state.googleSheets);
+export const useGoogleSheetsLoading = () =>
+  useChatStore((state) => state.googleSheetsLoading);
+export const useGooglePDFs = () => useChatStore((state) => state.googlePDFs);
+export const useGooglePDFsLoading = () =>
+  useChatStore((state) => state.googlePDFsLoading);

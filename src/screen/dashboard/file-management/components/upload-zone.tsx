@@ -174,18 +174,12 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
   };
 
   const handleUpload = () => {
-    console.log(
-      "🔘 Upload button clicked, selected files:",
-      selectedFiles.length
-    );
+
     if (selectedFiles.length > 0) {
-      console.log(
-        "📤 Calling onUpload with files:",
-        selectedFiles.map((f) => f.name)
-      );
+
       onUpload(selectedFiles);
     } else {
-      console.log("❌ No files selected for upload");
+      console.error("No files selected for upload");
     }
   };
 

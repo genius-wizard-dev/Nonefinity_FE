@@ -148,6 +148,7 @@ export function DatasetList({
   );
   const [insertFileSearchQuery, setInsertFileSearchQuery] = useState("");
   const [targetDataset, setTargetDataset] = useState<Dataset | null>(null);
+  const [loadingSchemas, setLoadingSchemas] = useState<Set<string>>(new Set());
 
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -275,7 +276,55 @@ export function DatasetList({
     setOpenDropdownId(null);
   };
 
-  const toggleDatasetExpand = (datasetId: string) => {
+  const handleFetchSchema = async (datasetId: string) => {
+    try {
+      setLoadingSchemas((prev) => new Set(prev).add(datasetId));
+      const token = await getClerkToken();
+      if (token) {
+        const { fetchDatasetSchema } = useDatasetStore.getState();
+        await fetchDatasetSchema(datasetId, token);
+        toast.success("Schema refreshed successfully");
+      }
+    } catch (error) {
+      console.error("Failed to fetch schema:", error);
+      toast.error("Failed to fetch schema");
+    } finally {
+      setLoadingSchemas((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(datasetId);
+        return newSet;
+      });
+    }
+    setOpenDropdownId(null);
+  };
+
+  const toggleDatasetExpand = async (datasetId: string) => {
+    const dataset = datasets.find((d) => d.id === datasetId);
+    if (!dataset) return;
+
+    const isExpanding = !expandedDatasets.has(datasetId);
+
+    // If expanding and schema is not loaded, fetch it
+    if (isExpanding && (!dataset.data_schema || dataset.data_schema.length === 0)) {
+      try {
+        setLoadingSchemas((prev) => new Set(prev).add(datasetId));
+        const token = await getClerkToken();
+        if (token) {
+          const { fetchDatasetSchema } = useDatasetStore.getState();
+          await fetchDatasetSchema(datasetId, token);
+        }
+      } catch (error) {
+        console.error("Failed to fetch schema:", error);
+        toast.error("Failed to fetch schema");
+      } finally {
+        setLoadingSchemas((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(datasetId);
+          return newSet;
+        });
+      }
+    }
+
     setExpandedDatasets((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(datasetId)) {
@@ -1063,7 +1112,9 @@ export function DatasetList({
                             <div className="flex-1 text-left">
                               <div className="font-medium">{dataset.name}</div>
                               <div className="text-xs text-muted-foreground">
-                                {dataset.rowCount?.toLocaleString() || 0} rows
+                                {dataset.rowCount !== undefined
+                                  ? `${dataset.rowCount.toLocaleString()} rows`
+                                  : "Click to load details"}
                               </div>
                             </div>
                           </button>
@@ -1099,6 +1150,17 @@ export function DatasetList({
                                 <Info className="h-4 w-4" />
                                 <span>View Info</span>
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleFetchSchema(dataset.id)}
+                                disabled={loadingSchemas.has(dataset.id)}
+                              >
+                                {loadingSchemas.has(dataset.id) ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4" />
+                                )}
+                                <span>Fetch Schema</span>
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleInsertData(dataset)}
@@ -1125,22 +1187,33 @@ export function DatasetList({
 
                         {expandedDatasets.has(dataset.id) && (
                           <div className="ml-8 mt-2 space-y-1 border-l border-border/50 pl-4">
-                            {dataset.data_schema.map((column) => (
-                              <div
-                                key={column.column_name}
-                                className="flex items-center justify-between px-3 py-2 text-xs rounded-md hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50"
-                              >
-                                <div className="flex items-center gap-2">
-                                  {getDataTypeIcon(column.column_type)}
-                                  <span className="font-medium text-foreground">
-                                    {column.column_name}
+                            {loadingSchemas.has(dataset.id) ? (
+                              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                                <span>Loading schema...</span>
+                              </div>
+                            ) : dataset.data_schema && dataset.data_schema.length > 0 ? (
+                              dataset.data_schema.map((column) => (
+                                <div
+                                  key={column.column_name}
+                                  className="flex items-center justify-between px-3 py-2 text-xs rounded-md hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {getDataTypeIcon(column.column_type)}
+                                    <span className="font-medium text-foreground">
+                                      {column.column_name}
+                                    </span>
+                                  </div>
+                                  <span className="text-muted-foreground font-mono text-[11px] bg-secondary/30 px-2 py-0.5 rounded">
+                                    {column.column_type}
                                   </span>
                                 </div>
-                                <span className="text-muted-foreground font-mono text-[11px] bg-secondary/30 px-2 py-0.5 rounded">
-                                  {column.column_type}
-                                </span>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-xs text-muted-foreground">
+                                No schema available. Click "Fetch Schema" to load.
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </>

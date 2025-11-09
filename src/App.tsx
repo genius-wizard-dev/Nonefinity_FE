@@ -18,8 +18,10 @@ import {
   Embedding,
   FileManagement,
   General,
+  Integrate,
   KnowledgeStoreDetail,
   KnowledgeStores,
+  MCP,
   Models,
 } from "./screen/index.ts";
 
@@ -77,6 +79,8 @@ function App() {
             <Route path="/dashboard/api-keys" element={<APIKeys />} />
             <Route path="/dashboard/embeddings" element={<Embedding />} />
             <Route path="/dashboard/models" element={<Models />} />
+            <Route path="/dashboard/integrate" element={<Integrate />} />
+            <Route path="/dashboard/mcp" element={<MCP />} />
           </Route>
         </Routes>
         {/* Show the Toaster in the top right corner */}

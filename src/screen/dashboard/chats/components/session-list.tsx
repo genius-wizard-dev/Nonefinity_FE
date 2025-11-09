@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -17,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { MessageSquare, Plus, Trash2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -118,8 +118,10 @@ export const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
 interface SessionCardProps {
   session: ChatSession;
   isSelected: boolean;
+  isChecked: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onToggleCheck: (checked: boolean) => void;
   isBulkSelected: boolean;
   onBulkSelectChange: (checked: boolean) => void;
   isDeleting?: boolean;
@@ -128,8 +130,10 @@ interface SessionCardProps {
 export const SessionCard: React.FC<SessionCardProps> = ({
   session,
   isSelected,
+  isChecked,
   onSelect,
   onDelete,
+  onToggleCheck,
   isBulkSelected,
   onBulkSelectChange,
   isDeleting,
@@ -142,6 +146,19 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     >
       <CardHeader>
         <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2 flex-1">
+            <Checkbox
+              checked={isChecked}
+              onCheckedChange={onToggleCheck}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1"
+            />
+            <div className="flex items-center gap-2 flex-1" onClick={onSelect}>
+              <MessageSquare className="w-5 h-5 text-primary" />
+              <CardTitle className="text-lg">
+                {session.name || "Untitled Session"}
+              </CardTitle>
+            </div>
           <div className="flex items-center gap-2">
             <Checkbox
               checked={isBulkSelected}
@@ -171,6 +188,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             )}
           </Button>
         </div>
+      </div>
         <CardDescription>
           Created {new Date(session.created_at).toLocaleDateString()}
         </CardDescription>
@@ -222,10 +240,10 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   const handleSingleDelete = async () => {
     if (!singleDeleteId) return;
-    
+
     setIsDeleting(true);
     setDeletingSessionId(singleDeleteId);
-    
+
     try {
       await deleteSession(singleDeleteId);
       // Remove from selected sessions if it was selected
@@ -245,16 +263,16 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   const handleBulkDelete = async () => {
     if (selectedSessions.size === 0) return;
-    
+
     setIsDeleting(true);
-    
+
     try {
       // Delete all selected sessions
-      const deletePromises = Array.from(selectedSessions).map(id => 
+      const deletePromises = Array.from(selectedSessions).map(id =>
         deleteSession(id)
       );
       await Promise.all(deletePromises);
-      
+
       toast.success(`Deleted ${selectedSessions.size} session(s)`);
       setSelectedSessions(new Set());
       handleDeleteDialogClose();
@@ -369,8 +387,10 @@ export const SessionList: React.FC<SessionListProps> = ({
               key={session.id}
               session={session}
               isSelected={session.id === selectedSessionId}
+              isChecked={selectedSessions.has(session.id)}
               onSelect={() => onSessionSelect(session)}
               onDelete={() => handleDelete(session.id)}
+              onToggleCheck={(checked) => handleSessionSelectChange(session.id, checked)}
               isBulkSelected={selectedSessions.has(session.id)}
               onBulkSelectChange={(checked) => handleSessionSelectChange(session.id, checked)}
               isDeleting={deletingSessionId === session.id || (selectedSessions.has(session.id) && isDeleting)}
@@ -393,7 +413,7 @@ export const SessionList: React.FC<SessionListProps> = ({
               {singleDeleteId ? "Delete Session?" : "Delete Selected Sessions?"}
             </DialogTitle>
             <DialogDescription>
-              {singleDeleteId 
+              {singleDeleteId
                 ? "Are you sure you want to delete this session? This action cannot be undone."
                 : `Are you sure you want to delete ${selectedSessions.size} selected session(s)? This action cannot be undone.`
               }
@@ -406,8 +426,8 @@ export const SessionList: React.FC<SessionListProps> = ({
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={singleDeleteId ? handleSingleDelete : handleBulkDelete}
             >
               {singleDeleteId ? "Delete Session" : `Delete ${selectedSessions.size} Session(s)`}

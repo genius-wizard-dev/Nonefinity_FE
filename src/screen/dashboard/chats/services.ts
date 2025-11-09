@@ -7,8 +7,8 @@ import type {
   ChatConfigUpdate,
   ChatSession,
   ChatSessionCreate,
-  ChatSessionDeleteResponse,
   ChatSessionListResponse,
+  IntegrationConfig,
 } from "./types";
 
 export class ChatService {
@@ -199,22 +199,24 @@ export class ChatService {
     }
   }
 
-  static async deleteSessions(sessionIds: string[]): Promise<ChatSessionDeleteResponse | null> {
+
+  static async deleteSessions(sessionIds: string[]): Promise<number> {
     try {
-      const response = await httpClient.delete(
-        ENDPOINTS.CHATS.SESSIONS.LIST,
+      const response = await httpClient.delete<{ deleted_count: number }>(
+        ENDPOINTS.CHATS.SESSIONS.DELETE_MULTIPLE,
         { session_ids: sessionIds }
       );
 
       if (!response.isSuccess) {
         console.error("❌ Failed to delete chat sessions:", response.message);
-        return null;
+        return 0;
       }
 
-      return response.getData() as ChatSessionDeleteResponse;
+      const data = response.getData();
+      return data?.deleted_count || 0;
     } catch (error) {
       console.error("❌ Failed to delete chat sessions:", error);
-      return null;
+      return 0;
     }
   }
 
@@ -245,18 +247,9 @@ export class ChatService {
     try {
       // Use baseURL from axios config
       const baseURL = getBaseURL();
-      console.debug("[ChatService.stream] baseURL:", baseURL);
 
       // Get token using same logic as axios interceptor
       const token = await getAuthToken();
-      console.debug(
-        "[ChatService.stream] sessionId:",
-        sessionId,
-        "tokenPresent:",
-        Boolean(token),
-        "messageLen:",
-        message?.length ?? 0
-      );
 
       const response = await fetch(
         `${baseURL}${ENDPOINTS.CHATS.SESSIONS.STREAM(sessionId)}`,
@@ -273,11 +266,6 @@ export class ChatService {
         }
       );
 
-      console.debug(
-        "[ChatService.stream] response status:",
-        response.status,
-        response.statusText
-      );
       if (!response.ok) {
         const errorText = await response
           .text()
@@ -289,7 +277,6 @@ export class ChatService {
 
       // Check if response is actually a stream
       const contentType = response.headers.get("content-type");
-      console.debug("[ChatService.stream] content-type:", contentType);
       if (!contentType?.includes("text/event-stream")) {
         console.warn("⚠️ Expected text/event-stream, got:", contentType);
       }
@@ -305,22 +292,10 @@ export class ChatService {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          console.debug(
-            "[ChatService.stream] reader done. remainingBufferLen:",
-            buffer.length
-          );
-        } else {
-          console.debug(
-            "[ChatService.stream] chunk received. size:",
-            value?.byteLength ?? 0
-          );
-        }
 
         if (done) {
           // Process remaining buffer before finishing
           if (buffer.trim()) {
-            console.debug("[ChatService.stream] processing remaining buffer");
             ChatService._processSSEBuffer(buffer, onEvent);
           }
           break;
@@ -328,12 +303,6 @@ export class ChatService {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n\n");
-        console.debug(
-          "[ChatService.stream] lines parsed:",
-          lines.length,
-          "currentBufferLen:",
-          buffer.length
-        );
 
         // Keep the last incomplete line in buffer
         buffer = lines.pop() || "";
@@ -341,10 +310,6 @@ export class ChatService {
         // Process complete SSE messages
         for (const line of lines) {
           if (line.trim()) {
-            console.debug(
-              "[ChatService.stream] processing line:",
-              line.slice(0, 200)
-            );
             ChatService._processSSELine(line, onEvent);
           }
         }
@@ -376,35 +341,22 @@ export class ChatService {
   ): void {
     const match = line.match(/^event: (.+)$/m);
     const dataMatch = line.match(/^data: (.+)$/m);
-    console.debug(
-      "[ChatService._processSSELine] raw line:",
-      line.slice(0, 200)
-    );
 
     if (match || dataMatch) {
       const eventType = match ? match[1] : "message";
       const dataStr = dataMatch ? dataMatch[1] : "{}";
-      console.debug(
-        "[ChatService._processSSELine] event:",
-        eventType,
-        "dataStr:",
-        dataStr.slice(0, 200)
-      );
 
       try {
         if (dataStr.trim() === '"[START]"') {
-          console.debug("[ChatService._processSSELine] START event");
           onEvent({ event: "start", data: {} });
           return;
         }
         if (dataStr.trim() === '"[END]"') {
-          console.debug("[ChatService._processSSELine] END event");
           onEvent({ event: eventType, data: { done: true } });
           return;
         }
 
         const data = JSON.parse(dataStr);
-        console.debug("[ChatService._processSSELine] parsed data:", data);
         onEvent({ event: eventType, data });
       } catch (e) {
         console.error("Failed to parse SSE data:", e, "Raw data:", dataStr);
@@ -425,15 +377,7 @@ export class ChatService {
     onEvent: (event: { event: string; data: any }) => void
   ): void {
     const lines = buffer.split("\n\n").filter((line) => line.trim());
-    console.debug(
-      "[ChatService._processSSEBuffer] lines to flush:",
-      lines.length
-    );
     for (const line of lines) {
-      console.debug(
-        "[ChatService._processSSEBuffer] flushing line:",
-        line.slice(0, 200)
-      );
       ChatService._processSSELine(line, onEvent);
     }
   }
@@ -463,6 +407,28 @@ export class ChatService {
     } catch (error) {
       console.error("❌ Failed to save conversation:", error);
       return false;
+    }
+  }
+
+  // Integration Config Methods
+  static async getIntegrationConfigs(): Promise<IntegrationConfig[] | null> {
+    try {
+      const response = await httpClient.get<IntegrationConfig[]>(
+        ENDPOINTS.INTEGRATIONS.GET_CONFIG
+      );
+
+      if (!response.isSuccess) {
+        console.error(
+          "❌ Failed to fetch integration configs:",
+          response.message
+        );
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch integration configs:", error);
+      return null;
     }
   }
 }

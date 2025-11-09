@@ -9,10 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useUser } from "@clerk/clerk-react";
-import { Calendar, Mail, Sparkles, User } from "lucide-react";
+import { Calendar, Mail, Sparkles, User, Cloud } from "lucide-react";
 
 export function UserInfoCard() {
   const { user } = useUser();
+
+  // Check if user has Google OAuth connection
+  const hasGoogleConnection = user?.externalAccounts?.some(
+    (account) => account.provider === "google"
+  );
+
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
     return name
@@ -107,6 +113,15 @@ export function UserInfoCard() {
           <Badge variant="outline" className="text-xs font-medium">
             Pro Member
           </Badge>
+          {hasGoogleConnection && (
+            <Badge
+              variant="default"
+              className="text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Cloud className="h-3 w-3 mr-1" />
+              Google Connected
+            </Badge>
+          )}
         </div>
       </CardContent>
     </Card>

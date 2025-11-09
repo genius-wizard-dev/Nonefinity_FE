@@ -173,9 +173,6 @@ export class EmbeddingService {
         model_id: modelId,
         knowledge_store_id: knowledgeStoreId,
       });
-
-      console.log(`File embedding task created: ${createResponse.task_id}`);
-
       // Poll until completion
       const result = await this.pollTaskStatus(createResponse.task_id, config);
 
@@ -203,7 +200,6 @@ export class EmbeddingService {
         knowledge_store_id: knowledgeStoreId,
       });
 
-      console.log(`Text embedding task created: ${createResponse.task_id}`);
 
       // Poll until completion
       const result = await this.pollTaskStatus(createResponse.task_id, config);
@@ -238,7 +234,6 @@ export class EmbeddingService {
         limit,
       });
 
-      console.log(`Search task created: ${createResponse.task_id}`);
 
       // Poll until completion
       const result = await this.pollTaskStatus(createResponse.task_id, config);

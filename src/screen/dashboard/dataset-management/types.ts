@@ -161,6 +161,10 @@ export interface DatasetStoreState {
 export interface DatasetStoreActions {
   fetchDatasets: (token: string, force?: boolean) => Promise<void>;
   getDataset: (datasetId: string, token: string) => Promise<Dataset | null>;
+  fetchDatasetSchema: (
+    datasetId: string,
+    token: string
+  ) => Promise<Dataset | null>;
   deleteDataset: (datasetId: string, token: string) => Promise<boolean>;
   convertDataset: (
     request: ConvertDatasetRequest,

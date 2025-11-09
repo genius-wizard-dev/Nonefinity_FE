@@ -1,7 +1,3 @@
-"use client";
-
-import type React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { LogoSpinner } from "@/components/shared";
@@ -27,22 +23,20 @@ export function SqlEditor({ onExecute, isExecuting }: SqlEditorProps) {
 
     // Determine the Monaco theme - check multiple sources
     const getMonacoTheme = () => {
-        console.log("resolvedTheme:", resolvedTheme);
-        
+
         // First check resolvedTheme
         if (resolvedTheme === "light") {
             return "vs";
         } else if (resolvedTheme === "dark") {
             return "vs-dark";
         }
-        
+
         // Fallback: check document class
         if (typeof document !== "undefined") {
             const isDarkClass = document.documentElement.classList.contains("dark");
-            console.log("Document has dark class:", isDarkClass);
             return isDarkClass ? "vs-dark" : "vs";
         }
-        
+
         // Default to dark
         return "vs-dark";
     };
@@ -53,28 +47,26 @@ export function SqlEditor({ onExecute, isExecuting }: SqlEditorProps) {
     useEffect(() => {
         if (isMounted && monacoRef.current && editorRef.current) {
             const newTheme = getMonacoTheme();
-            console.log("Changing Monaco theme to:", newTheme, "from resolvedTheme:", resolvedTheme);
             monacoRef.current.editor.setTheme(newTheme);
         }
     }, [resolvedTheme, isMounted]);
-    
+
     // Also watch for class changes on document
     useEffect(() => {
         if (!isMounted || typeof document === "undefined") return;
-        
+
         const observer = new MutationObserver(() => {
             if (monacoRef.current && editorRef.current) {
                 const newTheme = getMonacoTheme();
-                console.log("Document class changed, updating theme to:", newTheme);
                 monacoRef.current.editor.setTheme(newTheme);
             }
         });
-        
+
         observer.observe(document.documentElement, {
             attributes: true,
             attributeFilter: ["class"],
         });
-        
+
         return () => observer.disconnect();
     }, [isMounted]);
 
@@ -91,13 +83,12 @@ export function SqlEditor({ onExecute, isExecuting }: SqlEditorProps) {
         // Set initial theme using the same detection logic
         const initialTheme = getMonacoTheme();
         monaco.editor.setTheme(initialTheme);
-        console.log("Editor mounted with theme:", initialTheme, "resolvedTheme:", resolvedTheme);
-        
+
         setIsMounted(true);
 
         // Register SQL completion provider
         monaco.languages.registerCompletionItemProvider("sql", {
-            provideCompletionItems: (_model, _position) => {
+            provideCompletionItems: () => {
                 const suggestions: any[] = [];
 
                 // SQL Keywords

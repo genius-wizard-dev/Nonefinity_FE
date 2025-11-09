@@ -13,6 +13,10 @@ import {
   type UploadMetadataRequest,
   type UploadUrlRequest,
   type UploadUrlResponse,
+  type GooglePDF,
+  type GoogleSheet,
+  type ListPDFsResponse,
+  type ListSheetsResponse,
 } from "./types";
 
 export class FileService {
@@ -180,11 +184,7 @@ export class FileService {
     expiresIn: number;
   } | null> {
     try {
-      console.log("🔗 Getting upload URL for:", {
-        fileName,
-        fileSize,
-        fileType,
-      });
+
 
       const request: UploadUrlRequest = {
         file_name: fileName,
@@ -204,14 +204,12 @@ export class FileService {
       }
 
       const data = response.getData();
-      console.log("📥 Upload URL response:", data);
 
       if (!data?.upload_url) {
         console.error("❌ No upload URL in response:", data);
         return null;
       }
 
-      console.log("✅ Upload URL obtained:", data.upload_url);
       return {
         uploadUrl: data.upload_url,
         objectName: data.object_name,
@@ -232,10 +230,6 @@ export class FileService {
     onProgress?: (progress: number) => void
   ): Promise<boolean> {
     try {
-      console.log("📤 Uploading to MinIO:", {
-        fileName: file.name,
-        size: file.size,
-      });
 
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
@@ -249,7 +243,6 @@ export class FileService {
 
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            console.log("✅ MinIO upload completed successfully");
             resolve(true);
           } else {
             resolve(false);
@@ -282,12 +275,6 @@ export class FileService {
     token: string
   ): Promise<FileItem | null> {
     try {
-      console.log("💾 Saving file metadata:", {
-        objectName,
-        fileName,
-        fileSize,
-        fileType,
-      });
 
       const request: UploadMetadataRequest = {
         object_name: objectName,
@@ -308,10 +295,8 @@ export class FileService {
       }
 
       const uploaded = response.getData();
-      console.log("📥 Metadata save response:", uploaded);
 
       const fileItem = mapFileItem(uploaded);
-      console.log("✅ File metadata saved:", fileItem);
       return fileItem;
     } catch (error) {
       console.error("❌ Failed to save file metadata:", error);
@@ -328,10 +313,8 @@ export class FileService {
     onProgress?: (progress: number) => void
   ): Promise<FileItem | null> {
     try {
-      console.log("📤 Starting upload process for:", file.name);
 
       // Step 1: Get presigned upload URL
-      console.log("🔗 Step 1: Getting upload URL...");
       onProgress?.(10);
 
       const uploadData = await this.getUploadUrl(
@@ -346,7 +329,6 @@ export class FileService {
       }
 
       // Step 2: Upload file directly to MinIO
-      console.log("☁️ Step 2: Uploading to MinIO...");
       onProgress?.(30);
 
       const uploadSuccess = await this.uploadToMinIO(
@@ -366,7 +348,6 @@ export class FileService {
       onProgress?.(70);
 
       // Step 3: Save metadata to database
-      console.log("💾 Step 3: Saving metadata...");
       const fileItem = await this.saveFileMetadata(
         uploadData.objectName,
         file.name,
@@ -376,7 +357,6 @@ export class FileService {
       );
 
       onProgress?.(100);
-      console.log("✅ Upload completed successfully");
       return fileItem;
     } catch (error) {
       console.error("❌ Upload failed:", error);
@@ -389,9 +369,6 @@ export class FileService {
    */
   static async deleteFile(fileId: string, token: string): Promise<boolean> {
     try {
-      console.log("🗑️ Deleting file:", fileId);
-      console.log("🔗 Delete endpoint:", ENDPOINTS.FILES.DELETE(fileId));
-      console.log("🔑 Token available:", !!token);
 
       const response = await httpClient.delete<boolean>(
         ENDPOINTS.FILES.DELETE(fileId),
@@ -399,9 +376,6 @@ export class FileService {
         token
       );
 
-      console.log("📊 Response status:", response.statusCode);
-      console.log("📊 Response success:", response.isSuccess);
-      console.log("📊 Response data:", response.getData());
 
       if (!response.isSuccess) {
         console.error("❌ Failed to delete file:", response.message);
@@ -409,14 +383,9 @@ export class FileService {
       }
 
       const result = response.getData();
-      console.log("📥 Delete response:", result);
-      console.log("✅ File deleted successfully:", fileId);
 
       // If response is successful (status 200) and no data returned, consider it success
       if (result === undefined || result === null) {
-        console.log(
-          "📥 No data returned, but status is 200 - considering success"
-        );
         return true;
       }
 
@@ -445,15 +414,12 @@ export class FileService {
     options?: BatchDeleteOptions
   ): Promise<boolean> {
     try {
-      console.log("🗑️ Batch deleting files:", fileIds);
-      console.log("🔗 Batch delete endpoint:", ENDPOINTS.FILES.BATCH_DELETE);
 
       const batchSize = options?.batchSize || 10;
 
       if (fileIds.length <= batchSize) {
         // Single batch delete
         const request: BatchDeleteRequest = { file_ids: fileIds };
-        console.log("📤 Sending batch delete request:", request);
 
         const response = await httpClient.post<BatchDeleteResponse>(
           ENDPOINTS.FILES.BATCH_DELETE,
@@ -467,13 +433,9 @@ export class FileService {
         }
 
         const data = response.getData();
-        console.log("📥 Batch delete response:", data);
 
         const successIds = data.successful || [];
         const failedIds = data.failed?.map((f) => f.file_id) || [];
-
-        console.log("✅ Successful deletions:", successIds);
-        console.log("❌ Failed deletions:", failedIds);
 
         if (successIds.length > 0) {
           options?.onSuccess?.(successIds);
@@ -483,7 +445,6 @@ export class FileService {
         }
 
         const result = successIds.length > 0;
-        console.log("🎯 Batch delete result:", result);
         return result;
       } else {
         // Chunked delete
@@ -534,7 +495,6 @@ export class FileService {
     token: string
   ): Promise<FileItem | null> {
     try {
-      console.log("📝 Renaming file:", { fileId, newName });
 
       const response = await httpClient.put<BackendFileItem>(
         `${ENDPOINTS.FILES.RENAME(fileId)}?new_name=${encodeURIComponent(
@@ -550,7 +510,6 @@ export class FileService {
       }
 
       const updatedFile = response.getData();
-      console.log("✅ File renamed successfully:", updatedFile);
       return mapFileItem(updatedFile);
     } catch (error) {
       console.error("Failed to rename file:", error);
@@ -566,7 +525,6 @@ export class FileService {
     token: string
   ): Promise<string | null> {
     try {
-      console.log("🔗 Getting download URL for file:", fileId);
 
       const response = await httpClient.get<string>(
         ENDPOINTS.FILES.DOWNLOAD(fileId),
@@ -580,7 +538,6 @@ export class FileService {
       }
 
       const downloadUrl = response.getData();
-      console.log("📥 Download URL received:", downloadUrl);
 
       if (typeof downloadUrl === "string" && downloadUrl.startsWith("http")) {
         return downloadUrl;
@@ -618,7 +575,6 @@ export class FileService {
       anchor.click();
       document.body.removeChild(anchor);
 
-      console.log("✅ File download initiated");
       return true;
     } catch (error) {
       console.error("❌ Failed to download file:", error);
@@ -744,6 +700,159 @@ export class FileService {
     } catch (error) {
       console.error("Failed to import sheet from URL:", error);
       throw error;
+    }
+  }
+}
+
+// Google Drive Services
+export class DriveService {
+  /**
+   * List Google Sheets with pagination support
+   */
+  static async listSheets(
+    token: string,
+    pageToken?: string,
+    pageSize: number = 50
+  ): Promise<ListSheetsResponse> {
+    try {
+      const params: Record<string, unknown> = {
+        page_size: pageSize,
+      };
+      if (pageToken) {
+        params.page_token = pageToken;
+      }
+
+      const response = await httpClient.get<ListSheetsResponse>(
+        ENDPOINTS.GOOGLE.LIST_SHEETS,
+        params,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to fetch sheets:", response.message);
+        return {
+          files: [],
+          next_page_token: null,
+          has_more: false,
+        };
+      }
+
+      const data = response.getData();
+      return {
+        files: data.files || [],
+        next_page_token: data.next_page_token || null,
+        has_more: data.has_more || false,
+      };
+    } catch (error) {
+      console.error("Failed to fetch sheets:", error);
+      return {
+        files: [],
+        next_page_token: null,
+        has_more: false,
+      };
+    }
+  }
+
+  /**
+   * Search Google Sheets by keyword
+   */
+  static async searchSheets(
+    keyword: string,
+    token: string
+  ): Promise<GoogleSheet[]> {
+    try {
+      const response = await httpClient.get<GoogleSheet[]>(
+        ENDPOINTS.GOOGLE.SEARCH_SHEETS,
+        { keyword },
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to search sheets:", response.message);
+        return [];
+      }
+
+      const data = response.getData();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("Failed to search sheets:", error);
+      return [];
+    }
+  }
+}
+
+export class PDFService {
+  /**
+   * List PDF files with pagination support
+   */
+  static async listPDFs(
+    token: string,
+    pageToken?: string,
+    pageSize: number = 50
+  ): Promise<ListPDFsResponse> {
+    try {
+      const params: Record<string, unknown> = {
+        page_size: pageSize,
+      };
+      if (pageToken) {
+        params.page_token = pageToken;
+      }
+
+      const response = await httpClient.get<ListPDFsResponse>(
+        ENDPOINTS.GOOGLE.LIST_PDFS,
+        params,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to fetch PDFs:", response.message);
+        return {
+          files: [],
+          next_page_token: null,
+          has_more: false,
+        };
+      }
+
+      const data = response.getData();
+      return {
+        files: data.files || [],
+        next_page_token: data.next_page_token || null,
+        has_more: data.has_more || false,
+      };
+    } catch (error) {
+      console.error("Failed to fetch PDFs:", error);
+      return {
+        files: [],
+        next_page_token: null,
+        has_more: false,
+      };
+    }
+  }
+
+  /**
+   * Search PDF files by keyword
+   */
+  static async searchPDFs(
+    keyword: string,
+    token: string
+  ): Promise<GooglePDF[]> {
+    try {
+      const response = await httpClient.get<GooglePDF[]>(
+        ENDPOINTS.GOOGLE.SEARCH_PDFS,
+        { keyword },
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to search PDFs:", response.message);
+        return [];
+      }
+
+      const data = response.getData();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error("Failed to search PDFs:", error);
+      return [];
     }
   }
 }

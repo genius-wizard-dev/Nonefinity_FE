@@ -1,9 +1,9 @@
-import { Card, Tabs, Alert, Typography, Space } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Copy, Info, AlertTriangle } from "lucide-react";
 import { useState } from "react";
-
-const { Paragraph, Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 interface SDKConfigGuideProps {
   apiKey?: string;
@@ -84,18 +84,18 @@ function ChatApp() {
 
   const sendMessage = async (message) => {
     if (!sessionId) return;
-    
+
     setMessages(prev => [...prev, { type: "user", text: message }]);
-    
+
     let aiResponse = "";
     await client.streamMessage(sessionId, message, (event) => {
       if (event.event === "ai_result") {
         aiResponse += event.data.content;
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { 
-            type: "ai", 
-            text: aiResponse 
+          updated[updated.length - 1] = {
+            type: "ai",
+            text: aiResponse
           };
           return updated;
         });
@@ -119,10 +119,10 @@ function ChatApp() {
 </head>
 <body>
   <div id="chat"></div>
-  
+
   <script type="module">
     import { NonefinityClient } from 'https://unpkg.com/@nonefinity/ai-sdk/dist/index.mjs';
-    
+
     const client = new NonefinityClient({
       apiUrl: '${apiUrlValue}',
       apiKey: '${apiKeyValue}'
@@ -147,119 +147,117 @@ const client = new NonefinityClient({
   };
 
   const CodeBlock = ({ code, index }: { code: string; index: number }) => (
-    <div style={{ position: "relative" }}>
-      <pre
-        style={{
-          background: "#1e1e1e",
-          color: "#d4d4d4",
-          padding: 16,
-          borderRadius: 8,
-          overflow: "auto",
-          fontSize: 13,
-          lineHeight: 1.6,
-          fontFamily: "'Fira Code', 'Consolas', monospace",
-        }}
-      >
+    <div className="relative">
+      <pre className="bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-lg overflow-auto text-sm leading-relaxed font-mono">
         <code>{code}</code>
       </pre>
-      <button
+      <Button
         onClick={() => handleCopy(code, index)}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          background: copiedIndex === index ? "#52c41a" : "#434343",
-          color: "white",
-          border: "none",
-          padding: "6px 12px",
-          borderRadius: 4,
-          cursor: "pointer",
-          fontSize: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
+        variant="outline"
+        size="sm"
+        className="absolute top-3 right-3"
       >
-        <CopyOutlined />
+        <Copy className="h-4 w-4 mr-2" />
         {copiedIndex === index ? "Copied!" : "Copy"}
-      </button>
+      </Button>
     </div>
   );
 
   return (
-    <Card title="SDK Integration Guide" style={{ marginTop: 24 }}>
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <Alert
-          message="Quick Start"
-          description="Follow these steps to integrate the Nonefinity AI SDK into your application."
-          type="info"
-          showIcon
-        />
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>SDK Integration Guide</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Quick Start</AlertTitle>
+          <AlertDescription>
+            Follow these steps to integrate the Nonefinity AI SDK into your application.
+          </AlertDescription>
+        </Alert>
 
-        <div>
-          <Title level={4}>1. Installation</Title>
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold">1. Installation</h4>
           <CodeBlock code={examples.install} index={0} />
         </div>
 
-        <div>
-          <Title level={4}>2. Basic Usage</Title>
-          <Tabs defaultActiveKey="1">
-            <TabPane tab="TypeScript/JavaScript" key="1">
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold">2. Basic Usage</h4>
+          <Tabs defaultValue="1">
+            <TabsList>
+              <TabsTrigger value="1">TypeScript/JavaScript</TabsTrigger>
+              <TabsTrigger value="2">React</TabsTrigger>
+              <TabsTrigger value="3">Vanilla JS</TabsTrigger>
+            </TabsList>
+            <TabsContent value="1">
               <CodeBlock code={examples.basicUsage} index={1} />
-            </TabPane>
-            <TabPane tab="React" key="2">
+            </TabsContent>
+            <TabsContent value="2">
               <CodeBlock code={examples.react} index={2} />
-            </TabPane>
-            <TabPane tab="Vanilla JS" key="3">
+            </TabsContent>
+            <TabsContent value="3">
               <CodeBlock code={examples.vanillaJS} index={3} />
-            </TabPane>
+            </TabsContent>
           </Tabs>
         </div>
 
-        <div>
-          <Title level={4}>3. Environment Variables (Recommended)</Title>
-          <Paragraph>
-            <Text type="secondary">
-              Store your API key securely using environment variables:
-            </Text>
-          </Paragraph>
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold">3. Environment Variables (Recommended)</h4>
+          <p className="text-sm text-muted-foreground">
+            Store your API key securely using environment variables:
+          </p>
           <CodeBlock code={examples.env} index={4} />
-          <div style={{ marginTop: 12 }}>
-            <Text strong>Usage:</Text>
+          <div className="mt-3">
+            <p className="text-sm font-semibold mb-2">Usage:</p>
             <CodeBlock code={examples.envUsage} index={5} />
           </div>
         </div>
 
-        <Alert
-          message="Security Best Practices"
-          description={
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+        <Alert variant="default">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Security Best Practices</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc list-inside space-y-1 mt-2">
               <li>Never commit API keys to version control</li>
               <li>Use environment variables for API keys</li>
               <li>Rotate keys regularly</li>
               <li>Use different keys for development and production</li>
               <li>Revoke unused or compromised keys immediately</li>
             </ul>
-          }
-          type="warning"
-          showIcon
-        />
+          </AlertDescription>
+        </Alert>
 
-        <div>
-          <Title level={4}>Need More Help?</Title>
-          <Space direction="vertical">
-            <a href="https://github.com/genius-wizard-dev/Nonefinity_Agents" target="_blank" rel="noopener noreferrer">
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold">Need More Help?</h4>
+          <div className="flex flex-col gap-2">
+            <a
+              href="https://github.com/genius-wizard-dev/Nonefinity_Agents"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
               📚 Full Documentation
             </a>
-            <a href="https://github.com/genius-wizard-dev/Nonefinity_Agents/tree/main/Nonefinity_SDK/examples" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/genius-wizard-dev/Nonefinity_Agents/tree/main/Nonefinity_SDK/examples"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
               💡 Code Examples
             </a>
-            <a href="https://github.com/genius-wizard-dev/Nonefinity_Agents/issues" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/genius-wizard-dev/Nonefinity_Agents/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
               🐛 Report Issues
             </a>
-          </Space>
+          </div>
         </div>
-      </Space>
+      </CardContent>
     </Card>
   );
 }

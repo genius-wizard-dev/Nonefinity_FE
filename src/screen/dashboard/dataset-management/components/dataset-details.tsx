@@ -202,7 +202,6 @@ export function DatasetDetails({
           token
         );
 
-        console.log("🔧 Component: Update schema success:", success);
 
         if (success) {
           // Get updated dataset from store after successful update

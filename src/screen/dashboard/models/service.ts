@@ -21,12 +21,6 @@ export class ModelService {
     token?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🤖 Creating model:", {
-        name: data.name,
-        type: data.type,
-        credential_id: data.credential_id,
-      });
-
       const response = await httpClient.post<{
         success: boolean;
         message: string;
@@ -39,9 +33,6 @@ export class ModelService {
           error: response.message || "Failed to create model",
         };
       }
-
-      const responseData = response.getData();
-      console.log("📥 Create model response:", responseData);
 
       return { success: true };
     } catch (error) {
@@ -76,7 +67,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Models response:", data);
 
       return data;
     } catch (error) {
@@ -90,8 +80,6 @@ export class ModelService {
    */
   static async getModelStats(token?: string): Promise<ModelStats | null> {
     try {
-      console.log("📊 Fetching model stats");
-
       const response = await httpClient.get<ModelStats>(
         ENDPOINTS.MODELS.STATS,
         undefined,
@@ -104,7 +92,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Model stats response:", data);
 
       return data;
     } catch (error) {
@@ -121,8 +108,6 @@ export class ModelService {
     token?: string
   ): Promise<Model | null> {
     try {
-      console.log("🤖 Fetching default model:", { modelType });
-
       const response = await httpClient.get<Model>(
         ENDPOINTS.MODELS.GET_DEFAULT(modelType),
         undefined,
@@ -135,7 +120,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Default model response:", data);
 
       return data;
     } catch (error) {
@@ -152,8 +136,6 @@ export class ModelService {
     token?: string
   ): Promise<Model | null> {
     try {
-      console.log("🤖 Fetching model:", { modelId });
-
       const response = await httpClient.get<Model>(
         ENDPOINTS.MODELS.GET(modelId),
         undefined,
@@ -166,7 +148,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Model response:", data);
 
       return data;
     } catch (error) {
@@ -184,8 +165,6 @@ export class ModelService {
     token?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🤖 Updating model:", { modelId, data });
-
       const body: Record<string, any> = {};
       if (data.name !== undefined) body.name = data.name;
       if (data.description !== undefined) body.description = data.description;
@@ -204,9 +183,6 @@ export class ModelService {
         };
       }
 
-      const responseData = response.getData();
-      console.log("📥 Update model response:", responseData);
-
       return { success: true };
     } catch (error) {
       console.error("❌ Model update error:", error);
@@ -222,8 +198,6 @@ export class ModelService {
     token?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🤖 Deleting model:", { modelId });
-
       const response = await httpClient.delete<{
         success: boolean;
         message: string;
@@ -236,9 +210,6 @@ export class ModelService {
           error: response.message || "Failed to delete model",
         };
       }
-
-      const data = response.getData();
-      console.log("📥 Delete model response:", data);
 
       return { success: true };
     } catch (error) {
@@ -255,8 +226,6 @@ export class ModelService {
     token?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🤖 Setting default model:", { modelId });
-
       const response = await httpClient.post<{
         success: boolean;
         message: string;
@@ -269,9 +238,6 @@ export class ModelService {
           error: response.message || "Failed to set default model",
         };
       }
-
-      const responseData = response.getData();
-      console.log("📥 Set default model response:", responseData);
 
       return { success: true };
     } catch (error) {
@@ -288,8 +254,6 @@ export class ModelService {
     token?: string
   ): Promise<ModelListResponse | null> {
     try {
-      console.log("🤖 Fetching models by credential:", { credentialId });
-
       const response = await httpClient.get<ModelListResponse>(
         ENDPOINTS.MODELS.BY_CREDENTIAL(credentialId),
         undefined,
@@ -305,7 +269,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Models by credential response:", data);
 
       return data;
     } catch (error) {
@@ -322,8 +285,6 @@ export class ModelService {
     token?: string
   ): Promise<CredentialListResponse | null> {
     try {
-      console.log("🤖 Fetching models by task type:", { taskType });
-
       const response = await httpClient.get<CredentialListResponse>(
         ENDPOINTS.CREDENTIALS.LIST,
         { task_type: taskType },
@@ -339,7 +300,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Models by task type response:", data);
 
       return data;
     } catch (error) {
@@ -353,10 +313,6 @@ export class ModelService {
     token?: string
   ): Promise<ModelCredential[] | null> {
     try {
-      console.log("🤖 Fetching model credentials for credential:", {
-        credential_id,
-      });
-
       const response = await httpClient.get<ModelCredential[]>(
         ENDPOINTS.CREDENTIALS.MODEL_CREDENTIAL(credential_id),
         undefined,
@@ -369,7 +325,6 @@ export class ModelService {
       }
 
       const data = response.getData();
-      console.log("📥 Model credentials response:", data);
 
       return data;
     } catch (error) {

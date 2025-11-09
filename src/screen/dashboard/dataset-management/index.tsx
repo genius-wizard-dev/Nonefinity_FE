@@ -33,11 +33,8 @@ export default function DatasetManage() {
       try {
         const token = await getToken();
         if (token) {
-          console.log("📊 Initializing dataset manager with token");
           await fetchDatasets(token);
-        } else {
-          console.log("📊 No token available, using mock data");
-        }
+        } else throw new Error("No token available");
       } catch (error) {
         console.error("❌ Failed to initialize dataset manager:", error);
       }
@@ -54,19 +51,10 @@ export default function DatasetManage() {
   }, [selectedDataset, activeTab, setActiveTab]);
 
   const handleExecuteQuery = async (query: string) => {
-    try {
-      console.log("🔍 Executing query from UI:", query);
-      const token = await getToken();
-      if (token) {
-        const result = await executeQuery(query, token);
-        console.log("📊 Query result received:", result);
-        console.log("📊 Current queryResults state:", queryResults);
-      } else {
-        console.warn("No token available for query execution");
-      }
-    } catch (error) {
-      console.error("Query execution error:", error);
-    }
+    const token = await getToken();
+    if (token) {
+      await executeQuery(query, token);
+    } else throw new Error("No token available");
   };
 
   return (

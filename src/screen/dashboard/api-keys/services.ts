@@ -68,7 +68,7 @@ export class APIKeyService {
       const response = await httpClient.get<APIKeyListResponse>(
         ENDPOINTS.API_KEYS.LIST,
         params,
-        token
+        token || undefined
       );
 
       if (!response.isSuccess) {

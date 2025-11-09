@@ -127,6 +127,7 @@ export const ENDPOINTS = {
       CREATE: "/chats/sessions",
       GET: (id: string) => `/chats/sessions/${id}`,
       DELETE: (id: string) => `/chats/sessions/${id}`,
+      DELETE_MULTIPLE: "/chats/sessions",
       CLEAR_MESSAGES: (id: string) => `/chats/sessions/${id}/messages`,
       STREAM: (id: string) => `/chats/sessions/${id}/stream`,
       SAVE_CONVERSATION: (id: string) =>
@@ -164,6 +165,25 @@ export const ENDPOINTS = {
     SEARCH_SHEETS: "/google/search-sheets",
     LIST_PDFS: "/google/list-pdfs",
     SEARCH_PDFS: "/google/search-pdfs",
+  },
+
+  // Integration endpoints
+  INTEGRATIONS: {
+    LIST: "/intergrates",
+    CONNECT: "/intergrates/connect",
+    GET_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
+    ADD_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
+    GET_CONFIG: "/intergrates/config", // Get list of integrations with tools configured
+  },
+
+  // MCP endpoints
+  MCP: {
+    LIST: "/mcp",
+    CREATE: "/mcp",
+    GET: (mcpId: string) => `/mcp/${mcpId}`,
+    GET_TOOLS: (mcpId: string) => `/mcp/${mcpId}/tools`,
+    SYNC: (mcpId: string) => `/mcp/${mcpId}/sync`,
+    DELETE: (mcpId: string) => `/mcp/${mcpId}`,
   },
 } as const;
 

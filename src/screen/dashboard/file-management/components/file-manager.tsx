@@ -28,6 +28,7 @@ export default function FileManager() {
       name: file.name,
       type: file.type.split("/")[0],
       size: file.size,
+      sourceFile: "upload",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       modified: new Date(),
@@ -119,6 +120,7 @@ export default function FileManager() {
       <FileStats files={files} selectedCount={selectedFiles.length} />
 
       <FileToolbar
+        onDriveImportClick={() => {}}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         searchQuery={searchQuery}
