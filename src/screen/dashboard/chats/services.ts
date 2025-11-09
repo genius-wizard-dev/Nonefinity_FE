@@ -7,6 +7,7 @@ import type {
   ChatConfigUpdate,
   ChatSession,
   ChatSessionCreate,
+  ChatSessionDeleteResponse,
   ChatSessionListResponse,
   IntegrationConfig,
 } from "./types";
@@ -198,6 +199,7 @@ export class ChatService {
       return false;
     }
   }
+
 
   static async deleteSessions(sessionIds: string[]): Promise<number> {
     try {

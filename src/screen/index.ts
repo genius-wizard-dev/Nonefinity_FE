@@ -1,3 +1,4 @@
+import APIKeys from "./dashboard/api-keys";
 import Chats from "./dashboard/chats";
 import Credentials from "./dashboard/credentials";
 import DatasetManagement from "./dashboard/dataset-management";
@@ -12,6 +13,7 @@ import Models from "./dashboard/models";
 import Home from "./home";
 
 export {
+  APIKeys,
   Chats,
   Credentials,
   DatasetManagement,

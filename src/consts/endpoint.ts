@@ -149,6 +149,16 @@ export const ENDPOINTS = {
     SAVE_CONVERSATION: (id: string) => `/chats/${id}/save-conversation`,
   },
 
+  // API Key endpoints
+  API_KEYS: {
+    LIST: "/api-keys",
+    CREATE: "/api-keys",
+    GET: (id: string) => `/api-keys/${id}`,
+    UPDATE: (id: string) => `/api-keys/${id}`,
+    DELETE: (id: string) => `/api-keys/${id}`,
+    REVOKE: (id: string) => `/api-keys/${id}/revoke`,
+  },
+
   // Google Drive endpoints
   GOOGLE: {
     LIST_SHEETS: "/google/list-sheets",

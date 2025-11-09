@@ -11,6 +11,7 @@ import SignUpPage from "./screen/auth/SignUp";
 import { Layout } from "./screen/dashboard/index.tsx";
 import LandingPage from "./screen/home/index.tsx";
 import {
+  APIKeys,
   Chats,
   Credentials,
   DatasetManagement,
@@ -75,6 +76,7 @@ function App() {
               element={<KnowledgeStoreDetail />}
             />
             <Route path="/dashboard/credentials" element={<Credentials />} />
+            <Route path="/dashboard/api-keys" element={<APIKeys />} />
             <Route path="/dashboard/embeddings" element={<Embedding />} />
             <Route path="/dashboard/models" element={<Models />} />
             <Route path="/dashboard/integrate" element={<Integrate />} />

@@ -117,6 +117,11 @@ export interface ChatSessionListResponse {
   limit: number;
 }
 
+export interface ChatSessionDeleteResponse {
+  deleted_count: number;
+  not_found: string[];
+}
+
 // Chat Message Types
 export interface ChatMessage {
   id: string;
