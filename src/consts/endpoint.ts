@@ -156,6 +156,8 @@ export const ENDPOINTS = {
     UPDATE: (id: string) => `/api-keys/${id}`,
     DELETE: (id: string) => `/api-keys/${id}`,
     REVOKE: (id: string) => `/api-keys/${id}/revoke`,
+  },
+
   // Google Drive endpoints
   GOOGLE: {
     LIST_SHEETS: "/google/list-sheets",
