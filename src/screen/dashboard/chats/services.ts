@@ -7,6 +7,7 @@ import type {
   ChatConfigUpdate,
   ChatSession,
   ChatSessionCreate,
+  ChatSessionDeleteResponse,
   ChatSessionListResponse,
 } from "./types";
 
@@ -195,6 +196,25 @@ export class ChatService {
     } catch (error) {
       console.error("❌ Failed to delete chat session:", error);
       return false;
+    }
+  }
+
+  static async deleteSessions(sessionIds: string[]): Promise<ChatSessionDeleteResponse | null> {
+    try {
+      const response = await httpClient.delete(
+        ENDPOINTS.CHATS.SESSIONS.LIST,
+        { session_ids: sessionIds }
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to delete chat sessions:", response.message);
+        return null;
+      }
+
+      return response.getData() as ChatSessionDeleteResponse;
+    } catch (error) {
+      console.error("❌ Failed to delete chat sessions:", error);
+      return null;
     }
   }
 

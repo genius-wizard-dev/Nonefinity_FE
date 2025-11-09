@@ -145,6 +145,16 @@ export const ENDPOINTS = {
     APPROVE: (id: string) => `/chats/${id}/approve`,
     SAVE_CONVERSATION: (id: string) => `/chats/${id}/save-conversation`,
   },
+
+  // API Key endpoints
+  API_KEYS: {
+    LIST: "/api-keys",
+    CREATE: "/api-keys",
+    GET: (id: string) => `/api-keys/${id}`,
+    UPDATE: (id: string) => `/api-keys/${id}`,
+    DELETE: (id: string) => `/api-keys/${id}`,
+    REVOKE: (id: string) => `/api-keys/${id}/revoke`,
+  },
 } as const;
 
 // Helper function to build full endpoint URL

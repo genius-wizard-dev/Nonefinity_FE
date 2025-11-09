@@ -11,6 +11,7 @@ import {
   Database,
   FileText,
   Key,
+  KeyRound,
   LayoutDashboard,
   Menu,
   MessageSquare,
@@ -85,6 +86,11 @@ export function Layout() {
           icon: Key,
         },
         {
+          name: "API Keys",
+          href: "/dashboard/api-keys",
+          icon: KeyRound,
+        },
+        {
           name: "Embedding",
           href: "/dashboard/embeddings",
           icon: Zap,
@@ -145,7 +151,13 @@ export function Layout() {
 
         <SignedIn>
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+          <nav 
+            className="flex-1 p-4 space-y-3 overflow-y-auto"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(128, 128, 128, 0.3) transparent'
+            }}
+          >
             {navigationGroups.map((group, groupIndex) => (
               <div key={groupIndex} className="space-y-1">
                 {group.label && sidebarOpen && (
