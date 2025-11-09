@@ -8,6 +8,7 @@ import type {
   ChatSession,
   ChatSessionCreate,
   ChatSessionListResponse,
+  IntegrationConfig,
 } from "./types";
 
 export class ChatService {
@@ -463,6 +464,25 @@ export class ChatService {
     } catch (error) {
       console.error("❌ Failed to save conversation:", error);
       return false;
+    }
+  }
+
+  // Integration Config Methods
+  static async getIntegrationConfigs(): Promise<IntegrationConfig[] | null> {
+    try {
+      const response = await httpClient.get<IntegrationConfig[]>(
+        ENDPOINTS.INTEGRATIONS.GET_CONFIG
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch integration configs:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch integration configs:", error);
+      return null;
     }
   }
 }

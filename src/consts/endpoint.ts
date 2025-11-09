@@ -163,6 +163,17 @@ export const ENDPOINTS = {
     CONNECT: "/intergrates/connect",
     GET_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
     ADD_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
+    GET_CONFIG: "/intergrates/config", // Get list of integrations with tools configured
+  },
+
+  // MCP endpoints
+  MCP: {
+    LIST: "/mcp",
+    CREATE: "/mcp",
+    GET: (mcpId: string) => `/mcp/${mcpId}`,
+    GET_TOOLS: (mcpId: string) => `/mcp/${mcpId}/tools`,
+    SYNC: (mcpId: string) => `/mcp/${mcpId}/sync`,
+    DELETE: (mcpId: string) => `/mcp/${mcpId}`,
   },
 } as const;
 

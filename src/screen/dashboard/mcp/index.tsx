@@ -1,169 +1,236 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Server, Plus, RefreshCw, Trash2, Edit, Play, Square } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-// Mock API service
-const MCPService = {
-  async getServers() {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return {
-      servers: [
-        {
-          id: "1",
-          name: "GitHub MCP Server",
-          type: "github",
-          status: "running",
-          endpoint: "https://mcp.example.com/github",
-          description: "Model Context Protocol server for GitHub integration",
-          created_at: "2024-01-15T10:00:00Z",
-          updated_at: "2024-01-20T14:30:00Z",
-        },
-        {
-          id: "2",
-          name: "Slack MCP Server",
-          type: "slack",
-          status: "stopped",
-          endpoint: "https://mcp.example.com/slack",
-          description: "MCP server for Slack workspace communication",
-          created_at: "2024-01-10T09:00:00Z",
-          updated_at: "2024-01-18T11:20:00Z",
-        },
-        {
-          id: "3",
-          name: "Database MCP Server",
-          type: "database",
-          status: "running",
-          endpoint: "https://mcp.example.com/db",
-          description: "Database connection via MCP protocol",
-          created_at: "2024-01-05T08:00:00Z",
-          updated_at: "2024-01-12T16:45:00Z",
-        },
-      ],
-    };
-  },
-
-  async createServer(data: any) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return { success: true, server: { id: Date.now().toString(), ...data } };
-  },
-
-  async updateServer(id: string, data: any) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return { success: true };
-  },
-
-  async deleteServer(id: string) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return { success: true };
-  },
-
-  async toggleServerStatus(id: string, status: string) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return { success: true };
-  },
-};
-
-interface MCPServer {
-  id: string;
-  name: string;
-  type: string;
-  status: "running" | "stopped";
-  endpoint: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Button } from "@/components/ui/button";
+import { Server, Plus, RefreshCw } from "lucide-react";
+import {
+  MCPFormDialog,
+  MCPList,
+  MCPToolsSheet,
+} from "./components";
+import { MCPService, type MCPConfig, type MCPDetail, type MCPListItem, type MCPTool } from "./mcp-service";
 
 export default function MCP() {
-  const [servers, setServers] = useState<MCPServer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const { getToken } = useAuth();
+  const [mcps, setMcps] = useState<MCPListItem[]>([]);
+  const [isLoadingMcps, setIsLoadingMcps] = useState(false);
+  const [isMCPFormOpen, setIsMCPFormOpen] = useState(false);
+  const [isSubmittingMCP, setIsSubmittingMCP] = useState(false);
+  const [selectedMCP, setSelectedMCP] = useState<MCPListItem | null>(null);
+  const [mcpTools, setMcpTools] = useState<MCPTool[]>([]);
+  const [isLoadingMcpTools, setIsLoadingMcpTools] = useState(false);
+  const [isMcpToolsSheetOpen, setIsMcpToolsSheetOpen] = useState(false);
+  const [mcpSearchQuery, setMcpSearchQuery] = useState("");
+  const [deletingMCPId, setDeletingMCPId] = useState<string | null>(null);
+  const [syncingMCPId, setSyncingMCPId] = useState<string | null>(null);
+  const [editingMCP, setEditingMCP] = useState<MCPDetail | null>(null);
 
-  const fetchServers = async () => {
-    setLoading(true);
-    try {
-      const response = await MCPService.getServers();
-      setServers(response.servers);
-    } catch (error) {
-      toast.error("Failed to fetch MCP servers", {
-        description: "Could not load MCP servers. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load MCPs on mount
   useEffect(() => {
-    fetchServers();
-  }, []);
+    const loadMcps = async () => {
+      const token = await getToken();
+      if (token) {
+        await fetchMcps(token);
+      }
+    };
+    loadMcps();
+  }, [getToken]);
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
+  const fetchMcps = async (token: string) => {
+    setIsLoadingMcps(true);
     try {
-      await MCPService.deleteServer(id);
-      setServers(servers.filter((item) => item.id !== id));
-      toast.success("MCP server deleted", {
-        description: "The MCP server has been removed.",
-      });
-    } catch (error) {
-      toast.error("Failed to delete MCP server", {
-        description: "Could not delete the server. Please try again.",
+      const data = await MCPService.getMCPs(token);
+      if (data) {
+        setMcps(data);
+      }
+    } catch (error: any) {
+      toast.error("Failed to load MCPs", {
+        description: error?.message || "An error occurred while loading MCPs.",
       });
     } finally {
-      setDeletingId(null);
+      setIsLoadingMcps(false);
     }
   };
 
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
-    setTogglingId(id);
-    try {
-      const newStatus = currentStatus === "running" ? "stopped" : "running";
-      await MCPService.toggleServerStatus(id, newStatus);
-      setServers(
-        servers.map((item) =>
-          item.id === id
-            ? { ...item, status: newStatus as "running" | "stopped" }
-            : item
-        )
-      );
-      toast.success("Server status updated", {
-        description: `MCP server is now ${newStatus}.`,
-      });
-    } catch (error) {
-      toast.error("Failed to update server status", {
-        description: "Could not update the status. Please try again.",
-      });
-    } finally {
-      setTogglingId(null);
+  const handleRefresh = async () => {
+    const token = await getToken();
+    if (token) {
+      await fetchMcps(token);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const handleCreateMCP = async (config: MCPConfig) => {
+    setIsSubmittingMCP(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required", {
+          description: "Please sign in to create MCP configuration.",
+        });
+        return;
+      }
+
+      const mcp = await MCPService.createMCP(config, token);
+      if (mcp) {
+        // Extract server name from config
+        const serverName = Object.keys(config.config)[0] || "Unknown";
+        const action = editingMCP ? "updated" : "created";
+        toast.success(`MCP configuration ${action} successfully`, {
+          description: `${serverName} has been ${action} and validated.`,
+        });
+        setIsMCPFormOpen(false);
+        setEditingMCP(null);
+        await fetchMcps(token);
+      } else {
+        toast.error("Failed to save MCP configuration", {
+          description: "The configuration could not be validated or saved.",
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to save MCP configuration", {
+        description: error?.message || "An error occurred while saving the configuration.",
+      });
+    } finally {
+      setIsSubmittingMCP(false);
+    }
+  };
+
+  const handleEditMCP = async (mcp: MCPListItem) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required", {
+          description: "Please sign in to edit MCP configuration.",
+        });
+        return;
+      }
+
+      // Fetch full MCP detail
+      const mcpDetail = await MCPService.getMCP(mcp.id, token);
+      if (mcpDetail) {
+        setEditingMCP(mcpDetail);
+        setIsMCPFormOpen(true);
+      } else {
+        toast.error("Failed to load MCP configuration", {
+          description: "An error occurred while loading the configuration.",
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to load MCP configuration", {
+        description: error?.message || "An error occurred while loading the configuration.",
+      });
+    }
+  };
+
+  const handleViewMcpTools = async (mcp: MCPListItem) => {
+    setSelectedMCP(mcp);
+    setIsMcpToolsSheetOpen(true);
+    setMcpSearchQuery("");
+    setIsLoadingMcpTools(true);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required", {
+          description: "Please sign in to view tools.",
+        });
+        setIsMcpToolsSheetOpen(false);
+        setSelectedMCP(null);
+        return;
+      }
+
+      const tools = await MCPService.getMCPTools(mcp.id, token);
+      if (tools) {
+        setMcpTools(tools);
+      } else {
+        toast.error("Failed to load tools", {
+          description: "An error occurred while loading tools.",
+        });
+        setIsMcpToolsSheetOpen(false);
+        setSelectedMCP(null);
+      }
+    } catch (error: any) {
+      toast.error("Failed to load tools", {
+        description: error?.message || "An error occurred while loading tools.",
+      });
+      setIsMcpToolsSheetOpen(false);
+      setSelectedMCP(null);
+    } finally {
+      setIsLoadingMcpTools(false);
+    }
+  };
+
+  const handleSyncMCP = async (mcp: MCPListItem) => {
+    setSyncingMCPId(mcp.id);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required", {
+          description: "Please sign in to sync MCP tools.",
+        });
+        return;
+      }
+
+      const updatedMCP = await MCPService.syncMCPTools(mcp.id, token);
+      if (updatedMCP) {
+        toast.success("MCP tools synced successfully", {
+          description: `${mcp.name} tools have been updated from the MCP server.`,
+        });
+        await fetchMcps(token);
+        // If tools sheet is open for this MCP, refresh tools
+        if (selectedMCP?.id === mcp.id && isMcpToolsSheetOpen) {
+          const tools = await MCPService.getMCPTools(mcp.id, token);
+          if (tools) {
+            setMcpTools(tools);
+          }
+        }
+      } else {
+        toast.error("Failed to sync MCP tools", {
+          description: "An error occurred while syncing tools from the MCP server.",
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to sync MCP tools", {
+        description: error?.message || "An error occurred while syncing tools.",
+      });
+    } finally {
+      setSyncingMCPId(null);
+    }
+  };
+
+  const handleDeleteMCP = async (mcp: MCPListItem) => {
+    if (!confirm(`Are you sure you want to delete "${mcp.name}"?`)) {
+      return;
+    }
+
+    setDeletingMCPId(mcp.id);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required", {
+          description: "Please sign in to delete MCP configuration.",
+        });
+        return;
+      }
+
+      const success = await MCPService.deleteMCP(mcp.id, token);
+      if (success) {
+        toast.success("MCP configuration deleted successfully", {
+          description: `${mcp.name} has been deleted.`,
+        });
+        await fetchMcps(token);
+      } else {
+        toast.error("Failed to delete MCP configuration", {
+          description: "An error occurred while deleting the configuration.",
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to delete MCP configuration", {
+        description: error?.message || "An error occurred while deleting the configuration.",
+      });
+    } finally {
+      setDeletingMCPId(null);
+    }
   };
 
   return (
@@ -180,7 +247,7 @@ export default function MCP() {
                 MCP Servers
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Manage Model Context Protocol (MCP) servers and connections
+                Manage Model Context Protocol (MCP) server configurations
               </p>
             </div>
           </div>
@@ -188,14 +255,16 @@ export default function MCP() {
             <Button
               variant="outline"
               size="icon"
-              onClick={fetchServers}
-              disabled={loading}
+              onClick={handleRefresh}
+              disabled={isLoadingMcps}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoadingMcps ? "animate-spin" : ""}`}
+              />
             </Button>
-            <Button>
+            <Button onClick={() => setIsMCPFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add MCP Server
+              Create MCP
             </Button>
           </div>
         </div>
@@ -203,138 +272,72 @@ export default function MCP() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Servers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{servers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {servers.filter((s) => s.status === "running").length} running
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Running</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {servers.filter((s) => s.status === "running").length}
-            </div>
-            <p className="text-xs text-muted-foreground">Active servers</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stopped</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {servers.filter((s) => s.status === "stopped").length}
-            </div>
-            <p className="text-xs text-muted-foreground">Inactive servers</p>
-          </CardContent>
-        </Card>
+        <div className="bg-card shadow-sm rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="text-sm font-medium">Total Configurations</div>
+          </div>
+          <div className="text-2xl font-bold">{mcps.length}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {mcps.filter((m) => m.tools_count > 0).length} with tools
+          </p>
+        </div>
+        <div className="bg-card shadow-sm rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="text-sm font-medium">Total Tools</div>
+          </div>
+          <div className="text-2xl font-bold">
+            {mcps.reduce((sum, m) => sum + m.tools_count, 0)}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Available tools</p>
+        </div>
+        <div className="bg-card shadow-sm rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="text-sm font-medium">Transport Types</div>
+          </div>
+          <div className="text-2xl font-bold">
+            {new Set(mcps.map((m) => m.transport)).size}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Different transports</p>
+        </div>
       </div>
 
-      {/* Servers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>MCP Server List</CardTitle>
-          <CardDescription>
-            Manage and configure your MCP servers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : servers.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No MCP servers found</p>
-              <Button className="mt-4" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First MCP Server
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Endpoint</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {servers.map((server) => (
-                  <TableRow key={server.id}>
-                    <TableCell className="font-medium">{server.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{server.type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={server.status === "running" ? "default" : "secondary"}
-                      >
-                        {server.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {server.endpoint}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {server.description}
-                    </TableCell>
-                    <TableCell>{formatDate(server.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleStatus(server.id, server.status)}
-                          disabled={togglingId === server.id}
-                          title={server.status === "running" ? "Stop" : "Start"}
-                        >
-                          {server.status === "running" ? (
-                            <Square className="h-4 w-4" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={togglingId === server.id}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(server.id)}
-                          disabled={deletingId === server.id}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* MCP List */}
+      <MCPList
+        mcps={mcps}
+        isLoading={isLoadingMcps}
+        onRefresh={handleRefresh}
+        onViewTools={handleViewMcpTools}
+        onEdit={handleEditMCP}
+        onDelete={handleDeleteMCP}
+        onSync={handleSyncMCP}
+        deletingId={deletingMCPId}
+        syncingId={syncingMCPId}
+      />
+
+      {/* MCP Form Dialog */}
+      <MCPFormDialog
+        open={isMCPFormOpen}
+        onOpenChange={(open) => {
+          setIsMCPFormOpen(open);
+          if (!open) {
+            setEditingMCP(null);
+          }
+        }}
+        onSubmit={handleCreateMCP}
+        isSubmitting={isSubmittingMCP}
+        initialData={editingMCP}
+      />
+
+      {/* MCP Tools Sheet */}
+      <MCPToolsSheet
+        isOpen={isMcpToolsSheetOpen}
+        onOpenChange={setIsMcpToolsSheetOpen}
+        mcpName={selectedMCP?.name || ""}
+        tools={mcpTools}
+        isLoading={isLoadingMcpTools}
+        searchQuery={mcpSearchQuery}
+        onSearchChange={setMcpSearchQuery}
+      />
     </div>
   );
 }
-

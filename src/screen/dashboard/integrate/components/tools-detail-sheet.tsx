@@ -21,6 +21,7 @@ interface ToolsDetailSheetProps {
   onToggleTool: (toolSlug: string) => void;
   onAddTools?: () => void;
   onCopy: (text: string, label: string) => void;
+  isUpdating?: boolean;
 }
 
 export function ToolsDetailSheet({
@@ -35,6 +36,7 @@ export function ToolsDetailSheet({
   onToggleTool,
   onAddTools,
   onCopy,
+  isUpdating = false,
 }: ToolsDetailSheetProps) {
   const isConnected = selectedIntegration?.is_login ?? false;
 
@@ -85,6 +87,7 @@ export function ToolsDetailSheet({
                 onToggleTool={onToggleTool}
                 isConnected={isConnected}
                 onAddTools={onAddTools}
+                isUpdating={isUpdating}
               />
               <IntegrationDetails
                 integration={selectedIntegration}

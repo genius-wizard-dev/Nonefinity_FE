@@ -201,6 +201,22 @@
   overflow-wrap: break-word !important;
 }
 
+/* Highlight.js syntax highlighting */
+.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* Light mode - use github theme */
+:not(.dark) .hljs {
+  color: #24292e;
+}
+
+/* Dark mode - use github-dark theme */
+.dark .hljs {
+  color: #c9d1d9;
+}
+
 /* Performance optimizations */
 @keyframes shimmer {
   0% {

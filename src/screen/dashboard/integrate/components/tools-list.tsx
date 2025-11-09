@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import type { Tool } from "../types";
 
 interface ToolsListProps {
@@ -16,6 +16,7 @@ interface ToolsListProps {
   onToggleTool: (toolSlug: string) => void;
   isConnected?: boolean;
   onAddTools?: () => void;
+  isUpdating?: boolean;
 }
 
 export function ToolsList({
@@ -27,6 +28,7 @@ export function ToolsList({
   onToggleTool,
   isConnected = false,
   onAddTools,
+  isUpdating = false,
 }: ToolsListProps) {
   // Count tools with is_selected = true from BE
   const activeToolsCount = tools.filter((tool) => tool.is_selected).length;
@@ -54,7 +56,10 @@ export function ToolsList({
         <Tabs defaultValue="tools" className="w-full">
           <TabsList>
             <TabsTrigger value="tools">
-              Tools {isConnected && activeToolsCount > 0 && `(active ${activeToolsCount})`}
+              Tools{" "}
+              {isConnected &&
+                activeToolsCount > 0 &&
+                `(active ${activeToolsCount})`}
             </TabsTrigger>
             <TabsTrigger value="triggers" disabled>
               Triggers
@@ -79,9 +84,19 @@ export function ToolsList({
             <Button
               onClick={onAddTools}
               className="gap-2 whitespace-nowrap"
+              disabled={isUpdating}
             >
-              <Plus className="h-4 w-4" />
-              Update
+              {isUpdating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Update
+                </>
+              )}
             </Button>
           )}
         </div>
@@ -117,7 +132,9 @@ export function ToolsList({
                             : "hover:bg-accent hover:border-accent-foreground/20 cursor-pointer"
                           : "cursor-default"
                       }`}
-                      onClick={isConnected ? () => onToggleTool(tool.slug) : undefined}
+                      onClick={
+                        isConnected ? () => onToggleTool(tool.slug) : undefined
+                      }
                     >
                       {isConnected && (
                         <Checkbox

@@ -19,6 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Copy, Edit, MessageSquare, Trash2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import { DatasetService } from "../../dataset-management/services";
 import type { Dataset } from "../../dataset-management/types";
 import {
@@ -28,8 +29,11 @@ import {
 import { ModelService } from "../../models/service";
 import type { Model } from "../../models/type";
 import { useChatStore } from "../store";
-import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate } from "../types";
+import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate, IntegrationConfig } from "../types";
+import { ChatService } from "../services";
 import { ConfigDialog } from "./config-dialog";
+import { MCPService } from "../../mcp/mcp-service";
+import type { MCPConfig } from "./mcp-selector";
 
 interface CreateConfigDialogProps {
   open: boolean;
@@ -40,6 +44,7 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   open,
   onOpenChange,
 }) => {
+  const { getToken } = useAuth();
   const { createConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigCreate>({
     name: "",
@@ -48,10 +53,13 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
+    integration_ids: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+  const [mcps, setMcps] = useState<MCPConfig[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -85,6 +93,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
         knowledge_store_id: null,
         dataset_ids: null,
         instruction_prompt: "",
+        integration_ids: null,
+        mcp_ids: null,
       });
       loadModelsAndStores();
     } else if (!open) {
@@ -97,11 +107,14 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   const loadModelsAndStores = async () => {
     setModelsLoading(true);
     try {
-      const [chatModelsData, embeddingModelsData, datasetsData] =
+      const token = await getToken();
+      const [chatModelsData, embeddingModelsData, datasetsData, integrationsData, mcpsData] =
         await Promise.all([
           ModelService.listModels({ type: "chat", active_only: true }),
           ModelService.listModels({ type: "embedding", active_only: true }),
           DatasetService.getDatasets(1, 100),
+          ChatService.getIntegrationConfigs(),
+          token ? MCPService.getMCPs(token) : Promise.resolve(null),
         ]);
 
       if (chatModelsData) {
@@ -113,8 +126,21 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       if (datasetsData) {
         setDatasets(datasetsData || []);
       }
+      if (integrationsData) {
+        setIntegrations(integrationsData || []);
+      }
+      if (mcpsData) {
+        setMcps(mcpsData.map(mcp => ({
+          id: mcp.id,
+          name: mcp.name,
+          description: mcp.description,
+          server_name: mcp.server_name,
+          transport: mcp.transport,
+          tools_count: mcp.tools_count,
+        })));
+      }
     } catch (error) {
-      console.error("Failed to load models/datasets:", error);
+      console.error("Failed to load models/datasets/integrations/mcps:", error);
     } finally {
       setModelsLoading(false);
       setDataLoaded(true);
@@ -174,6 +200,14 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
             ? formData.dataset_ids
             : null,
         instruction_prompt: formData.instruction_prompt || "",
+        integration_ids:
+          formData.integration_ids && formData.integration_ids.length > 0
+            ? formData.integration_ids
+            : null,
+        mcp_ids:
+          formData.mcp_ids && formData.mcp_ids.length > 0
+            ? formData.mcp_ids
+            : null,
       });
 
       if (config) {
@@ -198,6 +232,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       embeddingModels={embeddingModels}
       datasets={datasets}
       filteredKnowledgeStores={filteredKnowledgeStores}
+      integrations={integrations}
+      mcps={mcps}
       selectedEmbeddingModel={selectedEmbeddingModel ?? null}
       modelsLoading={modelsLoading}
       dataLoaded={dataLoaded}
@@ -218,6 +254,7 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   onOpenChange,
   config,
 }) => {
+  const { getToken } = useAuth();
   const { updateConfig } = useChatStore();
   const [formData, setFormData] = useState<ChatConfigUpdate>({
     name: "",
@@ -226,10 +263,13 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
     knowledge_store_id: null,
     dataset_ids: null,
     instruction_prompt: "",
+    integration_ids: null,
   });
   const [chatModels, setChatModels] = useState<Model[]>([]);
   const [embeddingModels, setEmbeddingModels] = useState<Model[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+  const [mcps, setMcps] = useState<MCPConfig[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -263,6 +303,8 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
         knowledge_store_id: config.knowledge_store_id || null,
         dataset_ids: config.dataset_ids || null,
         instruction_prompt: config.instruction_prompt || "",
+        integration_ids: config.integration_ids || null,
+        mcp_ids: config.mcp_ids || null,
       });
       loadModelsAndStores();
     } else if (!open) {
@@ -275,11 +317,14 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   const loadModelsAndStores = async () => {
     setModelsLoading(true);
     try {
-      const [chatModelsData, embeddingModelsData, datasetsData] =
+      const token = await getToken();
+      const [chatModelsData, embeddingModelsData, datasetsData, integrationsData, mcpsData] =
         await Promise.all([
           ModelService.listModels({ type: "chat", active_only: true }),
           ModelService.listModels({ type: "embedding", active_only: true }),
           DatasetService.getDatasets(1, 100),
+          ChatService.getIntegrationConfigs(),
+          token ? MCPService.getMCPs(token) : Promise.resolve(null),
         ]);
 
       if (chatModelsData) {
@@ -291,8 +336,21 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       if (datasetsData) {
         setDatasets(datasetsData || []);
       }
+      if (integrationsData) {
+        setIntegrations(integrationsData || []);
+      }
+      if (mcpsData) {
+        setMcps(mcpsData.map(mcp => ({
+          id: mcp.id,
+          name: mcp.name,
+          description: mcp.description,
+          server_name: mcp.server_name,
+          transport: mcp.transport,
+          tools_count: mcp.tools_count,
+        })));
+      }
     } catch (error) {
-      console.error("Failed to load models/datasets:", error);
+      console.error("Failed to load models/datasets/integrations/mcps:", error);
     } finally {
       setModelsLoading(false);
       setDataLoaded(true);
@@ -352,6 +410,14 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
             ? formData.dataset_ids
             : null,
         instruction_prompt: formData.instruction_prompt || "",
+        integration_ids:
+          formData.integration_ids && formData.integration_ids.length > 0
+            ? formData.integration_ids
+            : null,
+        mcp_ids:
+          formData.mcp_ids && formData.mcp_ids.length > 0
+            ? formData.mcp_ids
+            : null,
       });
 
       if (updatedConfig) {
@@ -378,6 +444,8 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       embeddingModels={embeddingModels}
       datasets={datasets}
       filteredKnowledgeStores={filteredKnowledgeStores}
+      integrations={integrations}
+      mcps={mcps}
       selectedEmbeddingModel={selectedEmbeddingModel ?? null}
       modelsLoading={modelsLoading}
       dataLoaded={dataLoaded}

@@ -52,6 +52,8 @@ export interface ChatConfig {
   is_used?: boolean;
   created_at: string;
   updated_at: string;
+  integration_ids?: string[] | null;
+  mcp_ids?: string[] | null;
 }
 
 export interface ChatConfigCreate {
@@ -61,6 +63,8 @@ export interface ChatConfigCreate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string;
+  integration_ids?: string[] | null;
+  mcp_ids?: string[] | null;
 }
 
 export interface ChatConfigUpdate {
@@ -70,6 +74,17 @@ export interface ChatConfigUpdate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
+  integration_ids?: string[] | null;
+  mcp_ids?: string[] | null;
+}
+
+// Integration Config Types
+export interface IntegrationConfig {
+  id: string;
+  name: string;
+  logo: string;
+  toolkit_slug?: string | null;
+  list_tools_slug: string[];
 }
 
 export interface ChatConfigListResponse {

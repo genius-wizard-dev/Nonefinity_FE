@@ -12,15 +12,17 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Database, Settings } from "lucide-react";
+import { BookOpen, Database, Settings, Plug, Server } from "lucide-react";
 import React from "react";
 import type { Dataset } from "../../dataset-management/types";
 import type { Model } from "../../models/type";
 import type { KnowledgeStore } from "../../knowledge-stores/types";
-import type { ChatConfigCreate, ChatConfigUpdate } from "../types";
+import type { ChatConfigCreate, ChatConfigUpdate, IntegrationConfig } from "../types";
 import { DatasetSelector } from "./dataset-selector";
 import { KnowledgeStoreSelector } from "./knowledge-store-selector";
 import { ModelSelector } from "./model-selector";
+import { IntegrateSelector } from "./integrate-selector";
+import { MCPSelector, type MCPConfig } from "./mcp-selector";
 
 interface ConfigDialogProps {
   open: boolean;
@@ -33,6 +35,8 @@ interface ConfigDialogProps {
   embeddingModels: Model[];
   datasets: Dataset[];
   filteredKnowledgeStores: KnowledgeStore[];
+  integrations: IntegrationConfig[];
+  mcps: MCPConfig[];
   selectedEmbeddingModel: Model | null | undefined;
   modelsLoading: boolean;
   dataLoaded: boolean;
@@ -53,6 +57,8 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
   embeddingModels,
   datasets,
   filteredKnowledgeStores,
+  integrations,
+  mcps,
   selectedEmbeddingModel,
   modelsLoading,
   dataLoaded,
@@ -65,6 +71,20 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
     onFormDataChange({
       ...formData,
       dataset_ids: selectedIds.length > 0 ? selectedIds : null,
+    });
+  };
+
+  const handleIntegrateSelectionChange = (selectedIds: string[]) => {
+    onFormDataChange({
+      ...formData,
+      integration_ids: selectedIds.length > 0 ? selectedIds : null,
+    });
+  };
+
+  const handleMCPSelectionChange = (selectedIds: string[]) => {
+    onFormDataChange({
+      ...formData,
+      mcp_ids: selectedIds.length > 0 ? selectedIds : null,
     });
   };
 
@@ -116,7 +136,7 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
           ) : (
             <form onSubmit={onSubmit} className="flex flex-col">
               <Tabs defaultValue="basic" className="flex flex-col">
-                <TabsList className="grid w-full grid-cols-3 mb-4 flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-5 mb-4 flex-shrink-0">
                   <TabsTrigger value="basic" className="gap-2">
                     <Settings className="w-4 h-4" />
                     Basic
@@ -128,6 +148,14 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                   <TabsTrigger value="dataset" className="gap-2">
                     <Database className="w-4 h-4" />
                     Dataset
+                  </TabsTrigger>
+                  <TabsTrigger value="integrate" className="gap-2">
+                    <Plug className="w-4 h-4" />
+                    Integrate
+                  </TabsTrigger>
+                  <TabsTrigger value="mcp" className="gap-2">
+                    <Server className="w-4 h-4" />
+                    MCP
                   </TabsTrigger>
                 </TabsList>
 
@@ -218,6 +246,26 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                       onSelectionChange={handleDatasetSelectionChange}
                       loading={modelsLoading}
                       idPrefix={`${idPrefix}dataset`}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="integrate" className="space-y-4 mt-0">
+                    <IntegrateSelector
+                      integrations={integrations}
+                      selectedIds={formData.integration_ids || null}
+                      onSelectionChange={handleIntegrateSelectionChange}
+                      loading={modelsLoading}
+                      idPrefix={`${idPrefix}integrate`}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="mcp" className="space-y-4 mt-0">
+                    <MCPSelector
+                      mcps={mcps}
+                      selectedIds={formData.mcp_ids || null}
+                      onSelectionChange={handleMCPSelectionChange}
+                      loading={modelsLoading}
+                      idPrefix={`${idPrefix}mcp`}
                     />
                   </TabsContent>
                 </div>

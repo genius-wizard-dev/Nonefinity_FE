@@ -35,6 +35,7 @@ export default function Integrate() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingIntegrationId, setPendingIntegrationId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Load integrations on mount
   useEffect(() => {
@@ -174,12 +175,14 @@ export default function Integrate() {
       return;
     }
 
+    setIsUpdating(true);
     try {
       const token = await getToken();
       if (!token) {
         toast.error("Authentication required", {
           description: "Please sign in to add tools.",
         });
+        setIsUpdating(false);
         return;
       }
 
@@ -214,6 +217,8 @@ export default function Integrate() {
       toast.error("Failed to update tools", {
         description: error?.message || "An error occurred while updating tools.",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -267,6 +272,7 @@ export default function Integrate() {
         onToggleTool={toggleToolSelection}
         onAddTools={handleAddTools}
         onCopy={handleCopy}
+        isUpdating={isUpdating}
       />
     </div>
   );
