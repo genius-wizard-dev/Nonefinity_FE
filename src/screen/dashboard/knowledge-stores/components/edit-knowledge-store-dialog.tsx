@@ -126,7 +126,9 @@ export const EditKnowledgeStoreDialog: React.FC<
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ name: e.target.value })}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter knowledge store name"
                 disabled={isSubmitting}
               />
@@ -161,7 +163,9 @@ export const EditKnowledgeStoreDialog: React.FC<
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ description: e.target.value })}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
               placeholder="Enter description (optional)"
               rows={3}
               disabled={isSubmitting}

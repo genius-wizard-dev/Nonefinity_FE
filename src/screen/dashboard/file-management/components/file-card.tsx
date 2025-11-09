@@ -23,7 +23,10 @@ import {
     Info,
     MoreVertical,
     Trash2,
+    Cloud,
+    Upload,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef, useState } from "react";
 import type { FileItem } from "../types";
 import { FileIcon } from "./file-icon";
@@ -153,6 +156,23 @@ export function FileCard({
                 fileExt={file.ext}
                 className="h-12 w-12"
             />
+
+            <Badge
+                variant="secondary"
+                className="h-5 text-xs gap-1"
+            >
+                {file.sourceFile === "drive" ? (
+                    <>
+                        <Cloud className="h-3 w-3" />
+                        Drive
+                    </>
+                ) : (
+                    <>
+                        <Upload className="h-3 w-3" />
+                        Upload
+                    </>
+                )}
+            </Badge>
 
             <div className="w-full text-center">
                 {isRenaming ? (
@@ -293,6 +313,14 @@ export function FileCard({
                                 </label>
                                 <p className="text-sm">
                                     {formatDate(new Date(file.createdAt))}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">
+                                    Source
+                                </label>
+                                <p className="text-sm capitalize">
+                                    {file.sourceFile || "upload"}
                                 </p>
                             </div>
                         </div>

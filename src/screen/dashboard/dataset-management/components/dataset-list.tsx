@@ -48,6 +48,8 @@ import type { FileItem } from "../../file-management/types";
 import { DatasetService } from "../services";
 import { useDatasetStore } from "../store";
 import type { Column, Dataset } from "../types";
+import { validateDatasetName } from "../utils/dataset-name-validation";
+import { ImportDatasetModal } from "./import-dataset-modal";
 
 // Function to get icon for data type
 const getDataTypeIcon = (dataType: string) => {
@@ -123,6 +125,7 @@ export function DatasetList({
   const [createDatasetName, setCreateDatasetName] = useState("");
   const [createDatasetDescription, setCreateDatasetDescription] = useState("");
   const [isCreatingDataset, setIsCreatingDataset] = useState(false);
+  const [createNameError, setCreateNameError] = useState<string | undefined>();
   const [createColumns, setCreateColumns] = useState<Column[]>([
     {
       name: "id",
@@ -135,12 +138,6 @@ export function DatasetList({
 
   // Import from file states
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [availableFiles, setAvailableFiles] = useState<FileItem[]>([]);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
-  const [importDatasetName, setImportDatasetName] = useState("");
-  const [importDatasetDescription, setImportDatasetDescription] = useState("");
-  const [fileSearchQuery, setFileSearchQuery] = useState("");
 
   // Insert data states
   const [isInsertDataDialogOpen, setIsInsertDataDialogOpen] = useState(false);
@@ -295,60 +292,78 @@ export function DatasetList({
     toggleDatasetExpand(dataset.id);
   };
 
+  const handleCreateNameChange = (value: string) => {
+    setCreateDatasetName(value);
+    // Validate on change
+    const validation = validateDatasetName(value);
+    if (!validation.isValid && value.trim()) {
+      setCreateNameError(validation.error);
+    } else {
+      setCreateNameError(undefined);
+    }
+  };
+
   const handleCreateDataset = async () => {
-    if (createDatasetName.trim() && createColumns.length > 0) {
-      setIsCreatingDataset(true);
-      try {
-        const token = await getClerkToken();
+    if (!createDatasetName.trim() || createColumns.length === 0) return;
 
-        const data_schema = createColumns.map((col) => ({
-          column_name: col.name,
-          column_type: col.type.toLowerCase(),
-          desc: col.description || undefined,
-        }));
+    // Final validation
+    const validation = validateDatasetName(createDatasetName);
+    if (!validation.isValid) {
+      setCreateNameError(validation.error);
+      return;
+    }
 
-        const result = await DatasetService.createDataset(
-          createDatasetName.trim(),
-          createDatasetDescription,
-          data_schema,
-          token
-        );
+    setIsCreatingDataset(true);
+    try {
+      const token = await getClerkToken();
 
-        if (result.success && result.data) {
-          useDatasetStore.getState().addDataset(result.data);
+      const data_schema = createColumns.map((col) => ({
+        column_name: col.name,
+        column_type: col.type.toLowerCase(),
+        desc: col.description || undefined,
+      }));
 
-          toast.success("Dataset created successfully!", {
-            description: `Dataset "${createDatasetName.trim()}" has been created.`,
-          });
+      const result = await DatasetService.createDataset(
+        createDatasetName.trim(),
+        createDatasetDescription,
+        data_schema,
+        token
+      );
 
-          setIsCreateDialogOpen(false);
-          setIsAddDatasetDialogOpen(false);
-          setCreateDatasetName("");
-          setCreateDatasetDescription("");
-          setCreateColumns([
-            {
-              name: "id",
-              type: "INTEGER",
-              nullable: false,
-              primaryKey: false,
-              description: "",
-            },
-          ]);
-        } else {
-          console.error("❌ Create dataset failed:", result);
-          toast.error("Failed to create dataset", {
-            description:
-              result.error || "Please check your input and try again.",
-          });
-        }
-      } catch (error) {
-        console.error("Error creating dataset:", error);
-        toast.error("Failed to create dataset", {
-          description: "An unexpected error occurred. Please try again.",
+      if (result.success && result.data) {
+        useDatasetStore.getState().addDataset(result.data);
+
+        toast.success("Dataset created successfully!", {
+          description: `Dataset "${createDatasetName.trim()}" has been created.`,
         });
-      } finally {
-        setIsCreatingDataset(false);
+
+        setIsCreateDialogOpen(false);
+        setIsAddDatasetDialogOpen(false);
+        setCreateDatasetName("");
+        setCreateDatasetDescription("");
+        setCreateNameError(undefined);
+        setCreateColumns([
+          {
+            name: "id",
+            type: "INTEGER",
+            nullable: false,
+            primaryKey: false,
+            description: "",
+          },
+        ]);
+      } else {
+        console.error("❌ Create dataset failed:", result);
+        toast.error("Failed to create dataset", {
+          description: result.error || "Please check your input and try again.",
+        });
       }
+    } catch (error) {
+      console.error("Error creating dataset:", error);
+      toast.error("Failed to create dataset", {
+        description: "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsCreatingDataset(false);
     }
   };
 
@@ -380,154 +395,6 @@ export function DatasetList({
       setCreateColumns((prev) => prev.filter((_, i) => i !== index));
     }
   };
-
-  // Import from file functions
-  const loadAvailableFiles = async () => {
-    setIsLoadingFiles(true);
-    try {
-      const token = await getClerkToken();
-      if (token) {
-        const files = await FileService.getAllowConvertFiles(token);
-        // Filter for CSV and Excel files only
-        const supportedFiles = files.filter((file) => {
-          const fileType = file.type?.toLowerCase() || "";
-          const fileName = file.name?.toLowerCase() || "";
-          return (
-            fileType.includes("csv") ||
-            fileType.includes("excel") ||
-            fileType.includes("spreadsheet") ||
-            fileName.endsWith(".csv") ||
-            fileName.endsWith(".xlsx") ||
-            fileName.endsWith(".xls")
-          );
-        });
-        setAvailableFiles(supportedFiles);
-      }
-    } catch (error) {
-      console.error("Failed to load files:", error);
-      toast.error("Failed to load files");
-    } finally {
-      setIsLoadingFiles(false);
-    }
-  };
-
-  const handleFileSelect = (file: FileItem) => {
-    setSelectedFile(file);
-    // Auto-generate dataset name from file name
-    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-    setImportDatasetName(nameWithoutExt);
-  };
-
-  const handleImportDataset = async () => {
-    if (!selectedFile || !importDatasetName.trim()) return;
-
-    // Close dialog immediately and show converting toast
-    setIsImportDialogOpen(false);
-    setSelectedFile(null);
-    setImportDatasetName("");
-    setImportDatasetDescription("");
-    setFileSearchQuery("");
-
-    // Show converting toast
-    const convertingToastId = toast.loading(
-      <div className="w-full">
-        <div className="mb-2 text-sm font-medium">
-          Converting {selectedFile.name} to dataset...
-        </div>
-        <div className="text-xs text-muted-foreground">
-          This may take a few moments depending on file size
-        </div>
-      </div>,
-      {
-        duration: Infinity, // Keep toast until we dismiss it
-        className: "border-l-4 border-l-blue-500 bg-background",
-      }
-    );
-
-    try {
-      const token = await getClerkToken();
-      if (token) {
-        const result = await DatasetService.convertDataset(
-          {
-            file_id: selectedFile.id,
-            dataset_name: importDatasetName.trim(),
-            description: importDatasetDescription || undefined,
-          },
-          token
-        );
-
-        // Dismiss converting toast
-        toast.dismiss(convertingToastId);
-
-        if (result) {
-          useDatasetStore.getState().addDataset(result);
-
-          // Fetch updated dataset list
-          try {
-            await useDatasetStore.getState().fetchDatasets(token, true);
-          } catch (fetchError) {
-            console.error(
-              "Failed to refresh datasets after import:",
-              fetchError
-            );
-          }
-
-          // Show success toast
-          toast.success(
-            <div className="w-full">
-              <div className="mb-2 text-sm font-medium">
-                Dataset "{importDatasetName.trim()}" created successfully!
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Converted from {selectedFile.name}
-              </div>
-            </div>,
-            {
-              duration: 5000,
-              className: "border-l-4 border-l-green-500 bg-background",
-            }
-          );
-        } else {
-          toast.error(
-            <div className="w-full">
-              <div className="mb-2 text-sm font-medium">
-                Failed to convert dataset
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Please check your file and try again
-              </div>
-            </div>,
-            {
-              duration: 5000,
-              className: "border-l-4 border-l-red-500 bg-background",
-            }
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error importing dataset:", error);
-
-      // Dismiss converting toast
-      toast.dismiss(convertingToastId);
-
-      toast.error(
-        <div className="w-full">
-          <div className="mb-2 text-sm font-medium">Conversion failed</div>
-          <div className="text-xs text-muted-foreground">
-            An unexpected error occurred. Please try again.
-          </div>
-        </div>,
-        {
-          duration: 5000,
-          className: "border-l-4 border-l-red-500 bg-background",
-        }
-      );
-    }
-  };
-
-  const filteredFiles = availableFiles.filter((file) =>
-    file.name.toLowerCase().includes(fileSearchQuery.toLowerCase())
-  );
 
   // Insert data functions
   const loadInsertDataFiles = async () => {
@@ -757,7 +624,6 @@ export function DatasetList({
                     onClick={() => {
                       setIsAddDatasetDialogOpen(false);
                       setIsImportDialogOpen(true);
-                      loadAvailableFiles();
                     }}
                     className="flex items-center gap-4 p-5 rounded-xl border-2 border-border hover:border-green-500 hover:bg-green-500/5 transition-all duration-200 group hover:shadow-sm"
                   >
@@ -792,14 +658,31 @@ export function DatasetList({
               </DialogHeader>
               <div className="space-y-4 py-4 overflow-y-auto flex-1 px-2">
                 <div className="space-y-2">
-                  <Label htmlFor="dataset-name">Dataset Name</Label>
+                  <Label htmlFor="dataset-name">
+                    Dataset Name
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (lowercase, no spaces, use _ to join words)
+                    </span>
+                  </Label>
                   <Input
                     id="dataset-name"
-                    placeholder="e.g., customers, orders, products"
+                    placeholder="e.g., customer_data, orders_2024"
                     value={createDatasetName}
-                    onChange={(e) => setCreateDatasetName(e.target.value)}
-                    className="font-mono focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    onChange={(e) => handleCreateNameChange(e.target.value)}
+                    className={`font-mono focus:border-primary focus:ring-1 focus:ring-primary/20 ${
+                      createNameError ? "border-destructive" : ""
+                    }`}
                   />
+                  {createNameError && (
+                    <p className="text-xs text-destructive mt-1">
+                      {createNameError}
+                    </p>
+                  )}
+                  {!createNameError && createDatasetName.trim() && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Valid dataset name
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -911,7 +794,8 @@ export function DatasetList({
                   disabled={
                     !createDatasetName.trim() ||
                     createColumns.length === 0 ||
-                    isCreatingDataset
+                    isCreatingDataset ||
+                    !!createNameError
                   }
                 >
                   {isCreatingDataset ? (
@@ -928,173 +812,10 @@ export function DatasetList({
           </Dialog>
 
           {/* Import from File Dialog */}
-          <Dialog
+          <ImportDatasetModal
             open={isImportDialogOpen}
             onOpenChange={setIsImportDialogOpen}
-          >
-            <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Import Dataset from File</DialogTitle>
-                <DialogDescription>
-                  Select a CSV or Excel file to convert into a dataset.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4 overflow-y-auto flex-1">
-                {/* File Selection */}
-                <div className="space-y-2">
-                  <Label>Available Files</Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search files..."
-                      value={fileSearchQuery}
-                      onChange={(e) => setFileSearchQuery(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-
-                  <ScrollArea className="h-[200px] rounded-md border border-border">
-                    <div className="p-2">
-                      {isLoadingFiles ? (
-                        <div className="space-y-2">
-                          {Array.from({ length: 3 }).map((_, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 p-2"
-                            >
-                              <Skeleton className="h-4 w-4 rounded" />
-                              <Skeleton className="h-4 w-32 rounded" />
-                              <Skeleton className="h-4 w-16 rounded ml-auto" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : filteredFiles.length > 0 ? (
-                        <div className="space-y-1">
-                          {filteredFiles.map((file) => (
-                            <button
-                              key={file.id}
-                              onClick={() => handleFileSelect(file)}
-                              className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
-                                selectedFile?.id === file.id
-                                  ? "bg-primary/10 border border-primary/20"
-                                  : "hover:bg-secondary"
-                              }`}
-                            >
-                              <div className="flex-shrink-0">
-                                {file.type?.includes("excel") ||
-                                file.name?.endsWith(".xlsx") ||
-                                file.name?.endsWith(".xls") ? (
-                                  <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <FileText className="h-4 w-4 text-blue-500" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">
-                                  {file.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {file.type} •{" "}
-                                  {(file.size / 1024 / 1024).toFixed(1)} MB
-                                </div>
-                              </div>
-                              {selectedFile?.id === file.id && (
-                                <div className="flex-shrink-0">
-                                  <div className="w-2 h-2 bg-primary rounded-full" />
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">No CSV or Excel files found</p>
-                          <p className="text-xs">
-                            Upload files first in the File Management section
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-
-                {/* Dataset Configuration */}
-                {selectedFile && (
-                  <div className="space-y-4 border-t pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="import-dataset-name">Dataset Name</Label>
-                      <Input
-                        id="import-dataset-name"
-                        placeholder="e.g., customers, orders, products"
-                        value={importDatasetName}
-                        onChange={(e) => setImportDatasetName(e.target.value)}
-                        className="font-mono focus:border-primary focus:ring-1 focus:ring-primary/20"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="import-dataset-description">
-                        Description
-                      </Label>
-                      <Textarea
-                        id="import-dataset-description"
-                        placeholder="Describe what this dataset contains..."
-                        value={importDatasetDescription}
-                        onChange={(e) =>
-                          setImportDatasetDescription(e.target.value)
-                        }
-                        className="min-h-[60px] resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                      />
-                    </div>
-
-                    {/* Selected File Info */}
-                    <div className="rounded-lg bg-muted p-3 space-y-2">
-                      <div className="flex items-center gap-2">
-                        {selectedFile.type?.includes("excel") ||
-                        selectedFile.name?.endsWith(".xlsx") ||
-                        selectedFile.name?.endsWith(".xls") ? (
-                          <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <FileText className="h-4 w-4 text-blue-500" />
-                        )}
-                        <span className="font-medium text-sm">
-                          {selectedFile.name}
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {selectedFile.type} •{" "}
-                        {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsImportDialogOpen(false);
-                    setSelectedFile(null);
-                    setImportDatasetName("");
-                    setImportDatasetDescription("");
-                    setFileSearchQuery("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleImportDataset}
-                  disabled={!selectedFile || !importDatasetName.trim()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import Dataset
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          />
 
           {/* Insert Data Dialog */}
           <Dialog

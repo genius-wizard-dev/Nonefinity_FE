@@ -13,7 +13,6 @@ import { Calendar, Mail, Sparkles, User } from "lucide-react";
 
 export function UserInfoCard() {
   const { user } = useUser();
-
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
     return name

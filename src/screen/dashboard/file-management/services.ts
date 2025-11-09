@@ -684,4 +684,66 @@ export class FileService {
       return [];
     }
   }
+
+  /**
+   * Import files from Google Drive
+   */
+  static async importFromDrive(
+    fileIds: string[],
+    fileTypes: string[],
+    token: string
+  ): Promise<FileItem[]> {
+    try {
+      const response = await httpClient.post<BackendFileItem[]>(
+        ENDPOINTS.FILES.IMPORT_FROM_DRIVE,
+        {
+          file_ids: fileIds,
+          file_types: fileTypes,
+        },
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to import files from Drive:", response.message);
+        throw new Error(
+          response.message || "Failed to import files from Drive"
+        );
+      }
+
+      const files = response.getData();
+      return Array.isArray(files) ? files.map(mapFileItem) : [];
+    } catch (error) {
+      console.error("Failed to import files from Drive:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Import sheet from Google Sheet URL
+   */
+  static async importFromSheetUrl(
+    sheetUrl: string,
+    token: string
+  ): Promise<FileItem | null> {
+    try {
+      const response = await httpClient.post<BackendFileItem>(
+        ENDPOINTS.FILES.IMPORT_SHEET_URL,
+        {
+          sheet_url: sheetUrl,
+        },
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to import sheet from URL:", response.message);
+        throw new Error(response.message || "Failed to import sheet from URL");
+      }
+
+      const file = response.getData();
+      return file ? mapFileItem(file) : null;
+    } catch (error) {
+      console.error("Failed to import sheet from URL:", error);
+      throw error;
+    }
+  }
 }
