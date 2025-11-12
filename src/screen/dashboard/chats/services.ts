@@ -1,5 +1,5 @@
 import { ENDPOINTS } from "@/consts/endpoint";
-import { getAuthToken, getBaseURL, httpClient } from "@/lib/axios";
+import api, { getAxiosHeaders, httpClient } from "@/lib/axios";
 import type {
   ChatConfig,
   ChatConfigCreate,
@@ -85,13 +85,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update chat config:", response.message);
+        console.error("Failed to update chat config:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to update chat config:", error);
+      console.error("Failed to update chat config:", error);
       return null;
     }
   }
@@ -103,13 +103,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete chat config:", response.message);
+        console.error("Failed to delete chat config:", response.message);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("❌ Failed to delete chat config:", error);
+      console.error("Failed to delete chat config:", error);
       return false;
     }
   }
@@ -199,7 +199,6 @@ export class ChatService {
     }
   }
 
-
   static async deleteSessions(sessionIds: string[]): Promise<number> {
     try {
       const response = await httpClient.delete<{ deleted_count: number }>(
@@ -245,19 +244,16 @@ export class ChatService {
     onEvent: (event: { event: string; data: any }) => void
   ): Promise<void> {
     try {
-      // Use baseURL from axios config
-      const baseURL = getBaseURL();
-
-      // Get token using same logic as axios interceptor
-      const token = await getAuthToken();
-
+      // Use axios headers (including X-Timezone and Authorization from interceptors)
+      // For streaming, we use fetch but with headers from axios
+      const axiosHeaders = await getAxiosHeaders();
       const response = await fetch(
-        `${baseURL}${ENDPOINTS.CHATS.SESSIONS.STREAM(sessionId)}`,
+        `${api.defaults.baseURL}${ENDPOINTS.CHATS.SESSIONS.STREAM(sessionId)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...axiosHeaders,
           },
           body: JSON.stringify({
             role: "user",

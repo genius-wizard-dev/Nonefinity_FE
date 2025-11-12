@@ -2,6 +2,7 @@ import Axios, { type AxiosResponse, AxiosError } from "axios";
 import { API_CONFIG } from "../consts/endpoint";
 
 const baseURL = `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}`;
+export const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const api = Axios.create({
   baseURL,
@@ -110,13 +111,15 @@ export class ApiResult<T = unknown> {
 api.interceptors.request.use(
   async (config) => {
     try {
+      config.headers = config.headers ?? {};
+      (config.headers as Record<string, string>)["X-Timezone"] = timezone;
+
       if (typeof window !== "undefined") {
         const clerk = (window as unknown as Record<string, unknown>).Clerk;
         const token = await (
           clerk as { session?: { getToken?: () => Promise<string> } }
         )?.session?.getToken?.();
         if (token) {
-          config.headers = config.headers ?? {};
           (config.headers as Record<string, string>)[
             "Authorization"
           ] = `Bearer ${token}`;
@@ -168,14 +171,10 @@ export const httpClient = {
       const fullEndpoint = endpoint;
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-
-
       const response = await api.get<ServerApiResponse<T>>(fullEndpoint, {
         params,
         headers,
       });
-
-
 
       const result = new ApiResult<T>(response);
 
@@ -321,4 +320,27 @@ export const getAuthToken = async (): Promise<string | undefined> => {
 // Export baseURL for SSE and other direct fetch calls
 export const getBaseURL = (): string => {
   return baseURL;
+};
+
+// Helper function to get headers with interceptors applied (for fetch calls)
+export const getAxiosHeaders = async (): Promise<Record<string, string>> => {
+  const headers: Record<string, string> = {
+    "X-Timezone": timezone,
+  };
+
+  try {
+    if (typeof window !== "undefined") {
+      const clerk = (window as unknown as Record<string, unknown>).Clerk;
+      const token = await (
+        clerk as { session?: { getToken?: () => Promise<string> } }
+      )?.session?.getToken?.();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+  } catch {
+    // Silently ignore token errors
+  }
+
+  return headers;
 };
