@@ -47,6 +47,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.22",
     "highlight.js": "^11.11.1",
+    "lightningcss": "^1.30.2",
     "lucide-react": "^0.548.0",
     "motion": "^12.23.24",
     "nanoid": "^5.1.6",
