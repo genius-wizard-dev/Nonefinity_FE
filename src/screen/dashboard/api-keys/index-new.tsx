@@ -327,7 +327,6 @@ export default function APIKeysManagement() {
                                         </div>
                                     </TableCell>
                                     <TableCell>{getStatusBadge(key)}</TableCell>
-                                    </TableCell>
                                     <TableCell className="text-sm">
                                         {key.last_used_at
                                             ? format(
