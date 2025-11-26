@@ -1,28 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/Nonefinity.png" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Nonefinity</title>
-        <script>
-            (function () {
-                try {
-                    var saved = localStorage.getItem("theme");
-                    var prefersDark =
-                        window.matchMedia &&
-                        window.matchMedia("(prefers-color-scheme: dark)")
-                            .matches;
-                    var useDark = saved ? saved === "dark" : prefersDark;
-                    if (useDark) document.documentElement.classList.add("dark");
-                } catch (e) {
-                    // no-op
-                }
-            })();
-        </script>
-    </head>
-    <body>
-        <div id="root"></div>
-        <script type="module" src="/src/main.tsx"></script>
-    </body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/Nonefinity.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nonefinity - Build Intelligent AI Agents</title>
+    <meta
+      name="description"
+      content="Build intelligent AI agents in minutes. Upload files, run SQL queries, create embeddings, and deploy powerful conversational AI with enterprise-grade security."
+    />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nonefinity.com/" />
+    <meta
+      property="og:title"
+      content="Nonefinity - Build Intelligent AI Agents"
+    />
+    <meta
+      property="og:description"
+      content="Build intelligent AI agents in minutes. Upload files, run SQL queries, create embeddings, and deploy powerful conversational AI with enterprise-grade security."
+    />
+    <meta property="og:image" content="https://nonefinity.com/Nonefinity.png" />
+    <meta property="og:site_name" content="Nonefinity" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://nonefinity.com/" />
+    <meta
+      property="twitter:title"
+      content="Nonefinity - Build Intelligent AI Agents"
+    />
+    <meta
+      property="twitter:description"
+      content="Build intelligent AI agents in minutes. Upload files, run SQL queries, create embeddings, and deploy powerful conversational AI with enterprise-grade security."
+    />
+    <meta
+      property="twitter:image"
+      content="https://nonefinity.com/Nonefinity.png"
+    />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var useDark = saved ? saved === "dark" : prefersDark;
+          if (useDark) document.documentElement.classList.add("dark");
+        } catch (e) {
+          // no-op
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
