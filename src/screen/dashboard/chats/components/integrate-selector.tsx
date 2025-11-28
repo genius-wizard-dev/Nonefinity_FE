@@ -44,7 +44,8 @@ export const IntegrateSelector: React.FC<IntegrateSelectorProps> = ({
           <div className="text-center py-8">
             <Plug className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
-              No integrations available. Please configure tools for integrations first.
+              No integrations available. Please configure tools for integrations
+              first.
             </p>
           </div>
         ) : (
@@ -69,7 +70,8 @@ export const IntegrateSelector: React.FC<IntegrateSelectorProps> = ({
                       onError={(e) => {
                         // Fallback to icon if image fails to load
                         e.currentTarget.style.display = "none";
-                        const icon = e.currentTarget.nextElementSibling as HTMLElement;
+                        const icon = e.currentTarget
+                          .nextElementSibling as HTMLElement;
                         if (icon) icon.style.display = "block";
                       }}
                     />
@@ -85,12 +87,6 @@ export const IntegrateSelector: React.FC<IntegrateSelectorProps> = ({
                     >
                       {integration.name}
                     </label>
-                    {integration.list_tools_slug.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {integration.list_tools_slug.length} tool
-                        {integration.list_tools_slug.length !== 1 ? "s" : ""} configured
-                      </p>
-                    )}
                   </div>
                 </div>
               );
@@ -107,4 +103,3 @@ export const IntegrateSelector: React.FC<IntegrateSelectorProps> = ({
     </div>
   );
 };
-

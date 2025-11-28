@@ -12,17 +12,29 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Database, Settings, Plug, Server } from "lucide-react";
+import {
+  BookOpen,
+  Database,
+  Plug,
+  Server,
+  Settings,
+  Wrench,
+} from "lucide-react";
 import React from "react";
 import type { Dataset } from "../../dataset-management/types";
-import type { Model } from "../../models/type";
 import type { KnowledgeStore } from "../../knowledge-stores/types";
-import type { ChatConfigCreate, ChatConfigUpdate, IntegrationConfig } from "../types";
+import type { Model } from "../../models/type";
+import type {
+  ChatConfigCreate,
+  ChatConfigUpdate,
+  IntegrationConfig,
+} from "../types";
 import { DatasetSelector } from "./dataset-selector";
-import { KnowledgeStoreSelector } from "./knowledge-store-selector";
-import { ModelSelector } from "./model-selector";
 import { IntegrateSelector } from "./integrate-selector";
+import { KnowledgeStoreSelector } from "./knowledge-store-selector";
 import { MCPSelector, type MCPConfig } from "./mcp-selector";
+import { ModelSelector } from "./model-selector";
+import { ToolSelector } from "./tool-selector";
 
 interface ConfigDialogProps {
   open: boolean;
@@ -75,9 +87,23 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
   };
 
   const handleIntegrateSelectionChange = (selectedIds: string[]) => {
+    // When integrations change, we should also update selected_tools
+    // Remove tools that are no longer from selected integrations
+    const currentSelectedTools = formData.selected_tools || [];
+
     onFormDataChange({
       ...formData,
       integration_ids: selectedIds.length > 0 ? selectedIds : null,
+      // Keep tools for now, ToolSelector will handle filtering
+      selected_tools:
+        currentSelectedTools.length > 0 ? currentSelectedTools : null,
+    });
+  };
+
+  const handleToolSelectionChange = (selectedSlugs: string[]) => {
+    onFormDataChange({
+      ...formData,
+      selected_tools: selectedSlugs.length > 0 ? selectedSlugs : null,
     });
   };
 
@@ -136,7 +162,7 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
           ) : (
             <form onSubmit={onSubmit} className="flex flex-col">
               <Tabs defaultValue="basic" className="flex flex-col">
-                <TabsList className="grid w-full grid-cols-5 mb-4 flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-6 mb-4 flex-shrink-0">
                   <TabsTrigger value="basic" className="gap-2">
                     <Settings className="w-4 h-4" />
                     Basic
@@ -153,6 +179,10 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                     <Plug className="w-4 h-4" />
                     Integrate
                   </TabsTrigger>
+                  <TabsTrigger value="tools" className="gap-2">
+                    <Wrench className="w-4 h-4" />
+                    Tools
+                  </TabsTrigger>
                   <TabsTrigger value="mcp" className="gap-2">
                     <Server className="w-4 h-4" />
                     MCP
@@ -167,7 +197,10 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                         id={`${idPrefix}name`}
                         value={formData.name}
                         onChange={(e) =>
-                          onFormDataChange({ ...formData, name: e.target.value })
+                          onFormDataChange({
+                            ...formData,
+                            name: e.target.value,
+                          })
                         }
                         placeholder="My Chat Config"
                         required
@@ -259,6 +292,17 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                     />
                   </TabsContent>
 
+                  <TabsContent value="tools" className="space-y-4 mt-0">
+                    <ToolSelector
+                      integrations={integrations}
+                      selectedIntegrationIds={formData.integration_ids || null}
+                      selectedToolSlugs={formData.selected_tools || null}
+                      onToolSelectionChange={handleToolSelectionChange}
+                      loading={modelsLoading}
+                      idPrefix={`${idPrefix}tool`}
+                    />
+                  </TabsContent>
+
                   <TabsContent value="mcp" className="space-y-4 mt-0">
                     <MCPSelector
                       mcps={mcps}
@@ -282,7 +326,9 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || !formData.name || !formData.chat_model_id}
+                  disabled={
+                    submitting || !formData.name || !formData.chat_model_id
+                  }
                 >
                   {submitting ? "Saving..." : "Save"}
                 </Button>
@@ -294,4 +340,3 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
     </Dialog>
   );
 };
-

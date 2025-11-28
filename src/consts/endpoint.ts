@@ -174,6 +174,9 @@ export const ENDPOINTS = {
     GET_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
     ADD_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
     GET_CONFIG: "/intergrates/config", // Get list of integrations with tools configured
+    GET_AVAILABLE_TOOLS: (integrationId: string) =>
+      `/intergrates/available-tools/${integrationId}`, // Get all available tools for an integration
+    GET_AVAILABLE_TOOLS_BATCH: "/intergrates/available-tools/batch", // Batch get tools for multiple integrations
   },
 
   // MCP endpoints
