@@ -9,6 +9,7 @@ import type {
   ChatSessionCreate,
   ChatSessionListResponse,
   IntegrationConfig,
+  ToolItem,
 } from "./types";
 
 export class ChatService {
@@ -426,5 +427,80 @@ export class ChatService {
       console.error("❌ Failed to fetch integration configs:", error);
       return null;
     }
+  }
+
+  // Get available tools for an integration (for Chat Config tool selection)
+  static async getAvailableTools(
+    integrationId: string
+  ): Promise<ToolItem[] | null> {
+    try {
+      const response = await httpClient.get<ToolItem[]>(
+        ENDPOINTS.INTEGRATIONS.GET_AVAILABLE_TOOLS(integrationId)
+      );
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to fetch available tools:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch available tools:", error);
+      return null;
+    }
+  }
+
+  // Get available tools for multiple integrations in batch (optimized)
+  static async getAvailableToolsBatch(
+    integrationIds: string[]
+  ): Promise<Record<string, ToolItem[]> | null> {
+    if (integrationIds.length === 0) {
+      return {};
+    }
+
+    try {
+      const response = await httpClient.post<Record<string, ToolItem[]>>(
+        ENDPOINTS.INTEGRATIONS.GET_AVAILABLE_TOOLS_BATCH,
+        { integration_ids: integrationIds }
+      );
+
+      if (!response.isSuccess) {
+        console.error(
+          "❌ Failed to fetch available tools batch:",
+          response.message
+        );
+        // Fallback: fetch individually with Promise.allSettled
+        return await this.getAvailableToolsBatchFallback(integrationIds);
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to fetch available tools batch:", error);
+      // Fallback: fetch individually with Promise.allSettled
+      return await this.getAvailableToolsBatchFallback(integrationIds);
+    }
+  }
+
+  // Fallback method: fetch tools individually in parallel
+  private static async getAvailableToolsBatchFallback(
+    integrationIds: string[]
+  ): Promise<Record<string, ToolItem[]>> {
+    const results = await Promise.allSettled(
+      integrationIds.map(async (id) => ({
+        id,
+        tools: await this.getAvailableTools(id),
+      }))
+    );
+
+    const toolsMap: Record<string, ToolItem[]> = {};
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value.tools) {
+        toolsMap[result.value.id] = result.value.tools;
+      } else if (result.status === "fulfilled") {
+        toolsMap[result.value.id] = [];
+      }
+    }
+
+    return toolsMap;
   }
 }

@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   IntegrationHeader,
-  IntegrationStats,
   IntegrationList,
+  IntegrationStats,
   ToolsDetailSheet,
 } from "./components";
-import { IntegrationService } from "./services";
 import { useIntegrationStore } from "./store";
-import type { IntegrationItem, IntegrationDetail } from "./types";
+import type { IntegrationDetail, IntegrationItem } from "./types";
 
 export default function Integrate() {
   const { getToken } = useAuth();
@@ -27,7 +26,6 @@ export default function Integrate() {
     fetchTools,
     setSelectedIntegration,
     toggleToolSelection,
-    updateToolsInIntegration,
     clearSelectedIntegration,
   } = useIntegrationStore();
 
@@ -35,7 +33,6 @@ export default function Integrate() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [, setPendingIntegrationId] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   // Load integrations on mount
   useEffect(() => {
@@ -160,68 +157,6 @@ export default function Integrate() {
     });
   };
 
-  const handleAddTools = async () => {
-    if (selectedTools.size === 0) {
-      toast.info("No tools selected", {
-        description: "Please select at least one tool to add.",
-      });
-      return;
-    }
-
-    if (!selectedIntegration?.toolkit?.slug) {
-      toast.error("Invalid integration", {
-        description: "Toolkit slug not found.",
-      });
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      const token = await getToken();
-      if (!token) {
-        toast.error("Authentication required", {
-          description: "Please sign in to add tools.",
-        });
-        setIsUpdating(false);
-        return;
-      }
-
-      const toolSlugs = Array.from(selectedTools);
-      const toolsCount = toolSlugs.length;
-
-      const success = await IntegrationService.addTools(
-        selectedIntegration.toolkit.slug,
-        toolSlugs,
-        token
-      );
-
-      if (success) {
-        // Update tools in store (this will also clear selectedTools)
-        if (selectedIntegration) {
-          updateToolsInIntegration(
-            selectedIntegration.id,
-            selectedIntegration.toolkit.slug,
-            toolSlugs
-          );
-        }
-
-        toast.success("Tools updated successfully", {
-          description: `${toolsCount} tool(s) have been updated.`,
-        });
-      } else {
-        toast.error("Failed to update tools", {
-          description: "An error occurred while updating tools.",
-        });
-      }
-    } catch (error: any) {
-      toast.error("Failed to update tools", {
-        description: error?.message || "An error occurred while updating tools.",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   // Show error toast if there's an error
   useEffect(() => {
     if (error) {
@@ -270,9 +205,7 @@ export default function Integrate() {
         onSearchChange={setSearchQuery}
         selectedTools={selectedTools}
         onToggleTool={toggleToolSelection}
-        onAddTools={handleAddTools}
         onCopy={handleCopy}
-        isUpdating={isUpdating}
       />
     </div>
   );

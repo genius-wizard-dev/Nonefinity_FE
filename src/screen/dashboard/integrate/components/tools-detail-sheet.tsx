@@ -19,9 +19,7 @@ interface ToolsDetailSheetProps {
   onSearchChange: (query: string) => void;
   selectedTools: Set<string>;
   onToggleTool: (toolSlug: string) => void;
-  onAddTools?: () => void;
   onCopy: (text: string, label: string) => void;
-  isUpdating?: boolean;
 }
 
 export function ToolsDetailSheet({
@@ -34,12 +32,8 @@ export function ToolsDetailSheet({
   onSearchChange,
   selectedTools,
   onToggleTool,
-  onAddTools,
   onCopy,
-  isUpdating = false,
 }: ToolsDetailSheetProps) {
-  const isConnected = selectedIntegration?.is_login ?? false;
-
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
@@ -66,11 +60,9 @@ export function ToolsDetailSheet({
                       <SheetTitle className="text-2xl font-semibold">
                         {selectedIntegration.name}
                       </SheetTitle>
-                      {!isConnected && (
-                        <Badge variant="outline" className="text-xs">
-                          View
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="text-xs">
+                        Available Tools
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -85,9 +77,6 @@ export function ToolsDetailSheet({
                 onSearchChange={onSearchChange}
                 selectedTools={selectedTools}
                 onToggleTool={onToggleTool}
-                isConnected={isConnected}
-                onAddTools={onAddTools}
-                isUpdating={isUpdating}
               />
               <IntegrationDetails
                 integration={selectedIntegration}
