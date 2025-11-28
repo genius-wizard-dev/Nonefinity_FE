@@ -63,6 +63,7 @@ export interface ChatConfigCreate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string;
+  integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
   selected_tools?: Record<string, { tools: string[] }> | null;
 }
@@ -74,6 +75,7 @@ export interface ChatConfigUpdate {
   knowledge_store_id?: string | null;
   dataset_ids?: string[] | null;
   instruction_prompt?: string | null;
+  integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
   selected_tools?: Record<string, { tools: string[] }> | null;
 }
