@@ -1,6 +1,11 @@
 import { create } from "zustand";
+import { DatasetService } from "../dataset-management/services";
+import type { Dataset } from "../dataset-management/types";
 import { DriveService, PDFService } from "../file-management/services";
 import type { GooglePDF, GoogleSheet } from "../file-management/types";
+import { MCPService } from "../mcp/mcp-service";
+import { ModelService } from "../models/service";
+import type { Model } from "../models/type";
 import { ChatService } from "./services";
 import type {
   ChatConfig,
@@ -9,7 +14,19 @@ import type {
   ChatMessage,
   ChatSession,
   ChatSessionCreate,
+  IntegrationConfig,
+  ToolItem,
 } from "./types";
+
+// MCP config type for the store (simplified from MCPListItem)
+export interface MCPConfigStore {
+  id: string;
+  name: string;
+  description?: string;
+  server_name: string;
+  transport: string;
+  tools_count: number;
+}
 
 interface ChatState {
   // Chat Configs
@@ -35,6 +52,34 @@ interface ChatState {
   googlePDFs: GooglePDF[];
   googlePDFsLoading: boolean;
   googlePDFsLastFetch: number | null;
+
+  // Models cache
+  chatModels: Model[];
+  chatModelsLoading: boolean;
+  chatModelsLastFetch: number | null;
+  embeddingModels: Model[];
+  embeddingModelsLoading: boolean;
+  embeddingModelsLastFetch: number | null;
+
+  // Datasets cache
+  datasets: Dataset[];
+  datasetsLoading: boolean;
+  datasetsLastFetch: number | null;
+
+  // Integrations cache
+  integrations: IntegrationConfig[];
+  integrationsLoading: boolean;
+  integrationsLastFetch: number | null;
+
+  // Integration tools cache (batch loaded)
+  integrationTools: Record<string, ToolItem[]>;
+  integrationToolsLoading: boolean;
+  integrationToolsLastFetch: number | null;
+
+  // MCPs cache
+  mcps: MCPConfigStore[];
+  mcpsLoading: boolean;
+  mcpsLastFetch: number | null;
 
   // Actions
   fetchConfigs: () => Promise<void>;
@@ -62,6 +107,14 @@ interface ChatState {
   clearGooglePDFs: () => void;
   clearGoogleResources: () => void;
 
+  // New actions for cached data
+  fetchChatModels: (force?: boolean) => Promise<void>;
+  fetchEmbeddingModels: (force?: boolean) => Promise<void>;
+  fetchDatasets: (force?: boolean) => Promise<void>;
+  fetchIntegrations: (force?: boolean) => Promise<void>;
+  fetchIntegrationToolsBatch: (force?: boolean) => Promise<void>;
+  fetchMcps: (token: string, force?: boolean) => Promise<void>;
+
   reset: () => void;
 }
 
@@ -82,6 +135,25 @@ const initialState = {
   googlePDFs: [],
   googlePDFsLoading: false,
   googlePDFsLastFetch: null,
+  // New cached data
+  chatModels: [],
+  chatModelsLoading: false,
+  chatModelsLastFetch: null,
+  embeddingModels: [],
+  embeddingModelsLoading: false,
+  embeddingModelsLastFetch: null,
+  datasets: [],
+  datasetsLoading: false,
+  datasetsLastFetch: null,
+  integrations: [],
+  integrationsLoading: false,
+  integrationsLastFetch: null,
+  integrationTools: {},
+  integrationToolsLoading: false,
+  integrationToolsLastFetch: null,
+  mcps: [],
+  mcpsLoading: false,
+  mcpsLastFetch: null,
 };
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -350,6 +422,174 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
+  // New cached data fetch actions
+  fetchChatModels: async (force = false) => {
+    const state = get();
+    if (state.chatModelsLoading) return;
+    if (!force && state.chatModels.length > 0 && state.chatModelsLastFetch) {
+      const cacheAge = Date.now() - state.chatModelsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return; // 5 minutes cache
+    }
+
+    set({ chatModelsLoading: true });
+    try {
+      const data = await ModelService.listModels({
+        type: "chat",
+        active_only: true,
+      });
+      set({
+        chatModels: data?.models || [],
+        chatModelsLoading: false,
+        chatModelsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch chat models:", error);
+      set({ chatModelsLoading: false });
+    }
+  },
+
+  fetchEmbeddingModels: async (force = false) => {
+    const state = get();
+    if (state.embeddingModelsLoading) return;
+    if (
+      !force &&
+      state.embeddingModels.length > 0 &&
+      state.embeddingModelsLastFetch
+    ) {
+      const cacheAge = Date.now() - state.embeddingModelsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ embeddingModelsLoading: true });
+    try {
+      const data = await ModelService.listModels({
+        type: "embedding",
+        active_only: true,
+      });
+      set({
+        embeddingModels: data?.models || [],
+        embeddingModelsLoading: false,
+        embeddingModelsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch embedding models:", error);
+      set({ embeddingModelsLoading: false });
+    }
+  },
+
+  fetchDatasets: async (force = false) => {
+    const state = get();
+    if (state.datasetsLoading) return;
+    if (!force && state.datasets.length > 0 && state.datasetsLastFetch) {
+      const cacheAge = Date.now() - state.datasetsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ datasetsLoading: true });
+    try {
+      const data = await DatasetService.getDatasets(1, 100);
+      set({
+        datasets: data || [],
+        datasetsLoading: false,
+        datasetsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch datasets:", error);
+      set({ datasetsLoading: false });
+    }
+  },
+
+  fetchIntegrations: async (force = false) => {
+    const state = get();
+    if (state.integrationsLoading) return;
+    if (
+      !force &&
+      state.integrations.length > 0 &&
+      state.integrationsLastFetch
+    ) {
+      const cacheAge = Date.now() - state.integrationsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ integrationsLoading: true });
+    try {
+      const data = await ChatService.getIntegrationConfigs();
+      set({
+        integrations: data || [],
+        integrationsLoading: false,
+        integrationsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch integrations:", error);
+      set({ integrationsLoading: false });
+    }
+  },
+
+  fetchIntegrationToolsBatch: async (force = false) => {
+    const state = get();
+    if (state.integrationToolsLoading) return;
+
+    // Check cache validity
+    if (
+      !force &&
+      Object.keys(state.integrationTools).length > 0 &&
+      state.integrationToolsLastFetch
+    ) {
+      const cacheAge = Date.now() - state.integrationToolsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    // Need integrations first
+    if (state.integrations.length === 0) {
+      // Wait for integrations to be fetched first
+      return;
+    }
+
+    set({ integrationToolsLoading: true });
+    try {
+      const integrationIds = state.integrations.map((i) => i.id);
+      const toolsMap = await ChatService.getAvailableToolsBatch(integrationIds);
+      set({
+        integrationTools: toolsMap || {},
+        integrationToolsLoading: false,
+        integrationToolsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch integration tools batch:", error);
+      set({ integrationToolsLoading: false });
+    }
+  },
+
+  fetchMcps: async (token: string, force = false) => {
+    const state = get();
+    if (state.mcpsLoading) return;
+    if (!force && state.mcps.length > 0 && state.mcpsLastFetch) {
+      const cacheAge = Date.now() - state.mcpsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
+    set({ mcpsLoading: true });
+    try {
+      const data = await MCPService.getMCPs(token);
+      const mcpConfigs: MCPConfigStore[] = (data || []).map((mcp) => ({
+        id: mcp.id,
+        name: mcp.name,
+        description: mcp.description,
+        server_name: mcp.server_name,
+        transport: mcp.transport,
+        tools_count: mcp.tools_count,
+      }));
+      set({
+        mcps: mcpConfigs,
+        mcpsLoading: false,
+        mcpsLastFetch: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch MCPs:", error);
+      set({ mcpsLoading: false });
+    }
+  },
+
   reset: () => {
     set(initialState);
   },
@@ -383,3 +623,25 @@ export const useGoogleSheetsLoading = () =>
 export const useGooglePDFs = () => useChatStore((state) => state.googlePDFs);
 export const useGooglePDFsLoading = () =>
   useChatStore((state) => state.googlePDFsLoading);
+
+// New selectors for cached data
+export const useChatModels = () => useChatStore((state) => state.chatModels);
+export const useChatModelsLoading = () =>
+  useChatStore((state) => state.chatModelsLoading);
+export const useEmbeddingModels = () =>
+  useChatStore((state) => state.embeddingModels);
+export const useEmbeddingModelsLoading = () =>
+  useChatStore((state) => state.embeddingModelsLoading);
+export const useDatasets = () => useChatStore((state) => state.datasets);
+export const useDatasetsLoading = () =>
+  useChatStore((state) => state.datasetsLoading);
+export const useIntegrations = () =>
+  useChatStore((state) => state.integrations);
+export const useIntegrationsLoading = () =>
+  useChatStore((state) => state.integrationsLoading);
+export const useIntegrationTools = () =>
+  useChatStore((state) => state.integrationTools);
+export const useIntegrationToolsLoading = () =>
+  useChatStore((state) => state.integrationToolsLoading);
+export const useMcps = () => useChatStore((state) => state.mcps);
+export const useMcpsLoading = () => useChatStore((state) => state.mcpsLoading);

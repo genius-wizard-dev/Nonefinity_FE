@@ -1,9 +1,11 @@
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Database } from "lucide-react";
-import React, { useCallback } from "react";
+import { Database, RefreshCw } from "lucide-react";
+import React, { useCallback, useState } from "react";
 import type { Dataset } from "../../dataset-management/types";
+import { useChatStore } from "../store";
 
 interface DatasetSelectorProps {
   datasets: Dataset[];
@@ -20,6 +22,15 @@ export const DatasetSelector: React.FC<DatasetSelectorProps> = ({
   loading = false,
   idPrefix = "dataset",
 }) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const fetchDatasets = useChatStore((state) => state.fetchDatasets);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchDatasets(true);
+    setIsRefreshing(false);
+  };
+
   const handleToggle = useCallback(
     (datasetId: string) => {
       const currentIds = selectedIds || [];
@@ -38,7 +49,22 @@ export const DatasetSelector: React.FC<DatasetSelectorProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label>Datasets (Optional)</Label>
+      <div className="flex items-center justify-between">
+        <Label>Datasets (Optional)</Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          title="Refresh datasets"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+        </Button>
+      </div>
       <div className="border rounded-lg p-4 max-h-64 overflow-auto bg-muted/30">
         {datasets.length === 0 ? (
           <div className="text-center py-8">

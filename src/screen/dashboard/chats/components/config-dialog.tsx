@@ -12,17 +12,30 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Database, Settings, Plug, Server } from "lucide-react";
+import {
+  BookOpen,
+  Database,
+  Plug,
+  Server,
+  Settings,
+  Wrench,
+} from "lucide-react";
 import React from "react";
 import type { Dataset } from "../../dataset-management/types";
-import type { Model } from "../../models/type";
 import type { KnowledgeStore } from "../../knowledge-stores/types";
-import type { ChatConfigCreate, ChatConfigUpdate, IntegrationConfig } from "../types";
+import type { Model } from "../../models/type";
+import type {
+  ChatConfigCreate,
+  ChatConfigUpdate,
+  IntegrationConfig,
+} from "../types";
 import { DatasetSelector } from "./dataset-selector";
-import { KnowledgeStoreSelector } from "./knowledge-store-selector";
-import { ModelSelector } from "./model-selector";
 import { IntegrateSelector } from "./integrate-selector";
+import { KnowledgeStoreSelector } from "./knowledge-store-selector";
 import { MCPSelector, type MCPConfig } from "./mcp-selector";
+import { ModelSelector } from "./model-selector";
+import { ToolSelector } from "./tool-selector";
+import { ChatService } from "../services";
 
 interface ConfigDialogProps {
   open: boolean;
@@ -75,9 +88,95 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
   };
 
   const handleIntegrateSelectionChange = (selectedIds: string[]) => {
+    // When integrations change, we should also update selected_tools
+    // Remove tools that are no longer from selected integrations
+    const currentSelectedTools = formData.selected_tools || {};
+
+    // Filter out tools from integrations that are no longer selected
+    const selectedIntegrationNames = new Set(
+      selectedIds
+        .map((id) => integrations.find((i) => i.id === id)?.name)
+        .filter((name): name is string => name !== undefined)
+    );
+
+    const filteredSelectedTools: Record<string, { tools: string[] }> = {};
+    Object.keys(currentSelectedTools).forEach((integrationName) => {
+      if (selectedIntegrationNames.has(integrationName)) {
+        filteredSelectedTools[integrationName] = currentSelectedTools[integrationName];
+      }
+    });
+
     onFormDataChange({
       ...formData,
       integration_ids: selectedIds.length > 0 ? selectedIds : null,
+      selected_tools:
+        Object.keys(filteredSelectedTools).length > 0
+          ? filteredSelectedTools
+          : null,
+    });
+  };
+
+  const handleToolSelectionChange = async (selectedSlugs: string[]) => {
+    // Convert array of tool slugs to Record format grouped by integration
+    // We need to find which integration each tool belongs to
+    const selectedIntegrationIds = formData.integration_ids || [];
+    const toolsByIntegration: Record<string, { tools: string[] }> = {};
+
+    // Fetch tools for each integration to determine which integration each tool belongs to
+    try {
+      const toolsPromises = selectedIntegrationIds.map(async (integrationId) => {
+        const integration = integrations.find((i) => i.id === integrationId);
+        if (!integration) return { integrationName: "", tools: [] };
+
+        const tools = await ChatService.getAvailableTools(integrationId);
+        return {
+          integrationName: integration.name,
+          tools: tools || [],
+        };
+      });
+
+      const toolsData = await Promise.all(toolsPromises);
+
+      // Create a map of tool slug to integration name
+      const toolToIntegrationMap = new Map<string, string>();
+      toolsData.forEach(({ integrationName, tools }) => {
+        tools.forEach((tool) => {
+          toolToIntegrationMap.set(tool.slug, integrationName);
+        });
+      });
+
+      // Group selected tools by their integration
+      selectedSlugs.forEach((slug) => {
+        const integrationName = toolToIntegrationMap.get(slug);
+        if (integrationName) {
+          if (!toolsByIntegration[integrationName]) {
+            toolsByIntegration[integrationName] = { tools: [] };
+          }
+          if (!toolsByIntegration[integrationName].tools.includes(slug)) {
+            toolsByIntegration[integrationName].tools.push(slug);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching tools for conversion:", error);
+      // Fallback: if we can't determine which integration each tool belongs to,
+      // we'll group all tools under the first integration (not ideal but better than nothing)
+      if (selectedSlugs.length > 0 && selectedIntegrationIds.length > 0) {
+        const firstIntegration = integrations.find(
+          (i) => i.id === selectedIntegrationIds[0]
+        );
+        if (firstIntegration) {
+          toolsByIntegration[firstIntegration.name] = { tools: selectedSlugs };
+        }
+      }
+    }
+
+    onFormDataChange({
+      ...formData,
+      selected_tools:
+        Object.keys(toolsByIntegration).length > 0
+          ? toolsByIntegration
+          : null,
     });
   };
 
@@ -136,7 +235,7 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
           ) : (
             <form onSubmit={onSubmit} className="flex flex-col">
               <Tabs defaultValue="basic" className="flex flex-col">
-                <TabsList className="grid w-full grid-cols-5 mb-4 flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-6 mb-4 flex-shrink-0">
                   <TabsTrigger value="basic" className="gap-2">
                     <Settings className="w-4 h-4" />
                     Basic
@@ -153,6 +252,10 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                     <Plug className="w-4 h-4" />
                     Integrate
                   </TabsTrigger>
+                  <TabsTrigger value="tools" className="gap-2">
+                    <Wrench className="w-4 h-4" />
+                    Tools
+                  </TabsTrigger>
                   <TabsTrigger value="mcp" className="gap-2">
                     <Server className="w-4 h-4" />
                     MCP
@@ -167,7 +270,10 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                         id={`${idPrefix}name`}
                         value={formData.name}
                         onChange={(e) =>
-                          onFormDataChange({ ...formData, name: e.target.value })
+                          onFormDataChange({
+                            ...formData,
+                            name: e.target.value,
+                          })
                         }
                         placeholder="My Chat Config"
                         required
@@ -259,6 +365,22 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                     />
                   </TabsContent>
 
+                  <TabsContent value="tools" className="space-y-4 mt-0">
+                    <ToolSelector
+                      integrations={integrations}
+                      selectedIntegrationIds={formData.integration_ids || null}
+                      selectedToolSlugs={
+                        formData.selected_tools
+                          ? Object.values(formData.selected_tools)
+                              .flatMap((item) => item.tools)
+                          : null
+                      }
+                      onToolSelectionChange={handleToolSelectionChange}
+                      loading={modelsLoading}
+                      idPrefix={`${idPrefix}tool`}
+                    />
+                  </TabsContent>
+
                   <TabsContent value="mcp" className="space-y-4 mt-0">
                     <MCPSelector
                       mcps={mcps}
@@ -282,7 +404,9 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || !formData.name || !formData.chat_model_id}
+                  disabled={
+                    submitting || !formData.name || !formData.chat_model_id
+                  }
                 >
                   {submitting ? "Saving..." : "Save"}
                 </Button>
@@ -294,4 +418,3 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
     </Dialog>
   );
 };
-

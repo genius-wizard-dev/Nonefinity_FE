@@ -1,10 +1,15 @@
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Search } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info, Search } from "lucide-react";
 import type { Tool } from "../types";
 
 interface ToolsListProps {
@@ -24,26 +29,7 @@ export function ToolsList({
   isLoading,
   searchQuery,
   onSearchChange,
-  selectedTools,
-  onToggleTool,
-  isConnected = false,
-  onAddTools,
-  isUpdating = false,
 }: ToolsListProps) {
-  // Count tools with is_selected = true from BE
-  const activeToolsCount = tools.filter((tool) => tool.is_selected).length;
-
-  // Get set of tools that are selected from BE
-  const beSelectedTools = new Set(
-    tools.filter((tool) => tool.is_selected).map((tool) => tool.slug)
-  );
-
-  // Check if there are changes (selectedTools differs from BE selected tools)
-  const hasChanges =
-    selectedTools.size !== beSelectedTools.size ||
-    Array.from(selectedTools).some((slug) => !beSelectedTools.has(slug)) ||
-    Array.from(beSelectedTools).some((slug) => !selectedTools.has(slug));
-
   const filteredTools = tools.filter(
     (tool) =>
       tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,10 +42,7 @@ export function ToolsList({
         <Tabs defaultValue="tools" className="w-full">
           <TabsList>
             <TabsTrigger value="tools">
-              Tools{" "}
-              {isConnected &&
-                activeToolsCount > 0 &&
-                `(active ${activeToolsCount})`}
+              Available Tools ({tools.length})
             </TabsTrigger>
             <TabsTrigger value="triggers" disabled>
               Triggers
@@ -80,25 +63,18 @@ export function ToolsList({
               className="pl-9"
             />
           </div>
-          {isConnected && onAddTools && hasChanges && (
-            <Button
-              onClick={onAddTools}
-              className="gap-2 whitespace-nowrap"
-              disabled={isUpdating}
-            >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  Update
-                </>
-              )}
-            </Button>
-          )}
+        </div>
+
+        {/* Info banner */}
+        <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-muted">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              These are all available tools for this integration. To use
+              specific tools, select them when creating or editing a{" "}
+              <strong>Chat Config</strong>.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -121,32 +97,33 @@ export function ToolsList({
             ) : (
               <div className="space-y-2">
                 {filteredTools.map((tool) => {
-                  const isSelected = selectedTools.has(tool.slug);
                   return (
                     <div
                       key={tool.slug}
-                      className={`p-4 rounded-lg border transition-all flex items-start gap-3 ${
-                        isConnected
-                          ? isSelected
-                            ? "border-primary bg-primary/5 hover:bg-primary/10 cursor-pointer"
-                            : "hover:bg-accent hover:border-accent-foreground/20 cursor-pointer"
-                          : "cursor-default"
-                      }`}
-                      onClick={
-                        isConnected ? () => onToggleTool(tool.slug) : undefined
-                      }
+                      className="p-4 rounded-lg border transition-all"
                     >
-                      {isConnected && (
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => onToggleTool(tool.slug)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5"
-                        />
-                      )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-foreground">
-                          {tool.name}
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold text-sm text-foreground">
+                            {tool.name}
+                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs font-mono"
+                                >
+                                  {tool.slug}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">
+                                  Tool slug - use this when configuring
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
                           {tool.description}

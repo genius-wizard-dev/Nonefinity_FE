@@ -52,8 +52,8 @@ export interface ChatConfig {
   is_used?: boolean;
   created_at: string;
   updated_at: string;
-  integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
+  selected_tools?: Record<string, { tools: string[] }> | null;
 }
 
 export interface ChatConfigCreate {
@@ -65,6 +65,7 @@ export interface ChatConfigCreate {
   instruction_prompt?: string;
   integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
+  selected_tools?: Record<string, { tools: string[] }> | null;
 }
 
 export interface ChatConfigUpdate {
@@ -76,6 +77,7 @@ export interface ChatConfigUpdate {
   instruction_prompt?: string | null;
   integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
+  selected_tools?: Record<string, { tools: string[] }> | null;
 }
 
 // Integration Config Types
@@ -84,7 +86,13 @@ export interface IntegrationConfig {
   name: string;
   logo: string;
   toolkit_slug?: string | null;
-  list_tools_slug: string[];
+}
+
+// Tool type for Chat Config tool selection
+export interface ToolItem {
+  slug: string;
+  name: string;
+  description: string;
 }
 
 export interface ChatConfigListResponse {

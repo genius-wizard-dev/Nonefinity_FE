@@ -1,8 +1,11 @@
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Server } from "lucide-react";
-import React, { useCallback } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { RefreshCw, Server } from "lucide-react";
+import React, { useCallback, useState } from "react";
+import { useChatStore } from "../store";
 
 export interface MCPConfig {
   id: string;
@@ -28,6 +31,22 @@ export const MCPSelector: React.FC<MCPSelectorProps> = ({
   loading = false,
   idPrefix = "mcp",
 }) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { getToken } = useAuth();
+  const fetchMcps = useChatStore((state) => state.fetchMcps);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const token = await getToken();
+      if (token) {
+        await fetchMcps(token, true);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleToggle = useCallback(
     (mcpId: string) => {
       const currentIds = selectedIds || [];
@@ -46,13 +65,29 @@ export const MCPSelector: React.FC<MCPSelectorProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label>MCP Configurations (Optional)</Label>
+      <div className="flex items-center justify-between">
+        <Label>MCP Configurations (Optional)</Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          title="Refresh MCP configurations"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+        </Button>
+      </div>
       <div className="border rounded-lg p-4 max-h-64 overflow-auto bg-muted/30">
         {mcps.length === 0 ? (
           <div className="text-center py-8">
             <Server className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
-              No MCP configurations available. Please configure MCP servers first.
+              No MCP configurations available. Please configure MCP servers
+              first.
             </p>
           </div>
         ) : (
@@ -102,4 +137,3 @@ export const MCPSelector: React.FC<MCPSelectorProps> = ({
     </div>
   );
 };
-
