@@ -1,12 +1,12 @@
-export const docsContent = `# 📚 Hướng Dẫn Sử Dụng Hệ Thống AI Agent - Nonefinity
+export const docsContent = `# Hướng Dẫn Sử Dụng Hệ Thống AI Agent - Nonefinity
 
-## 🎯 Giới Thiệu
+## Giới Thiệu
 
 Nonefinity là một nền tảng AI Agent cho phép bạn xây dựng và tương tác với các AI Agent thông minh. Hệ thống hỗ trợ quản lý dữ liệu, tạo knowledge base, và chat với AI agents một cách dễ dàng.
 
 ---
 
-## 🚀 Bắt Đầu
+## Bắt Đầu
 
 ### 1. Đăng Ký / Đăng Nhập
 
@@ -30,11 +30,11 @@ Nonefinity là một nền tảng AI Agent cho phép bạn xây dựng và tươ
 
 ---
 
-## 📋 Flow Sử Dụng Chính
+## Flow Sử Dụng Chính
 
 Sau khi đăng nhập, bạn sẽ thấy trang **Dashboard** với các tính năng chính. Để sử dụng AI Agent hiệu quả, hãy làm theo các bước sau:
 
-### **Bước 1: Cấu Hình Credentials (API Keys)** 🔑
+### **Bước 1: Cấu Hình Credentials (API Keys)**
 
 Đây là bước **QUAN TRỌNG NHẤT** - bạn cần cấu hình API keys của các AI providers để hệ thống có thể sử dụng.
 
@@ -60,7 +60,7 @@ Sau khi đăng nhập, bạn sẽ thấy trang **Dashboard** với các tính n�
    - Bật/tắt credential bằng switch
    - Chỉnh sửa hoặc xóa credential (chỉ xóa được khi không đang sử dụng)
 
-> ⚠️ **Lưu ý**:
+> **Lưu ý**:
 >
 > - API key sẽ được mã hóa và lưu trữ an toàn
 > - Credential đang được sử dụng không thể xóa hoặc thay đổi provider
@@ -68,7 +68,7 @@ Sau khi đăng nhập, bạn sẽ thấy trang **Dashboard** với các tính n�
 
 ---
 
-### **Bước 2: Upload Files (Tùy Chọn)** 📁
+### **Bước 2: Upload Files (Tùy Chọn)**
 
 Nếu bạn muốn AI Agent có thể truy cập và phân tích dữ liệu từ files, hãy upload files vào hệ thống.
 
@@ -92,7 +92,7 @@ Nếu bạn muốn AI Agent có thể truy cập và phân tích dữ liệu t�
 
 ---
 
-### **Bước 3: Tạo Knowledge Store** 🗄️
+### **Bước 3: Tạo Knowledge Store**
 
 Knowledge Store là kho lưu trữ tri thức của bạn, nơi lưu trữ các embeddings từ files để AI có thể tìm kiếm và sử dụng.
 
@@ -117,14 +117,14 @@ Knowledge Store là kho lưu trữ tri thức của bạn, nơi lưu trữ các 
    - Upload files hoặc chọn files đã có
    - Hệ thống sẽ tự động tạo embeddings và lưu vào knowledge store
 
-> 💡 **Mẹo**:
+> **Mẹo**:
 >
 > - Dimension phải khớp với embedding model bạn sẽ sử dụng
 > - Cosine distance thường được sử dụng phổ biến nhất
 
 ---
 
-### **Bước 4: Cấu Hình Models (Tùy Chọn)** 🧠
+### **Bước 4: Cấu Hình Models (Tùy Chọn)**
 
 Cấu hình các AI models và embedding models để sử dụng trong chat.
 
@@ -142,7 +142,7 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 
 ---
 
-### **Bước 5: Chat với AI Agent** 💬
+### **Bước 5: Chat với AI Agent**
 
 Đây là bước cuối cùng - bắt đầu chat với AI Agent của bạn!
 
@@ -184,27 +184,27 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 
 ---
 
-## 🎨 Các Tính Năng Khác
+## Các Tính Năng Khác
 
-### **Datasets** 📊
+### **Datasets**
 
 - Tạo và quản lý datasets
 - Phân tích dữ liệu với DuckDB
 - Chuyển đổi sang Parquet format
 
-### **API Keys** 🔐
+### **API Keys**
 
 - Tạo API keys để tích hợp với ứng dụng bên ngoài
 - Quản lý và xóa API keys
 - Xem lịch sử sử dụng
 
-### **Integrate** 🔗
+### **Integrate**
 
 - Kết nối với các dịch vụ bên ngoài
 - Sử dụng các tools và integrations có sẵn
 - Tự động hóa workflows
 
-### **MCP (Model Context Protocol)** 🔌
+### **MCP (Model Context Protocol)**
 
 - Cấu hình MCP servers
 - Kết nối với các MCP providers
@@ -212,7 +212,7 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 
 ---
 
-## 📝 Flow Tóm Tắt
+## Flow Tóm Tắt
 
 \`\`\`
 1. Đăng nhập → Dashboard
@@ -225,14 +225,14 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
    ↓
 5. (Tùy chọn) Cấu hình Models
    ↓
-6. Tạo Chat Session và bắt đầu chat với AI! 🎉
+6. Tạo Chat Session và bắt đầu chat với AI!
 \`\`\`
 
 ---
 
-## 💡 Tips & Best Practices
+## Tips & Best Practices
 
-### ✅ Nên làm:
+### Nên làm:
 
 1. **Luôn cấu hình Credentials trước** - Đây là bước bắt buộc để sử dụng AI
 2. **Đặt tên rõ ràng** cho credentials, knowledge stores, và chat sessions
@@ -240,7 +240,7 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 4. **Kiểm tra dimension** khi tạo knowledge store phải khớp với embedding model
 5. **Lưu lại chat sessions** quan trọng để tham khảo sau
 
-### ❌ Nên tránh:
+### Nên tránh:
 
 1. **Không xóa credentials đang sử dụng** - Sẽ gây lỗi khi chat
 2. **Không tạo knowledge store với dimension sai** - Embeddings sẽ không hoạt động
@@ -249,7 +249,7 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 
 ---
 
-## 🆘 Xử Lý Sự Cố
+## Xử Lý Sự Cố
 
 ### Vấn đề: Không thể chat với AI
 
@@ -278,7 +278,7 @@ Cấu hình các AI models và embedding models để sử dụng trong chat.
 
 ---
 
-## 📞 Hỗ Trợ
+## Hỗ Trợ
 
 Nếu bạn gặp vấn đề hoặc có câu hỏi:
 
@@ -288,8 +288,9 @@ Nếu bạn gặp vấn đề hoặc có câu hỏi:
 
 ---
 
-## 🎉 Chúc Bạn Sử Dụng Thành Công!
+## Chúc Bạn Sử Dụng Thành Công!
 
 Hệ thống AI Agent của Nonefinity được thiết kế để dễ sử dụng và mạnh mẽ. Hãy bắt đầu với việc cấu hình credentials và khám phá các tính năng tuyệt vời!
 
-**Happy Building! 🚀**`;
+**Happy Building!**
+`;
