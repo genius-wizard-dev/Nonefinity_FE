@@ -10,14 +10,20 @@ import KnowledgeStores from "./dashboard/knowledge-stores";
 import KnowledgeStoreDetail from "./dashboard/knowledge-stores/detail";
 import MCP from "./dashboard/mcp";
 import Models from "./dashboard/models";
+import DocsPage from "./docs";
+import Features from "./features";
 import Home from "./home";
+import NotFoundPage from "./not-found";
+import Privacy from "./privacy";
 
 export {
   APIKeys,
   Chats,
   Credentials,
   DatasetManagement,
+  DocsPage,
   Embedding,
+  Features,
   FileManagement,
   General,
   Home,
@@ -26,4 +32,6 @@ export {
   KnowledgeStores,
   MCP,
   Models,
+  NotFoundPage,
+  Privacy,
 };

@@ -132,6 +132,7 @@ export const ENDPOINTS = {
       STREAM: (id: string) => `/chats/sessions/${id}/stream`,
       SAVE_CONVERSATION: (id: string) =>
         `/chats/sessions/${id}/save-conversation`,
+      EXPORT: (id: string) => `/chats/sessions/${id}/export`,
     },
     // Legacy endpoints for backward compatibility
     LIST: "/chats",
