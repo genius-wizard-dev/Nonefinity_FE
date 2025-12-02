@@ -1,11 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MessageSquare, Plus, Download, FileText, FileJson } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ChatInterface } from "./components/chat-interface";
 import { ConfigList, CreateConfigDialog } from "./components/config-list";
 import { SessionList } from "./components/session-list";
 import { useChatStore } from "./store";
+import { ChatService } from "./services";
 import type { ChatConfig, ChatSession } from "./types";
 
 const ChatManager: React.FC = () => {
@@ -29,6 +37,48 @@ const ChatManager: React.FC = () => {
 
   const handleSessionSelect = (session: ChatSession) => {
     selectSession(session);
+  };
+
+  const handleExportChatHistory = async (format: "csv" | "json") => {
+    if (!selectedSession) return;
+
+    try {
+      toast.loading(`Exporting chat history as ${format.toUpperCase()}...`, {
+        id: "export-chat-history",
+      });
+
+      const result = await ChatService.exportChatHistory(
+        selectedSession.id,
+        format
+      );
+
+      if (result) {
+        toast.success(
+          `Chat history exported successfully! (${result.qa_pairs_count} Q&A pairs)`,
+          {
+            id: "export-chat-history",
+            description: `File: ${result.file_name}`,
+            action: {
+              label: "Download",
+              onClick: () => {
+                window.open(result.download_url, "_blank");
+              },
+            },
+            duration: 5000,
+          }
+        );
+      } else {
+        toast.error("Failed to export chat history", {
+          id: "export-chat-history",
+        });
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export chat history", {
+        id: "export-chat-history",
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 
   // Flow: Config List -> Session List -> Chat Interface
@@ -149,6 +199,30 @@ const ChatManager: React.FC = () => {
                   {selectedSession.name || "Chat Session"}
                 </span>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => handleExportChatHistory("csv")}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleExportChatHistory("json")}
+                  >
+                    <FileJson className="w-4 h-4 mr-2" />
+                    Export as JSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

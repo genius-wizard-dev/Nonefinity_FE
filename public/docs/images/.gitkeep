@@ -1,0 +1,8 @@
+# Documentation Images
+
+Place your documentation images in this directory.
+
+Images can be referenced in markdown using:
+- Relative path: `![Alt text](./images/filename.png)`
+- Absolute path: `![Alt text](/docs/images/filename.png)`
+

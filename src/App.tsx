@@ -1,5 +1,6 @@
 import { UserProfile, useAuth } from "@clerk/clerk-react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { Loading } from "./components/shared";
 import { Toaster } from "./components/ui/sonner";
 import { LoadingProvider } from "./contexts/LoadingContext";
@@ -15,7 +16,9 @@ import {
   Chats,
   Credentials,
   DatasetManagement,
+  DocsPage,
   Embedding,
+  Features,
   FileManagement,
   General,
   Integrate,
@@ -23,8 +26,9 @@ import {
   KnowledgeStores,
   MCP,
   Models,
+  NotFoundPage,
+  Privacy,
 } from "./screen/index.ts";
-
 
 // Component để redirect nếu đã login
 function HomePageGuard() {
@@ -48,8 +52,12 @@ function App() {
   return (
     <LoadingProvider>
       <ClerkProviderWithRoutes>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<HomePageGuard />} />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
           <Route
@@ -83,6 +91,8 @@ function App() {
             <Route path="/dashboard/integrate" element={<Integrate />} />
             <Route path="/dashboard/mcp" element={<MCP />} />
           </Route>
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         {/* Show the Toaster in the top right corner */}
         <Toaster closeButton />

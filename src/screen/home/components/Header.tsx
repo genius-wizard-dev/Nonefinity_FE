@@ -31,7 +31,7 @@ export function Header() {
                             Features
                         </Link>
                         <Link
-                            to="https://docs.nonefinity.com/"
+                            to="/docs"
                             className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Documentation
@@ -41,6 +41,12 @@ export function Header() {
                             className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
                         >
                             Pricing
+                        </Link>
+                        <Link
+                            to="/privacy"
+                            className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                        >
+                            Privacy
                         </Link>
                         <Link
                             to="/contact"
@@ -94,7 +100,7 @@ export function Header() {
                                 Features
                             </Link>
                             <Link
-                                to="https://docs.nonefinity.com/"
+                                to="/docs"
                                 className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
                                 onClick={() => setIsMenuOpen(false)}
                             >
@@ -106,6 +112,13 @@ export function Header() {
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Pricing
+                            </Link>
+                            <Link
+                                to="/privacy"
+                                className="block px-3 py-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-accent rounded-lg transition-colors"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Privacy
                             </Link>
                             <Link
                                 to="/contact"
