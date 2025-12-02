@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface Heading {
   id: string;
@@ -100,51 +100,6 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
     }
   };
 
-  // Build nested structure
-  const buildNestedStructure = (headings: Heading[]) => {
-    const result: JSX.Element[] = [];
-    let stack: { heading: Heading; element: JSX.Element }[] = [];
-
-    headings.forEach((heading, index) => {
-      const item = (
-        <div key={heading.id} className="relative">
-          <button
-            onClick={() => scrollToHeading(heading.id)}
-            className={cn(
-              "w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2",
-              activeId === heading.id
-                ? "bg-primary/10 text-primary font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-            style={{ paddingLeft: `${(heading.level - 1) * 12 + 12}px` }}
-          >
-            {heading.level > 1 && (
-              <ChevronRight className="h-3 w-3 flex-shrink-0 opacity-50" />
-            )}
-            <span className="truncate">{heading.text}</span>
-          </button>
-        </div>
-      );
-
-      // Pop stack until we find parent or empty
-      while (
-        stack.length > 0 &&
-        stack[stack.length - 1].heading.level >= heading.level
-      ) {
-        stack.pop();
-      }
-
-      // If stack is empty, add to result
-      if (stack.length === 0) {
-        result.push(item);
-      }
-
-      stack.push({ heading, element: item });
-    });
-
-    return result;
-  };
-
   if (headings.length === 0) {
     return null;
   }
@@ -184,4 +139,3 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
     </div>
   );
 };
-
