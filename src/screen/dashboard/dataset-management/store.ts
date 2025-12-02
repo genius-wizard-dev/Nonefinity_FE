@@ -260,17 +260,32 @@ export const useDatasetStore = create<DatasetStore>((set, get) => ({
 
       if (result.success && result.data) {
         // Update store with the returned dataset data
-        set((state) => ({
-          datasets: state.datasets.map((dataset) =>
-            dataset.id === datasetId ? result.data! : dataset
-          ),
-          selectedDataset:
-            state.selectedDataset?.id === datasetId
-              ? result.data!
-              : state.selectedDataset,
-          isLoading: false,
-          error: null,
-        }));
+        // Preserve existing rowCount if the API response doesn't include it
+        set((state) => {
+          const existingDataset = state.datasets.find((d) => d.id === datasetId);
+          const existingSelectedDataset = state.selectedDataset?.id === datasetId ? state.selectedDataset : null;
+
+          // Preserve rowCount from existing dataset if not in API response
+          const updatedData = result.data!;
+          if (!updatedData.rowCount && existingDataset?.rowCount) {
+            updatedData.rowCount = existingDataset.rowCount;
+          }
+
+          return {
+            datasets: state.datasets.map((dataset) =>
+              dataset.id === datasetId ? updatedData : dataset
+            ),
+            selectedDataset:
+              state.selectedDataset?.id === datasetId
+                ? {
+                    ...updatedData,
+                    rowCount: updatedData.rowCount || existingSelectedDataset?.rowCount || 0,
+                  }
+                : state.selectedDataset,
+            isLoading: false,
+            error: null,
+          };
+        });
         return true;
       } else {
         set({
