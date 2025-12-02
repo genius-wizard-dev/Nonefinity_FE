@@ -25,11 +25,15 @@ const footerSections = [
     title: "Resources",
     links: [
       {
-        label: "Documentation",
-        href: "https://docs.nonefinity.com/",
+        label: "User Guide",
+        href: "/docs",
         icon: Book,
       },
-      { label: "API Reference", href: "/api" },
+      {
+        label: "API Reference",
+        href: "https://docs.nonefinity.com/",
+        external: true,
+      },
       { label: "Tutorials", href: "/tutorials" },
       { label: "Examples", href: "/examples" },
     ],
@@ -120,21 +124,43 @@ export function Footer() {
                   {section.title}
                 </h3>
                 <ul className="space-y-3">
-                  {section.links.map((link) => (
-                    <li key={link.label}>
-                      <Link
-                        to={link.href}
-                        className="text-gray-400 hover:text-blue-400 transition-colors flex items-center space-x-2 group"
-                      >
-                        {link.icon && (
-                          <link.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                        )}
-                        <span className="hover:translate-x-1 transition-transform duration-200">
-                          {link.label}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                  {section.links.map((link) => {
+                    const isExternal = (link as any).external;
+                    if (isExternal) {
+                      return (
+                        <li key={link.label}>
+                          <a
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-blue-400 transition-colors flex items-center space-x-2 group"
+                          >
+                            {link.icon && (
+                              <link.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                            )}
+                            <span className="hover:translate-x-1 transition-transform duration-200">
+                              {link.label}
+                            </span>
+                          </a>
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={link.label}>
+                        <Link
+                          to={link.href}
+                          className="text-gray-400 hover:text-blue-400 transition-colors flex items-center space-x-2 group"
+                        >
+                          {link.icon && (
+                            <link.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                          )}
+                          <span className="hover:translate-x-1 transition-transform duration-200">
+                            {link.label}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </BlurFade>

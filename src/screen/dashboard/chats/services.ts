@@ -407,6 +407,37 @@ export class ChatService {
     }
   }
 
+  static async exportChatHistory(
+    sessionId: string,
+    format: "csv" | "json" = "csv"
+  ): Promise<{
+    file_id: string;
+    file_name: string;
+    download_url: string;
+    format: string;
+    qa_pairs_count: number;
+  } | null> {
+    try {
+      const response = await httpClient.post<{
+        file_id: string;
+        file_name: string;
+        download_url: string;
+        format: string;
+        qa_pairs_count: number;
+      }>(ENDPOINTS.CHATS.SESSIONS.EXPORT(sessionId), { format });
+
+      if (!response.isSuccess) {
+        console.error("❌ Failed to export chat history:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("❌ Failed to export chat history:", error);
+      return null;
+    }
+  }
+
   // Integration Config Methods
   static async getIntegrationConfigs(): Promise<IntegrationConfig[] | null> {
     try {
