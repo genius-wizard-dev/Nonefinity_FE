@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,22 +18,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { MessageSquare, Plus, RefreshCw, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useChatStore } from "../store";
-import type { ChatSession, ChatSessionCreate } from "../types";
+import type { ChatSession } from "../types";
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -35,33 +45,27 @@ export const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
   onOpenChange,
   configId,
 }) => {
-  const { createSession, fetchSessions } = useChatStore();
-  const [formData, setFormData] = useState<ChatSessionCreate>({
-    chat_config_id: configId,
-    name: "",
-  });
+  const { createSession } = useChatStore();
+  const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        chat_config_id: configId,
-        name: "",
-      });
+      setName("");
     }
-  }, [open, configId]);
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) return;
+
     setSubmitting(true);
     try {
       const session = await createSession({
+        name,
         chat_config_id: configId,
-        name: formData.name || undefined,
       });
-
       if (session) {
-        await fetchSessions(configId);
         onOpenChange(false);
       }
     } catch (error) {
@@ -74,41 +78,35 @@ export const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New Chat Session</DialogTitle>
-          <DialogDescription>
-            Start a new chat session with this configuration
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Session Name (Optional)</Label>
-              <Input
-                id="name"
-                value={formData.name || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="My Chat Session"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold">New Session</h2>
+            <p className="text-sm text-muted-foreground">
+              Create a new chat session for this configuration.
+            </p>
           </div>
-
-          <DialogFooter>
+          <div className="space-y-2">
+            <Label htmlFor="name">Session Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter session name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={submitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Session"}
+            <Button type="submit" disabled={submitting || !name.trim()}>
+              {submitting ? "Creating..." : "Create"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
@@ -118,70 +116,85 @@ export const CreateSessionDialog: React.FC<CreateSessionDialogProps> = ({
 interface SessionCardProps {
   session: ChatSession;
   isSelected: boolean;
+  isSelectMode: boolean;
   isChecked: boolean;
   onSelect: () => void;
+  onCheck: (checked: boolean) => void;
   onDelete: () => void;
-  onToggleCheck: (checked: boolean) => void;
-  isDeleting?: boolean;
 }
 
-export const SessionCard: React.FC<SessionCardProps> = ({
+const SessionCard: React.FC<SessionCardProps> = ({
   session,
   isSelected,
+  isSelectMode,
   isChecked,
   onSelect,
+  onCheck,
   onDelete,
-  onToggleCheck,
-  isDeleting,
 }) => {
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${
-        isSelected ? "ring-2 ring-primary" : ""
-      } ${isChecked ? "bg-muted/50" : ""} ${isDeleting ? "opacity-50" : ""}`}
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md group ${
+        isSelected ? "ring-2 ring-primary border-primary" : "border-border/50"
+      }`}
+      onClick={() => {
+        if (isSelectMode) {
+          onCheck(!isChecked);
+        } else {
+          onSelect();
+        }
+      }}
     >
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2 flex-1">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+        <div className="flex items-center gap-3">
+          {isSelectMode ? (
             <Checkbox
               checked={isChecked}
-              onCheckedChange={onToggleCheck}
+              onCheckedChange={(checked) => onCheck(checked as boolean)}
               onClick={(e) => e.stopPropagation()}
-              className="mt-1"
-              disabled={isDeleting}
             />
-            <div className="flex items-center gap-2 flex-1" onClick={onSelect}>
-              <MessageSquare className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg">
-                {session.name || "Untitled Session"}
-              </CardTitle>
+          ) : (
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground transition-colors duration-200 group-hover:bg-muted/80">
+              <MessageSquare className="w-5 h-5" />
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-        <CardDescription>
-          Created {new Date(session.created_at).toLocaleDateString()}
-        </CardDescription>
-      </CardHeader>
-      <CardContent onClick={onSelect} className="cursor-pointer">
-        <div className="space-y-1 text-sm text-muted-foreground">
-          {session.messages && session.messages.total > 0 && (
-            <p>{session.messages.total} messages</p>
           )}
+          <div>
+            <CardTitle className="text-base font-semibold leading-none mb-1.5">
+              {session.name || "Untitled Session"}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Created {new Date(session.created_at).toLocaleDateString()}
+            </CardDescription>
+          </div>
+        </div>
+        {!isSelectMode && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete session</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="font-normal">
+            Active
+          </Badge>
         </div>
       </CardContent>
     </Card>
@@ -199,18 +212,28 @@ export const SessionList: React.FC<SessionListProps> = ({
   onSessionSelect,
   selectedSessionId,
 }) => {
-  const { sessions, sessionsLoading, fetchSessions, deleteSession } =
-    useChatStore();
+  const {
+    sessions,
+    sessionsLoading,
+    fetchSessions,
+    refreshSessions,
+    deleteSession,
+  } = useChatStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(
     new Set()
   );
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
-    null
-  );
+  const [lastConfigId, setLastConfigId] = useState<string | null>(null);
+
+  // Clear selection when config changes
+  useEffect(() => {
+    if (configId !== lastConfigId) {
+      setSelectedSessions(new Set());
+      setLastConfigId(configId);
+    }
+  }, [configId, lastConfigId]);
 
   useEffect(() => {
     if (configId) {
@@ -219,79 +242,43 @@ export const SessionList: React.FC<SessionListProps> = ({
   }, [configId, fetchSessions]);
 
   const handleDelete = async (id: string) => {
-    setSingleDeleteId(id);
+    setSessionToDelete(id);
     setDeleteConfirmOpen(true);
   };
 
-  const handleSingleDelete = async () => {
-    if (!singleDeleteId) return;
-
-    setIsDeleting(true);
-    setDeletingSessionId(singleDeleteId);
-
-    try {
-      await deleteSession(singleDeleteId);
-      // Remove from selected sessions if it was selected
-      setSelectedSessions((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(singleDeleteId);
-        return newSet;
-      });
-      handleDeleteDialogClose();
-    } catch (error) {
-      console.error("Failed to delete session:", error);
-    } finally {
-      setIsDeleting(false);
-      setDeletingSessionId(null);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedSessions.size === 0) return;
-
-    setIsDeleting(true);
-
-    try {
-      // Delete all selected sessions
-      const deletePromises = Array.from(selectedSessions).map((id) =>
-        deleteSession(id)
+  const handleConfirmDelete = async () => {
+    if (sessionToDelete) {
+      await deleteSession(sessionToDelete);
+      setSessionToDelete(null);
+    } else if (selectedSessions.size > 0) {
+      await Promise.all(
+        Array.from(selectedSessions).map((id) => deleteSession(id))
       );
-      await Promise.all(deletePromises);
-
       toast.success(`Deleted ${selectedSessions.size} session(s)`);
       setSelectedSessions(new Set());
-      handleDeleteDialogClose();
-    } catch {
-      toast.error("Failed to delete some sessions");
-    } finally {
-      setIsDeleting(false);
     }
+    setDeleteConfirmOpen(false);
   };
 
-  const handleDeleteDialogClose = () => {
-    setDeleteConfirmOpen(false);
-    setSingleDeleteId(null);
+  const toggleSessionSelection = (id: string) => {
+    const newSelected = new Set(selectedSessions);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedSessions(newSelected);
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allSessionIds = new Set(filteredSessions.map((s) => s.id));
-      setSelectedSessions(allSessionIds);
+      // Logic assumes filteredSessions but here we use sessions.
+      // Need to filter sessions by configId if store returns all.
+      const filtered = sessions.filter((s) => s.chat_config_id === configId);
+      setSelectedSessions(new Set(filtered.map((s) => s.id)));
     } else {
       setSelectedSessions(new Set());
     }
-  };
-
-  const handleSessionSelectChange = (sessionId: string, checked: boolean) => {
-    setSelectedSessions((prev) => {
-      const newSet = new Set(prev);
-      if (checked) {
-        newSet.add(sessionId);
-      } else {
-        newSet.delete(sessionId);
-      }
-      return newSet;
-    });
   };
 
   const filteredSessions = sessions.filter(
@@ -300,46 +287,49 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   if (sessionsLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2 mt-2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h3 className="text-lg font-semibold">Chat Sessions</h3>
-          {filteredSessions.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={
-                  selectedSessions.size === filteredSessions.length &&
-                  filteredSessions.length > 0
-                }
-                onCheckedChange={handleSelectAll}
-                id="select-all-sessions"
-                className="w-5 h-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-              />
-              <Label
-                htmlFor="select-all-sessions"
-                className="text-sm text-muted-foreground"
-              >
-                Select All ({selectedSessions.size}/{filteredSessions.length})
-              </Label>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="select-all"
+              checked={
+                filteredSessions.length > 0 &&
+                selectedSessions.size === filteredSessions.length
+              }
+              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+              disabled={filteredSessions.length === 0}
+            />
+            <Label
+              htmlFor="select-all"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Select All
+            </Label>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {selectedSessions.size > 0 && (
@@ -352,6 +342,14 @@ export const SessionList: React.FC<SessionListProps> = ({
               Delete Selected ({selectedSessions.size})
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refreshSessions(configId)}
+            title="Refresh sessions"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
           <Button onClick={() => setCreateDialogOpen(true)} size="sm">
             <Plus className="w-4 h-4 mr-2" />
             New Session
@@ -360,14 +358,13 @@ export const SessionList: React.FC<SessionListProps> = ({
       </div>
 
       {filteredSessions.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No sessions</h3>
+        <div className="text-center py-12 border rounded-lg border-dashed">
+          <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+          <h3 className="text-lg font-semibold mb-2">No active sessions</h3>
           <p className="text-muted-foreground mb-4">
-            Create your first chat session to start chatting
+            Start a new conversation to get started
           </p>
           <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
             Create Session
           </Button>
         </div>
@@ -378,16 +375,11 @@ export const SessionList: React.FC<SessionListProps> = ({
               key={session.id}
               session={session}
               isSelected={session.id === selectedSessionId}
+              isSelectMode={selectedSessions.size > 0}
               isChecked={selectedSessions.has(session.id)}
               onSelect={() => onSessionSelect(session)}
+              onCheck={() => toggleSessionSelection(session.id)}
               onDelete={() => handleDelete(session.id)}
-              onToggleCheck={(checked) =>
-                handleSessionSelectChange(session.id, checked)
-              }
-              isDeleting={
-                deletingSessionId === session.id ||
-                (selectedSessions.has(session.id) && isDeleting)
-              }
             />
           ))}
         </div>
@@ -399,34 +391,28 @@ export const SessionList: React.FC<SessionListProps> = ({
         configId={configId}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={handleDeleteDialogClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {singleDeleteId ? "Delete Session?" : "Delete Selected Sessions?"}
-            </DialogTitle>
-            <DialogDescription>
-              {singleDeleteId
-                ? "Are you sure you want to delete this session? This action cannot be undone."
-                : `Are you sure you want to delete ${selectedSessions.size} selected session(s)? This action cannot be undone.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleDeleteDialogClose}>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              selected session(s) and all associated messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSessionToDelete(null)}>
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={singleDeleteId ? handleSingleDelete : handleBulkDelete}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmDelete}
             >
-              {singleDeleteId
-                ? "Delete Session"
-                : `Delete ${selectedSessions.size} Session(s)`}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

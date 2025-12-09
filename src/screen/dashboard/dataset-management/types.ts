@@ -21,6 +21,7 @@ export interface Dataset {
   owner_id: string;
   data_schema: DatasetSchema[];
   rowCount?: number; // For UI compatibility
+  is_used?: boolean;
 }
 
 // Backend API response types matching the server structure
@@ -32,6 +33,7 @@ export interface BackendDataset {
   owner_id: string;
   data_schema: DatasetSchema[];
   row_count: number;
+  is_used?: boolean;
 }
 
 // Dataset list response
@@ -267,5 +269,6 @@ export const mapDataset = (backendDataset: BackendDataset): Dataset => {
     owner_id: backendDataset.owner_id,
     data_schema: backendDataset.data_schema,
     rowCount: backendDataset.row_count || 0,
+    is_used: backendDataset.is_used,
   };
 };

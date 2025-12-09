@@ -35,7 +35,9 @@ export const MCPSelector: React.FC<MCPSelectorProps> = ({
   const { getToken } = useAuth();
   const fetchMcps = useChatStore((state) => state.fetchMcps);
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsRefreshing(true);
     try {
       const token = await getToken();

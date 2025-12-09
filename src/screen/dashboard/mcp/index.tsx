@@ -1,14 +1,27 @@
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
+import { Plus, RefreshCw, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Server, Plus, RefreshCw } from "lucide-react";
 import {
+  MCPDeleteDialog,
   MCPFormDialog,
   MCPList,
   MCPToolsSheet,
 } from "./components";
-import { MCPService, type MCPConfig, type MCPDetail, type MCPListItem, type MCPTool } from "./mcp-service";
+import {
+  MCPService,
+  type MCPConfig,
+  type MCPDetail,
+  type MCPListItem,
+  type MCPTool,
+} from "./mcp-service";
 
 export default function MCP() {
   const { getToken } = useAuth();
@@ -24,6 +37,10 @@ export default function MCP() {
   const [deletingMCPId, setDeletingMCPId] = useState<string | null>(null);
   const [syncingMCPId, setSyncingMCPId] = useState<string | null>(null);
   const [editingMCP, setEditingMCP] = useState<MCPDetail | null>(null);
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [mcpToDelete, setMcpToDelete] = useState<MCPListItem | null>(null);
 
   // Load MCPs on mount
   useEffect(() => {
@@ -59,18 +76,24 @@ export default function MCP() {
     }
   };
 
-  const handleCreateMCP = async (config: MCPConfig) => {
+  const handleSaveMCP = async (config: MCPConfig) => {
     setIsSubmittingMCP(true);
     try {
       const token = await getToken();
       if (!token) {
         toast.error("Authentication required", {
-          description: "Please sign in to create MCP configuration.",
+          description: "Please sign in to save MCP configuration.",
         });
         return;
       }
 
-      const mcp = await MCPService.createMCP(config, token);
+      let mcp;
+      if (editingMCP) {
+        mcp = await MCPService.updateMCP(editingMCP.id, config, token);
+      } else {
+        mcp = await MCPService.createMCP(config, token);
+      }
+
       if (mcp) {
         // Extract server name from config
         const serverName = Object.keys(config.config)[0] || "Unknown";
@@ -88,7 +111,8 @@ export default function MCP() {
       }
     } catch (error: any) {
       toast.error("Failed to save MCP configuration", {
-        description: error?.message || "An error occurred while saving the configuration.",
+        description:
+          error?.message || "An error occurred while saving the configuration.",
       });
     } finally {
       setIsSubmittingMCP(false);
@@ -117,7 +141,9 @@ export default function MCP() {
       }
     } catch (error: any) {
       toast.error("Failed to load MCP configuration", {
-        description: error?.message || "An error occurred while loading the configuration.",
+        description:
+          error?.message ||
+          "An error occurred while loading the configuration.",
       });
     }
   };
@@ -186,7 +212,8 @@ export default function MCP() {
         }
       } else {
         toast.error("Failed to sync MCP tools", {
-          description: "An error occurred while syncing tools from the MCP server.",
+          description:
+            "An error occurred while syncing tools from the MCP server.",
         });
       }
     } catch (error: any) {
@@ -198,12 +225,17 @@ export default function MCP() {
     }
   };
 
-  const handleDeleteMCP = async (mcp: MCPListItem) => {
-    if (!confirm(`Are you sure you want to delete "${mcp.name}"?`)) {
-      return;
-    }
+  // Open delete confirmation dialog
+  const handleDeleteClick = (mcp: MCPListItem) => {
+    setMcpToDelete(mcp);
+    setIsDeleteDialogOpen(true);
+  };
 
-    setDeletingMCPId(mcp.id);
+  // Confirm delete action
+  const handleConfirmDelete = async () => {
+    if (!mcpToDelete) return;
+
+    setDeletingMCPId(mcpToDelete.id);
     try {
       const token = await getToken();
       if (!token) {
@@ -213,20 +245,34 @@ export default function MCP() {
         return;
       }
 
-      const success = await MCPService.deleteMCP(mcp.id, token);
-      if (success) {
+      const result = await MCPService.deleteMCP(mcpToDelete.id, token);
+      if (result.success) {
         toast.success("MCP configuration deleted successfully", {
-          description: `${mcp.name} has been deleted.`,
+          description: `${mcpToDelete.name} has been deleted.`,
         });
+        setIsDeleteDialogOpen(false);
+        setMcpToDelete(null);
+        await fetchMcps(token);
+      } else if (result.dependencies && result.dependencies.length > 0) {
+        // MCP is in use - the dialog will show the dependencies
+        toast.error("Cannot delete MCP configuration", {
+          description:
+            "This MCP is being used by one or more chat configurations.",
+        });
+        // Refresh the list to get updated usage info
         await fetchMcps(token);
       } else {
         toast.error("Failed to delete MCP configuration", {
-          description: "An error occurred while deleting the configuration.",
+          description:
+            result.message ||
+            "An error occurred while deleting the configuration.",
         });
       }
     } catch (error: any) {
       toast.error("Failed to delete MCP configuration", {
-        description: error?.message || "An error occurred while deleting the configuration.",
+        description:
+          error?.message ||
+          "An error occurred while deleting the configuration.",
       });
     } finally {
       setDeletingMCPId(null);
@@ -252,16 +298,27 @@ export default function MCP() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isLoadingMcps}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isLoadingMcps ? "animate-spin" : ""}`}
-              />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleRefresh}
+                    disabled={isLoadingMcps}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${
+                        isLoadingMcps ? "animate-spin" : ""
+                      }`}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh MCP list</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button onClick={() => setIsMCPFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create MCP
@@ -297,7 +354,9 @@ export default function MCP() {
           <div className="text-2xl font-bold">
             {new Set(mcps.map((m) => m.transport)).size}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Different transports</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Different transports
+          </p>
         </div>
       </div>
 
@@ -308,7 +367,7 @@ export default function MCP() {
         onRefresh={handleRefresh}
         onViewTools={handleViewMcpTools}
         onEdit={handleEditMCP}
-        onDelete={handleDeleteMCP}
+        onDelete={handleDeleteClick}
         onSync={handleSyncMCP}
         deletingId={deletingMCPId}
         syncingId={syncingMCPId}
@@ -323,7 +382,7 @@ export default function MCP() {
             setEditingMCP(null);
           }
         }}
-        onSubmit={handleCreateMCP}
+        onSubmit={handleSaveMCP}
         isSubmitting={isSubmittingMCP}
         initialData={editingMCP}
       />
@@ -337,6 +396,22 @@ export default function MCP() {
         isLoading={isLoadingMcpTools}
         searchQuery={mcpSearchQuery}
         onSearchChange={setMcpSearchQuery}
+      />
+
+      {/* MCP Delete Confirmation Dialog */}
+      <MCPDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setMcpToDelete(null);
+          }
+        }}
+        mcpName={mcpToDelete?.name || ""}
+        isUsed={mcpToDelete?.is_used}
+        usedBy={mcpToDelete?.used_by}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deletingMCPId === mcpToDelete?.id}
       />
     </div>
   );

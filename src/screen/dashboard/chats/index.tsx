@@ -1,19 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Plus, Download, FileText, FileJson } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  Download,
+  FileJson,
+  FileText,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ChatInterface } from "./components/chat-interface";
 import { ConfigList, CreateConfigDialog } from "./components/config-list";
 import { SessionList } from "./components/session-list";
-import { useChatStore } from "./store";
 import { ChatService } from "./services";
+import { useChatStore } from "./store";
 import type { ChatConfig, ChatSession } from "./types";
 
 const ChatManager: React.FC = () => {
@@ -23,6 +30,7 @@ const ChatManager: React.FC = () => {
     selectConfig,
     selectSession,
     fetchConfigs,
+    refreshConfigs,
   } = useChatStore();
   const [createConfigDialogOpen, setCreateConfigDialogOpen] = useState(false);
 
@@ -103,10 +111,20 @@ const ChatManager: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <Button onClick={() => setCreateConfigDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Config
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => refreshConfigs()}
+                  title="Refresh configs"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+                <Button onClick={() => setCreateConfigDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Config
+                </Button>
+              </div>
             </div>
           </div>
         </header>

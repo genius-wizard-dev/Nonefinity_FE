@@ -16,6 +16,8 @@ export interface MCPListItem {
   tools_count: number;
   created_at: string;
   updated_at: string;
+  is_used: boolean;
+  used_by: Array<{ id: string; name: string }>;
 }
 
 export interface MCPDetail {
@@ -64,6 +66,33 @@ export class MCPService {
       return response.getData();
     } catch (error) {
       console.error("Failed to create MCP:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Update an existing MCP configuration
+   */
+  static async updateMCP(
+    mcpId: string,
+    config: MCPConfig,
+    token: string
+  ): Promise<MCPDetail | null> {
+    try {
+      const response = await httpClient.put<MCPDetail>(
+        ENDPOINTS.MCP.UPDATE(mcpId),
+        config,
+        token
+      );
+
+      if (!response.isSuccess) {
+        console.error("Failed to update MCP:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("Failed to update MCP:", error);
       return null;
     }
   }
@@ -168,25 +197,46 @@ export class MCPService {
 
   /**
    * Delete an MCP configuration
+   * Returns an object with success status and optional dependencies info
    */
-  static async deleteMCP(mcpId: string, token: string): Promise<boolean> {
+  static async deleteMCP(
+    mcpId: string,
+    token: string
+  ): Promise<{
+    success: boolean;
+    dependencies?: Array<{ id: string; name: string }>;
+    message?: string;
+  }> {
     try {
-      const response = await httpClient.delete<{ success: boolean }>(
-        ENDPOINTS.MCP.DELETE(mcpId),
-        undefined,
-        token
-      );
+      const response = await httpClient.delete<{
+        success: boolean;
+        details?: { dependencies?: Array<{ id: string; name: string }> };
+      }>(ENDPOINTS.MCP.DELETE(mcpId), undefined, token);
 
       if (!response.isSuccess) {
+        // Check for 409 Conflict (MCP is in use)
+        if (response.statusCode === 409) {
+          // Details can be in the data (from error response body)
+          const responseData = response.data as any;
+          const dependencies = responseData?.details?.dependencies || [];
+          return {
+            success: false,
+            dependencies,
+            message:
+              response.message || "Cannot delete MCP because it is in use",
+          };
+        }
         console.error("Failed to delete MCP:", response.message);
-        return false;
+        return { success: false, message: response.message };
       }
 
-      return true;
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error("Failed to delete MCP:", error);
-      return false;
+      return {
+        success: false,
+        message: error?.message || "Failed to delete MCP",
+      };
     }
   }
 }
-

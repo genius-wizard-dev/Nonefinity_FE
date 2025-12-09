@@ -17,6 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Activity,
   CheckCircle2,
   ChevronDown,
@@ -376,30 +382,48 @@ export const EmbeddingToolbar = memo(function EmbeddingToolbar({
             <div className="flex items-center gap-2">
               {/* Clear Filters */}
               {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleClearFilters}
-                  title="Clear all filters"
-                  className="shadow-sm"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleClearFilters}
+                        className="shadow-sm"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Clear all filters</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
 
               {/* Refresh */}
-              <Button
-                variant="outline"
-                size="icon"
-                title="Refresh tasks"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="shadow-sm"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="shadow-sm"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          isRefreshing ? "animate-spin" : ""
+                        }`}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Refresh tasks</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>

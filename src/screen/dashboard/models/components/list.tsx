@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -10,13 +11,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Copy,
-  Database,
-  Edit,
-  MessageSquare,
-  Trash2,
-} from "lucide-react";
-import { LogoSpinner } from "@/components/shared";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Copy, Database, Edit, MessageSquare, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ModelTableProps {
@@ -191,7 +191,10 @@ export function ModelTable({
                       disabled={togglingStatus === model.id}
                     />
                     {togglingStatus === model.id && (
-                      <LogoSpinner size="sm" className="text-muted-foreground" />
+                      <LogoSpinner
+                        size="sm"
+                        className="text-muted-foreground"
+                      />
                     )}
                   </div>
                 </TableCell>
@@ -201,29 +204,55 @@ export function ModelTable({
                 </TableCell>
                 <TableCell className="pl-4 pr-6">
                   <div className="flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => onEdit(model)}
-                      aria-label="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-red-600"
-                      onClick={() => onDelete(model.id)}
-                      aria-label="Delete"
-                      disabled={deletingModelId === model.id}
-                    >
-                      {deletingModelId === model.id ? (
-                        <LogoSpinner size="sm" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => onEdit(model)}
+                            aria-label="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit model</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-red-600"
+                              onClick={() => onDelete(model.id)}
+                              aria-label="Delete"
+                              disabled={
+                                deletingModelId === model.id || model.is_used
+                              }
+                            >
+                              {deletingModelId === model.id ? (
+                                <LogoSpinner size="sm" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {model.is_used
+                              ? "Cannot delete: This model is currently in use."
+                              : "Delete model"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </TableCell>
               </TableRow>

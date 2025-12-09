@@ -16,6 +16,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Edit, MoreVertical, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { KnowledgeStore } from "../types";
@@ -121,19 +127,29 @@ export function KnowledgeStoreCard({
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="bg-border" />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={handleDeleteClick}
-                disabled={knowledgeStore.is_use}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Store
-                {knowledgeStore.is_use && (
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    (In use)
-                  </span>
-                )}
-              </DropdownMenuItem>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0} className="w-full">
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={handleDeleteClick}
+                        disabled={knowledgeStore.is_use}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Store
+                      </DropdownMenuItem>
+                    </span>
+                  </TooltipTrigger>
+                  {knowledgeStore.is_use && (
+                    <TooltipContent side="left">
+                      <p>
+                        Cannot delete: This knowledge store is currently in use.
+                      </p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
