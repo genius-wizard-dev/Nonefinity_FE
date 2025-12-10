@@ -61,6 +61,8 @@ export default defineConfig({
             "remark-gfm",
             "remark-rehype",
           ],
+          "pdf-vendor": ["react-pdf"],
+          "xlsx-vendor": ["xlsx"],
         },
       },
     },
