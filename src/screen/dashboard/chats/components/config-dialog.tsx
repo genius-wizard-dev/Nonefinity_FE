@@ -36,6 +36,7 @@ import { MCPSelector, type MCPConfig } from "./mcp-selector";
 import { ModelSelector } from "./model-selector";
 import { ToolSelector } from "./tool-selector";
 import { ChatService } from "../services";
+import { useChatStore } from "../store";
 
 interface ConfigDialogProps {
   open: boolean;
