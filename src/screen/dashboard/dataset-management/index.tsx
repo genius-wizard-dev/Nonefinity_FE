@@ -36,7 +36,7 @@ export default function DatasetManage() {
           await fetchDatasets(token);
         } else throw new Error("No token available");
       } catch (error) {
-        console.error("❌ Failed to initialize dataset manager:", error);
+        console.error("Failed to initialize dataset manager:", error);
       }
     };
 

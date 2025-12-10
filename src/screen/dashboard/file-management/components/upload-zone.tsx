@@ -21,11 +21,6 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
   const validateFile = (file: File): boolean => {
     const maxSize = 50 * 1024 * 1024; // 50MB in bytes
     const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
       "text/csv",
       "application/vnd.ms-excel",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -33,16 +28,7 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
       "application/pdf",
     ];
 
-    const allowedExtensions = [
-      ".jpg",
-      ".jpeg",
-      ".png",
-      ".csv",
-      ".xlsx",
-      ".xls",
-      ".txt",
-      ".pdf",
-    ];
+    const allowedExtensions = [".csv", ".xlsx", ".xls", ".txt", ".pdf"];
 
     // Check file size
     if (file.size > maxSize) {
@@ -61,7 +47,7 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
     ) {
       setFileErrors((prev) => [
         ...prev,
-        `${file.name}: File type not allowed. Only images, CSV, XLSX, TXT, and PDF files are accepted`,
+        `${file.name}: File type not allowed. Only CSV, XLSX, TXT, and PDF files are accepted`,
       ]);
       return false;
     }
@@ -174,9 +160,7 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
   };
 
   const handleUpload = () => {
-
     if (selectedFiles.length > 0) {
-
       onUpload(selectedFiles);
     } else {
       console.error("No files selected for upload");
@@ -222,7 +206,7 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
             Drag and drop files here
           </p>
           <p className="mb-2 text-sm text-muted-foreground">
-            Supported formats: Images (JPG, PNG, GIF, WebP), CSV, XLSX, TXT, PDF
+            Supported formats: CSV, XLSX, TXT, PDF
           </p>
           <p className="mb-4 text-sm text-muted-foreground">
             Maximum file size: 50MB
@@ -237,7 +221,7 @@ export function UploadZone({ onUpload, onClose }: UploadZoneProps) {
             id="file-upload"
             type="file"
             multiple
-            accept=".jpg,.jpeg,.png,.gif,.webp,.csv,.xlsx,.xls,.txt,.pdf"
+            accept=".csv,.xlsx,.xls,.txt,.pdf"
             onChange={handleFileSelect}
             className="hidden"
           />

@@ -74,7 +74,7 @@ const ModelManagement = () => {
             setFilteredCredentialsForAdd([]);
           }
         } catch (error) {
-          console.error("❌ Failed to fetch credentials by type:", error);
+          console.error("Failed to fetch credentials by type:", error);
           setFilteredCredentialsForAdd([]);
           toast.error("Failed to load credentials", {
             description:

@@ -83,6 +83,7 @@ export const ENDPOINTS = {
   // Task endpoints
   TASKS: {
     LIST: "/tasks",
+    GET: (taskId: string) => `/tasks/${taskId}`,
     DELETE: (taskId: string) => `/tasks/${taskId}`,
     CLEAR: (clearType: string) => `/tasks?clear_type=${clearType}`,
   },
@@ -120,6 +121,7 @@ export const ENDPOINTS = {
       GET: (id: string) => `/chats/configs/${id}`,
       UPDATE: (id: string) => `/chats/configs/${id}`,
       DELETE: (id: string) => `/chats/configs/${id}`,
+      EXPORT: (id: string) => `/chats/configs/${id}/export`,
     },
     // Chat Session endpoints
     SESSIONS: {
@@ -170,14 +172,14 @@ export const ENDPOINTS = {
 
   // Integration endpoints
   INTEGRATIONS: {
-    LIST: "/intergrates",
-    CONNECT: "/intergrates/connect",
-    GET_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
-    ADD_TOOLS: (toolkitSlug: string) => `/intergrates/tools/${toolkitSlug}`,
-    GET_CONFIG: "/intergrates/config", // Get list of integrations with tools configured
+    LIST: "/integrations",
+    CONNECT: "/integrations/connect",
+    GET_TOOLS: (toolkitSlug: string) => `/integrations/tools/${toolkitSlug}`,
+    ADD_TOOLS: (toolkitSlug: string) => `/integrations/tools/${toolkitSlug}`,
+    GET_CONFIG: "/integrations/config", // Get list of integrations with tools configured
     GET_AVAILABLE_TOOLS: (integrationId: string) =>
-      `/intergrates/available-tools/${integrationId}`, // Get all available tools for an integration
-    GET_AVAILABLE_TOOLS_BATCH: "/intergrates/available-tools/batch", // Batch get tools for multiple integrations
+      `/integrations/available-tools/${integrationId}`, // Get all available tools for an integration
+    GET_AVAILABLE_TOOLS_BATCH: "/integrations/available-tools/batch", // Batch get tools for multiple integrations
   },
 
   // MCP endpoints

@@ -19,19 +19,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { File, FileText, Upload } from "lucide-react";
+import {
+  Database,
+  File,
+  FileText,
+  RefreshCw,
+  Sparkles,
+  Upload,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useEmbeddingActions } from "../../embedding/store";
 import {
   useAvailableFiles,
+  useCompatibleKnowledgeStores,
   useEmbeddingModels,
   useFetchAvailableFiles,
   useFetchEmbeddingModels,
   useFetchKnowledgeStores,
   useFetchStoresByDimension,
-  useLoading as useKnowledgeStoreLoading,
-  useKnowledgeStores,
+  useLoadingCompatibleStores,
 } from "../store";
 
 interface CreateKnowledgeDataDialogProps {
@@ -44,14 +51,14 @@ export function CreateKnowledgeDataDialog({
   onOpenChange,
 }: CreateKnowledgeDataDialogProps) {
   // Use selectors to prevent unnecessary re-renders
-  const knowledgeStores = useKnowledgeStores();
+  const compatibleStores = useCompatibleKnowledgeStores();
   const embeddingModels = useEmbeddingModels();
   const availableFiles = useAvailableFiles();
   const fetchEmbeddingModels = useFetchEmbeddingModels();
   const fetchAvailableFiles = useFetchAvailableFiles();
   const fetchStoresByDimension = useFetchStoresByDimension();
   const fetchKnowledgeStores = useFetchKnowledgeStores();
-  const isLoadingStores = useKnowledgeStoreLoading();
+  const isLoadingCompatibleStores = useLoadingCompatibleStores();
 
   // Memoize the onOpenChange callback to prevent unnecessary re-renders
   const handleOpenChange = useCallback(
@@ -106,14 +113,8 @@ export function CreateKnowledgeDataDialog({
     setSelectedStore("");
   }, [selectedModelData, fetchStoresByDimension]);
 
-  // Memoize filtered stores to prevent unnecessary re-calculations
-  const filteredStores = useMemo(() => {
-    if (!selectedModelData?.dimension) return [];
-
-    return knowledgeStores.filter(
-      (store) => store.dimension === selectedModelData.dimension
-    );
-  }, [selectedModelData, knowledgeStores]);
+  // Using compatible stores directly from store
+  const filteredStores = compatibleStores;
 
   const handleFileToggle = useCallback((fileId: string) => {
     setSelectedFiles((prev) =>
@@ -155,9 +156,9 @@ export function CreateKnowledgeDataDialog({
         );
       }
 
-      // Refresh knowledge store data
+      // Refresh knowledge store data silently without UI flicker
       if (selectedStore) {
-        await fetchKnowledgeStores();
+        await fetchKnowledgeStores({ background: true });
       }
 
       // Close modal immediately after success
@@ -196,16 +197,29 @@ export function CreateKnowledgeDataDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl bg-popover border-border">
-        <DialogHeader>
-          <DialogTitle className="text-foreground">Upload Vectors</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Add new vectors to your collection
-          </DialogDescription>
+        <DialogHeader className="space-y-3 pb-4 border-b border-border/50">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <Upload className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <DialogTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              Upload Vectors
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-1.5 leading-relaxed">
+              Add new vector embeddings to your knowledge base collections.
+              Select an embedding model and a compatible target collection to
+              begin.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="model" className="text-foreground">
+        <div className="space-y-6 pt-4">
+          <div className="space-y-3">
+            <Label
+              htmlFor="model"
+              className="text-sm font-medium text-foreground flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-primary" />
               Embedding Model
             </Label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -222,22 +236,46 @@ export function CreateKnowledgeDataDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="collection" className="text-foreground">
-              Target Collection
-            </Label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="collection"
+                className="text-sm font-medium text-foreground flex items-center gap-2"
+              >
+                <Database className="w-4 h-4 text-primary" />
+                Target Collection
+              </Label>
+              {selectedModelData && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    if (selectedModelData?.dimension) {
+                      fetchStoresByDimension(selectedModelData.dimension);
+                    }
+                  }}
+                  disabled={isLoadingCompatibleStores}
+                  title="Reload collections"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${
+                      isLoadingCompatibleStores ? "animate-spin" : ""
+                    }`}
+                  />
+                </Button>
+              )}
+            </div>
             <Select
               value={selectedStore}
               onValueChange={setSelectedStore}
-              disabled={!selectedModel || isLoadingStores}
+              disabled={!selectedModel || isLoadingCompatibleStores}
             >
               <SelectTrigger className="bg-card border-border text-foreground">
                 <SelectValue
                   placeholder={
                     !selectedModel
                       ? "Please select a model first"
-                      : isLoadingStores
-                      ? "Loading stores..."
                       : "Select knowledge store"
                   }
                 />
@@ -247,10 +285,12 @@ export function CreateKnowledgeDataDialog({
                   <div className="p-2 text-sm text-muted-foreground">
                     Please select an embedding model first
                   </div>
-                ) : isLoadingStores ? (
-                  <div className="p-2 text-sm text-muted-foreground flex items-center gap-2">
+                ) : isLoadingCompatibleStores ? (
+                  <div className="p-3 text-sm text-muted-foreground flex items-center justify-center gap-2 h-20">
                     <LogoSpinner size="sm" />
-                    Loading stores...
+                    <span className="animate-pulse">
+                      Loading collections...
+                    </span>
                   </div>
                 ) : filteredStores.length > 0 ? (
                   filteredStores.map((store) => (
@@ -259,8 +299,12 @@ export function CreateKnowledgeDataDialog({
                     </SelectItem>
                   ))
                 ) : (
-                  <div className="p-2 text-sm text-muted-foreground">
-                    No stores available for selected model dimension
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    <p>No compatible stores found.</p>
+                    <p className="text-xs mt-1 opacity-70">
+                      Create a store with {selectedModelData?.dimension}{" "}
+                      dimensions first.
+                    </p>
                   </div>
                 )}
               </SelectContent>

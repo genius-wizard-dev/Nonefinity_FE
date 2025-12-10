@@ -18,6 +18,12 @@ export default function FileManager() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
 
+  const handleRefresh = useCallback(() => {
+    // Clear selections and search when refreshing the demo data
+    setSelectedFiles([]);
+    setSearchQuery("");
+  }, []);
+
   const filteredFiles = files.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -129,6 +135,7 @@ export default function FileManager() {
         onShowShortcuts={() => setShowShortcuts(true)}
         selectedCount={selectedFiles.length}
         onDeleteSelected={() => handleDeleteRequest(selectedFiles)}
+        onRefresh={handleRefresh}
       />
 
       <div className="flex-1 overflow-auto">

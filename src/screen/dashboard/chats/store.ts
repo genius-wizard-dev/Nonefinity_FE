@@ -321,9 +321,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const session = await ChatService.createSession(data);
       if (session) {
-        set((state) => ({
-          sessions: [session, ...state.sessions],
-        }));
+        set((state) => {
+          // Update the config's is_used status locally
+          const updatedConfigs = state.configs.map((config) =>
+            config.id === data.chat_config_id
+              ? { ...config, is_used: true }
+              : config
+          );
+
+          return {
+            sessions: [session, ...state.sessions],
+            configs: updatedConfigs,
+          };
+        });
         return session;
       }
       return null;
@@ -351,6 +361,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           selectedSession:
             state.selectedSession?.id === id ? null : state.selectedSession,
         }));
+        // Refresh configs to update is_used status
+        get().fetchConfigs(true);
       }
     } catch (error) {
       console.error("Failed to delete session:", error);
@@ -368,6 +380,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ? null
               : state.selectedSession,
         }));
+        // Refresh configs to update is_used status
+        get().fetchConfigs(true);
       }
       return deletedCount;
     } catch (error) {

@@ -1,4 +1,4 @@
-import { File, FileText, HardDrive, ImageIcon } from "lucide-react";
+import { File, FileText, HardDrive, Table } from "lucide-react";
 import type { FileItem, FileStats as FileStatsType } from "../types";
 
 interface FileStatsProps {
@@ -12,18 +12,64 @@ interface FileStatsProps {
 export function FileStats({
   files,
   selectedCount,
-  isLoading,
+  stats,
+
   isSearchMode = false,
 }: FileStatsProps) {
-  // Always use files array for accurate counts (especially for search results)
+  // Prefer backend stats when available; fall back to client-side counts
+  const backendTotalFiles = stats?.totalFiles ?? (stats as any)?.total_files;
+  const backendTotalSize = stats?.totalSize ?? (stats as any)?.total_size;
+
   const totalFiles = files.length;
   const totalSize = files.reduce((acc, file) => acc + file.size, 0);
-  const imageCount = files.filter((f) => f.type.includes("image")).length;
-  const documentCount = files.filter((f) =>
-    ["pdf", "document", "spreadsheet", "presentation", "text"].some((docType) =>
-      f.type.includes(docType)
-    )
-  ).length;
+
+  const displayTotalFiles =
+    !isSearchMode && backendTotalFiles !== undefined
+      ? backendTotalFiles
+      : totalFiles;
+
+  const displayTotalSize =
+    !isSearchMode && backendTotalSize !== undefined
+      ? backendTotalSize
+      : totalSize;
+  // Helper to get extension from file (prefer ext field, fallback to name)
+  const getExt = (file: FileItem) => {
+    if (file.ext) {
+      return file.ext.replace(/^\./, "").toLowerCase();
+    }
+    return file.name.split(".").pop()?.toLowerCase() || "";
+  };
+
+  // Structured files: spreadsheets (csv, xlsx, xls)
+  // Use both type property and extension for compatibility
+  const structuredTypes = ["spreadsheet"];
+  const structuredExts = ["csv", "xlsx", "xls"];
+
+  // Unstructured files: pdf, txt, md
+  const unstructuredExts = ["pdf", "txt", "md"];
+
+  const structuredCount =
+    (stats?.file_types as any)?.structured !== undefined
+      ? (stats?.file_types as any)?.structured
+      : files.filter((f) => {
+          const ext = getExt(f);
+          const fileType = f.type?.toLowerCase() || "";
+          return (
+            structuredTypes.includes(fileType) || structuredExts.includes(ext)
+          );
+        }).length;
+
+  const unstructuredCount =
+    (stats?.file_types as any)?.unstructured !== undefined
+      ? (stats?.file_types as any)?.unstructured
+      : files.filter((f) => {
+          const ext = getExt(f);
+          const fileType = f.type?.toLowerCase() || "";
+          // For unstructured, we only want pdf, txt, md
+          if (fileType === "pdf") return true;
+          if (unstructuredExts.includes(ext)) return true;
+          return false;
+        }).length;
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -57,7 +103,7 @@ export function FileStats({
                 {isSearchMode ? "Search Results" : "Total Files"}
               </p>
               <p className="text-xl font-semibold text-foreground">
-                {isLoading ? 0 : totalFiles}
+                {displayTotalFiles}
               </p>
             </div>
           </div>
@@ -69,19 +115,21 @@ export function FileStats({
             <div>
               <p className="text-sm text-muted-foreground">Storage Used</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatBytes(totalSize)}
+                {formatBytes(displayTotalSize)}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 rounded-lg bg-accent/50 p-4">
             <div className="rounded-md bg-primary/10 p-2">
-              <ImageIcon className="h-5 w-5 text-primary" />
+              <Table className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Images</p>
+              <p className="text-sm text-muted-foreground">
+                Structured (csv, xlsx)
+              </p>
               <p className="text-xl font-semibold text-foreground">
-                {imageCount}
+                {structuredCount}
               </p>
             </div>
           </div>
@@ -91,9 +139,11 @@ export function FileStats({
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Documents</p>
+              <p className="text-sm text-muted-foreground">
+                Unstructured (pdf, txt, md)
+              </p>
               <p className="text-xl font-semibold text-foreground">
-                {documentCount}
+                {unstructuredCount}
               </p>
             </div>
           </div>

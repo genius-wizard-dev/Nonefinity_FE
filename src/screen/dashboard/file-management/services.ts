@@ -9,14 +9,14 @@ import {
   type FileItem,
   type FileStats,
   type FileStatsResponse,
-  type SearchFilters,
-  type UploadMetadataRequest,
-  type UploadUrlRequest,
-  type UploadUrlResponse,
   type GooglePDF,
   type GoogleSheet,
   type ListPDFsResponse,
   type ListSheetsResponse,
+  type SearchFilters,
+  type UploadMetadataRequest,
+  type UploadUrlRequest,
+  type UploadUrlResponse,
 } from "./types";
 
 export class FileService {
@@ -184,8 +184,6 @@ export class FileService {
     expiresIn: number;
   } | null> {
     try {
-
-
       const request: UploadUrlRequest = {
         file_name: fileName,
         file_size: fileSize,
@@ -199,14 +197,14 @@ export class FileService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to get upload URL:", response.message);
+        console.error("Failed to get upload URL:", response.message);
         return null;
       }
 
       const data = response.getData();
 
       if (!data?.upload_url) {
-        console.error("❌ No upload URL in response:", data);
+        console.error("No upload URL in response:", data);
         return null;
       }
 
@@ -216,7 +214,7 @@ export class FileService {
         expiresIn: data.expires_in || 10,
       };
     } catch (error) {
-      console.error("❌ Failed to get upload URL:", error);
+      console.error("Failed to get upload URL:", error);
       return null;
     }
   }
@@ -230,7 +228,6 @@ export class FileService {
     onProgress?: (progress: number) => void
   ): Promise<boolean> {
     try {
-
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
 
@@ -250,7 +247,7 @@ export class FileService {
         });
 
         xhr.addEventListener("error", () => {
-          console.error("❌ MinIO upload error:", xhr.statusText);
+          console.error("MinIO upload error:", xhr.statusText);
           resolve(false);
         });
 
@@ -259,7 +256,7 @@ export class FileService {
         xhr.send(file);
       });
     } catch (error) {
-      console.error("❌ Failed to upload to MinIO:", error);
+      console.error("Failed to upload to MinIO:", error);
       return false;
     }
   }
@@ -275,7 +272,6 @@ export class FileService {
     token: string
   ): Promise<FileItem | null> {
     try {
-
       const request: UploadMetadataRequest = {
         object_name: objectName,
         file_name: fileName,
@@ -290,7 +286,7 @@ export class FileService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to save file metadata:", response.message);
+        console.error("Failed to save file metadata:", response.message);
         return null;
       }
 
@@ -299,7 +295,7 @@ export class FileService {
       const fileItem = mapFileItem(uploaded);
       return fileItem;
     } catch (error) {
-      console.error("❌ Failed to save file metadata:", error);
+      console.error("Failed to save file metadata:", error);
       return null;
     }
   }
@@ -313,7 +309,6 @@ export class FileService {
     onProgress?: (progress: number) => void
   ): Promise<FileItem | null> {
     try {
-
       // Step 1: Get presigned upload URL
       onProgress?.(10);
 
@@ -359,7 +354,7 @@ export class FileService {
       onProgress?.(100);
       return fileItem;
     } catch (error) {
-      console.error("❌ Upload failed:", error);
+      console.error("Upload failed:", error);
       return null;
     }
   }
@@ -369,16 +364,14 @@ export class FileService {
    */
   static async deleteFile(fileId: string, token: string): Promise<boolean> {
     try {
-
       const response = await httpClient.delete<boolean>(
         ENDPOINTS.FILES.DELETE(fileId),
         undefined,
         token
       );
 
-
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete file:", response.message);
+        console.error("Failed to delete file:", response.message);
         return false;
       }
 
@@ -400,7 +393,7 @@ export class FileService {
       }
       return result === true;
     } catch (error) {
-      console.error("❌ Failed to delete file:", error);
+      console.error("Failed to delete file:", error);
       return false;
     }
   }
@@ -414,7 +407,6 @@ export class FileService {
     options?: BatchDeleteOptions
   ): Promise<boolean> {
     try {
-
       const batchSize = options?.batchSize || 10;
 
       if (fileIds.length <= batchSize) {
@@ -428,7 +420,7 @@ export class FileService {
         );
 
         if (!response.isSuccess) {
-          console.error("❌ Batch delete failed:", response.message);
+          console.error("Batch delete failed:", response.message);
           return false;
         }
 
@@ -495,7 +487,6 @@ export class FileService {
     token: string
   ): Promise<FileItem | null> {
     try {
-
       const response = await httpClient.put<BackendFileItem>(
         `${ENDPOINTS.FILES.RENAME(fileId)}?new_name=${encodeURIComponent(
           newName
@@ -505,7 +496,7 @@ export class FileService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to rename file:", response.message);
+        console.error("Failed to rename file:", response.message);
         return null;
       }
 
@@ -525,7 +516,6 @@ export class FileService {
     token: string
   ): Promise<string | null> {
     try {
-
       const response = await httpClient.get<string>(
         ENDPOINTS.FILES.DOWNLOAD(fileId),
         undefined,
@@ -533,7 +523,7 @@ export class FileService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to get download URL:", response.message);
+        console.error("Failed to get download URL:", response.message);
         return null;
       }
 
@@ -543,10 +533,10 @@ export class FileService {
         return downloadUrl;
       }
 
-      console.warn("❌ Invalid download response:", downloadUrl);
+      console.warn("Invalid download response:", downloadUrl);
       return null;
     } catch (error) {
-      console.error("❌ Failed to get download URL:", error);
+      console.error("Failed to get download URL:", error);
       return null;
     }
   }
@@ -562,7 +552,7 @@ export class FileService {
       const downloadUrl = await this.downloadFile(fileId, token);
 
       if (!downloadUrl) {
-        console.error("❌ No download URL available");
+        console.error("No download URL available");
         return false;
       }
 
@@ -577,7 +567,7 @@ export class FileService {
 
       return true;
     } catch (error) {
-      console.error("❌ Failed to download file:", error);
+      console.error("Failed to download file:", error);
       return false;
     }
   }

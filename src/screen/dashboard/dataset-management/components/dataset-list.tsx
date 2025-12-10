@@ -417,7 +417,7 @@ export function DatasetList({
           },
         ]);
       } else {
-        console.error("❌ Create dataset failed:", result);
+        console.error("Create dataset failed:", result);
         toast.error("Failed to create dataset", {
           description: result.error || "Please check your input and try again.",
         });

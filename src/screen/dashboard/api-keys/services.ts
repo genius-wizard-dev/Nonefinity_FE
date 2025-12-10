@@ -8,8 +8,8 @@ import type {
   APIKey,
   APIKeyCreate,
   APIKeyCreateResponse,
-  APIKeyUpdate,
   APIKeyListResponse,
+  APIKeyUpdate,
 } from "./types";
 
 export class APIKeyService {
@@ -19,7 +19,11 @@ export class APIKeyService {
   static async create(
     data: APIKeyCreate,
     token?: string
-  ): Promise<{ success: boolean; data?: APIKeyCreateResponse; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    data?: APIKeyCreateResponse;
+    error?: string;
+  }> {
     try {
       console.log("🔑 Creating API key:", data.name);
 
@@ -30,7 +34,7 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create API key:", response.message);
+        console.error("Failed to create API key:", response.message);
         return {
           success: false,
           error: response.message || "Failed to create API key",
@@ -38,11 +42,11 @@ export class APIKeyService {
       }
 
       const responseData = response.getData();
-      console.log("✅ API key created successfully");
+      console.log("API key created successfully");
 
       return { success: true, data: responseData };
     } catch (error) {
-      console.error("❌ API key creation error:", error);
+      console.error("API key creation error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -72,7 +76,7 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch API keys:", response.message);
+        console.error("Failed to fetch API keys:", response.message);
         return {
           success: false,
           error: response.message || "Failed to fetch API keys",
@@ -80,11 +84,11 @@ export class APIKeyService {
       }
 
       const responseData = response.getData();
-      console.log(`✅ Found ${responseData.total} API key(s)`);
+      console.log(`Found ${responseData.total} API key(s)`);
 
       return { success: true, data: responseData };
     } catch (error) {
-      console.error("❌ API keys fetch error:", error);
+      console.error("API keys fetch error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -106,7 +110,7 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch API key:", response.message);
+        console.error("Failed to fetch API key:", response.message);
         return {
           success: false,
           error: response.message || "Failed to fetch API key",
@@ -114,11 +118,11 @@ export class APIKeyService {
       }
 
       const responseData = response.getData();
-      console.log("✅ API key retrieved");
+      console.log("API key retrieved");
 
       return { success: true, data: responseData };
     } catch (error) {
-      console.error("❌ API key fetch error:", error);
+      console.error("API key fetch error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -141,7 +145,7 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update API key:", response.message);
+        console.error("Failed to update API key:", response.message);
         return {
           success: false,
           error: response.message || "Failed to update API key",
@@ -149,11 +153,11 @@ export class APIKeyService {
       }
 
       const responseData = response.getData();
-      console.log("✅ API key updated successfully");
+      console.log("API key updated successfully");
 
       return { success: true, data: responseData };
     } catch (error) {
-      console.error("❌ API key update error:", error);
+      console.error("API key update error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -175,7 +179,7 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to revoke API key:", response.message);
+        console.error("Failed to revoke API key:", response.message);
         return {
           success: false,
           error: response.message || "Failed to revoke API key",
@@ -183,11 +187,11 @@ export class APIKeyService {
       }
 
       const responseData = response.getData();
-      console.log("✅ API key revoked successfully");
+      console.log("API key revoked successfully");
 
       return { success: true, data: responseData };
     } catch (error) {
-      console.error("❌ API key revoke error:", error);
+      console.error("API key revoke error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -209,18 +213,18 @@ export class APIKeyService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete API key:", response.message);
+        console.error("Failed to delete API key:", response.message);
         return {
           success: false,
           error: response.message || "Failed to delete API key",
         };
       }
 
-      console.log("✅ API key deleted successfully");
+      console.log("API key deleted successfully");
 
       return { success: true };
     } catch (error) {
-      console.error("❌ API key delete error:", error);
+      console.error("API key delete error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }

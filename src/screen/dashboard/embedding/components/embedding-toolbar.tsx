@@ -28,14 +28,13 @@ import {
   ChevronDown,
   FileText,
   Filter,
-  Plus,
+  ListTodo,
   RefreshCw,
   Search,
   Trash2,
   Type,
   X,
   XCircle,
-  Zap,
 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { useEmbeddingActions, useTasksData } from "../store";
@@ -49,8 +48,7 @@ interface EmbeddingToolbarProps {
 export const EmbeddingToolbar = memo(function EmbeddingToolbar({
   onFiltersChange,
 }: EmbeddingToolbarProps) {
-  const { setShowCreateDialog, refreshTaskStatus, refreshTasks, clearTasks } =
-    useEmbeddingActions();
+  const { refreshTaskStatus, refreshTasks, clearTasks } = useEmbeddingActions();
   const { tasks } = useTasksData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -174,14 +172,12 @@ export const EmbeddingToolbar = memo(function EmbeddingToolbar({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary" />
+              <ListTodo className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-foreground">
-                Embedding Tasks
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
               <p className="text-sm text-muted-foreground">
-                Manage your embedding and processing tasks
+                Manage your background and processing tasks
               </p>
             </div>
           </div>
@@ -276,15 +272,6 @@ export const EmbeddingToolbar = memo(function EmbeddingToolbar({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Create Task Button */}
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            className="shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Task
-          </Button>
         </div>
       </div>
 

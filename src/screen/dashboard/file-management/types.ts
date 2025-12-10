@@ -283,6 +283,7 @@ export interface FileStoreActions {
     token: string
   ) => Promise<boolean>;
   downloadFile: (fileId: string, token: string) => Promise<boolean>;
+  getFileUrl: (fileId: string, token: string) => Promise<string | null>;
   addFile: (file: FileItem) => void;
   updateFile: (fileId: string, updates: Partial<FileItem>) => void;
   removeFile: (fileId: string) => void;

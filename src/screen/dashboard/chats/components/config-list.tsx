@@ -371,11 +371,13 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
 interface ConfigListProps {
   onConfigSelect: (config: ChatConfig) => void;
   selectedConfigId?: string;
+  searchQuery?: string;
 }
 
 export const ConfigList: React.FC<ConfigListProps> = ({
   onConfigSelect,
   selectedConfigId,
+  searchQuery = "",
 }) => {
   const { getToken } = useAuth();
   const {
@@ -397,6 +399,15 @@ export const ConfigList: React.FC<ConfigListProps> = ({
   const [deletingConfigId, setDeletingConfigId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Filter configs based on search query
+  const filteredConfigs = React.useMemo(() => {
+    if (!searchQuery.trim()) return configs;
+    const query = searchQuery.toLowerCase();
+    return configs.filter((config) =>
+      config.name.toLowerCase().includes(query)
+    );
+  }, [configs, searchQuery]);
 
   // Fetch all data on mount
   useEffect(() => {
@@ -497,10 +508,24 @@ export const ConfigList: React.FC<ConfigListProps> = ({
     );
   }
 
+  if (filteredConfigs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-muted mb-4">
+          <MessageSquare className="w-6 h-6 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No results found</h3>
+        <p className="text-muted-foreground">
+          No chat configs match "{searchQuery}"
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {configs.map((config) => (
+        {filteredConfigs.map((config) => (
           <ConfigCard
             key={config.id}
             config={config}
