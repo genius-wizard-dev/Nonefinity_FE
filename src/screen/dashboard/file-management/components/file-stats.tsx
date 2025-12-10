@@ -13,7 +13,7 @@ export function FileStats({
   files,
   selectedCount,
   stats,
-  isLoading,
+
   isSearchMode = false,
 }: FileStatsProps) {
   // Prefer backend stats when available; fall back to client-side counts

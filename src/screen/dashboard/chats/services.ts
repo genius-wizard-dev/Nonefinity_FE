@@ -407,7 +407,10 @@ export class ChatService {
     }
   }
 
-  static async exportChatHistory(sessionId: string): Promise<{
+  static async exportChatHistory(
+    sessionId: string,
+    format: "csv" | "json" = "csv"
+  ): Promise<{
     file_id: string;
     file_name: string;
     download_url: string;
@@ -421,7 +424,7 @@ export class ChatService {
         download_url: string;
         format: string;
         qa_pairs_count: number;
-      }>(ENDPOINTS.CHATS.SESSIONS.EXPORT(sessionId), { format: "csv" });
+      }>(ENDPOINTS.CHATS.SESSIONS.EXPORT(sessionId), { format });
 
       if (!response.isSuccess) {
         console.error("Failed to export chat history:", response.message);
