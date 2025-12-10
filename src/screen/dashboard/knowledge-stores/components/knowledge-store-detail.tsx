@@ -2,6 +2,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import VectorFlowGraph from "@/screen/dashboard/knowledge-stores/components/vector-graph";
 import VectorList from "@/screen/dashboard/knowledge-stores/components/vector-list";
 import {
@@ -218,13 +224,22 @@ export const KnowledgeStoreDetail: React.FC<KnowledgeStoreDetailProps> = ({
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex items-center gap-4 p-6 border-b border-border bg-card">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/dashboard/knowledge-stores")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/dashboard/knowledge-stores")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Back to Knowledge Stores</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <div className="flex items-center space-x-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">

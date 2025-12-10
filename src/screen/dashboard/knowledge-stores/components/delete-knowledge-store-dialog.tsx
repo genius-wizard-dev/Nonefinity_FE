@@ -40,6 +40,7 @@ export const DeleteKnowledgeStoreDialog: React.FC<
       onOpenChange(false);
     } catch (error: any) {
       const errorMessage =
+        error?.response?.data?.message ||
         error?.response?.data?.detail ||
         error?.message ||
         "Failed to delete knowledge store";
@@ -127,7 +128,6 @@ export const DeleteKnowledgeStoreDialog: React.FC<
               </div>
             </div>
           </div>
-
         </div>
 
         <DialogFooter>

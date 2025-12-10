@@ -19,6 +19,12 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getClerkToken } from "@/consts/endpoint";
 import {
   Calendar,
@@ -220,11 +226,14 @@ export function DatasetList({
     setNewDatasetName("");
   };
 
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
   const handleDelete = (datasetId: string) => {
     const dataset = datasets.find((d) => d.id === datasetId);
     if (dataset) {
       setDatasetToDelete(dataset);
       setDeleteConfirmOpen(true);
+      setDeleteConfirmText("");
     }
     setOpenDropdownId(null);
   };
@@ -248,8 +257,10 @@ export function DatasetList({
           setDeleteConfirmOpen(false);
           setDatasetToDelete(null);
         } else {
+          const error = useDatasetStore.getState().error;
           toast.error("Failed to delete dataset", {
-            description: "Please try again.",
+            description: error || "Please try again.",
+            duration: 5000,
           });
         }
       }
@@ -267,6 +278,8 @@ export function DatasetList({
     setDeleteConfirmOpen(false);
     setDatasetToDelete(null);
   };
+
+  // ... (unchanged code) ...
 
   const handleShowInfo = (datasetId: string) => {
     const dataset = datasets.find((d) => d.id === datasetId);
@@ -305,7 +318,10 @@ export function DatasetList({
     const isExpanding = !expandedDatasets.has(datasetId);
 
     // If expanding and schema is not loaded, fetch it
-    if (isExpanding && (!dataset.data_schema || dataset.data_schema.length === 0)) {
+    if (
+      isExpanding &&
+      (!dataset.data_schema || dataset.data_schema.length === 0)
+    ) {
       try {
         setLoadingSchemas((prev) => new Set(prev).add(datasetId));
         const token = await getClerkToken();
@@ -1174,13 +1190,36 @@ export function DatasetList({
                                 <Edit2 className="h-4 w-4" />
                                 <span>Rename</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => handleDelete(dataset.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                <span>Delete</span>
-                              </DropdownMenuItem>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span tabIndex={0} className="w-full">
+                                      <DropdownMenuItem
+                                        variant="destructive"
+                                        onClick={(e) => {
+                                          if (dataset.is_used) {
+                                            e.preventDefault();
+                                            return;
+                                          }
+                                          handleDelete(dataset.id);
+                                        }}
+                                        disabled={dataset.is_used}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>Delete</span>
+                                      </DropdownMenuItem>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {dataset.is_used && (
+                                    <TooltipContent side="left">
+                                      <p>
+                                        Cannot delete: This dataset is currently
+                                        in use.
+                                      </p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -1192,7 +1231,8 @@ export function DatasetList({
                                 <RefreshCw className="h-3 w-3 animate-spin" />
                                 <span>Loading schema...</span>
                               </div>
-                            ) : dataset.data_schema && dataset.data_schema.length > 0 ? (
+                            ) : dataset.data_schema &&
+                              dataset.data_schema.length > 0 ? (
                               dataset.data_schema.map((column) => (
                                 <div
                                   key={column.column_name}
@@ -1211,7 +1251,8 @@ export function DatasetList({
                               ))
                             ) : (
                               <div className="px-3 py-2 text-xs text-muted-foreground">
-                                No schema available. Click "Fetch Schema" to load.
+                                No schema available. Click "Fetch Schema" to
+                                load.
                               </div>
                             )}
                           </div>
@@ -1237,7 +1278,7 @@ export function DatasetList({
               dataset and all of its data.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <div className="rounded-lg bg-muted p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Database className="h-4 w-4 text-muted-foreground" />
@@ -1248,6 +1289,34 @@ export function DatasetList({
               <p className="text-sm text-muted-foreground">
                 {datasetToDelete?.rowCount?.toLocaleString() || 0} rows
               </p>
+            </div>
+
+            <div>
+              <Label
+                htmlFor="confirm-delete-dataset"
+                className="text-sm font-medium block mb-2"
+              >
+                Type{" "}
+                <span
+                  className="font-bold text-destructive cursor-pointer hover:underline"
+                  onClick={() => {
+                    navigator.clipboard.writeText("DELETE");
+                    toast.success("Copied 'DELETE' to clipboard");
+                  }}
+                  title="Click to copy"
+                >
+                  DELETE
+                </span>{" "}
+                to confirm
+              </Label>
+              <Input
+                id="confirm-delete-dataset"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                autoComplete="off"
+                disabled={isDeletingDataset}
+              />
             </div>
           </div>
           <div className="flex items-center justify-end gap-2">
@@ -1261,7 +1330,8 @@ export function DatasetList({
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              disabled={isDeletingDataset}
+              disabled={deleteConfirmText !== "DELETE" || isDeletingDataset}
+              className="text-white"
             >
               {isDeletingDataset ? (
                 <>

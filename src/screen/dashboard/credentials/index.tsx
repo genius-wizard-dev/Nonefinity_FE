@@ -1,3 +1,4 @@
+import { LogoSpinner } from "@/components/shared";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { mapProviderIconWithSize } from "@/utils/map-provider-icon";
 import {
   Check,
@@ -48,7 +55,6 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { LogoSpinner } from "@/components/shared";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCredentialStore } from "./store";
@@ -443,7 +449,8 @@ function ManageAICredentials() {
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    Custom base URL to override the provider default. Leave empty to use provider default.
+                    Custom base URL to override the provider default. Leave
+                    empty to use provider default.
                   </p>
                 </div>
               </div>
@@ -630,7 +637,10 @@ function ManageAICredentials() {
                         }
                       />
                       {togglingStatus === credential.id && (
-                        <LogoSpinner size="sm" className="text-muted-foreground" />
+                        <LogoSpinner
+                          size="sm"
+                          className="text-muted-foreground"
+                        />
                       )}
                     </div>
                   </TableCell>
@@ -643,32 +653,58 @@ function ManageAICredentials() {
                   </TableCell>
                   <TableCell className="pl-4 pr-6">
                     <div className="flex gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        onClick={() => openEditDialog(credential)}
-                        aria-label="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-red-600"
-                        onClick={() => handleDirectDelete(credential.id)}
-                        aria-label="Delete"
-                        disabled={
-                          credential.usage_count > 0 ||
-                          deletingCredentialId === credential.id
-                        }
-                      >
-                        {deletingCredentialId === credential.id ? (
-                          <LogoSpinner size="sm" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => openEditDialog(credential)}
+                              aria-label="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit credential</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={0}>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600"
+                                onClick={() =>
+                                  handleDirectDelete(credential.id)
+                                }
+                                aria-label="Delete"
+                                disabled={
+                                  credential.usage_count > 0 ||
+                                  deletingCredentialId === credential.id
+                                }
+                              >
+                                {deletingCredentialId === credential.id ? (
+                                  <LogoSpinner size="sm" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              {credential.usage_count > 0
+                                ? "Cannot delete: This credential is currently in use."
+                                : "Delete credential"}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -765,7 +801,8 @@ function ManageAICredentials() {
                 onChange={(e) => handleInputChange("base_url", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Custom base URL to override the provider default. Leave empty to use provider default.
+                Custom base URL to override the provider default. Leave empty to
+                use provider default.
               </p>
             </div>
           </div>
@@ -808,11 +845,9 @@ function ManageAICredentials() {
             <AlertDialogAction
               onClick={handleDeleteCredential}
               disabled={deletingCredential}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
-              {deletingCredential && (
-                <LogoSpinner size="sm" className="mr-2" />
-              )}
+              {deletingCredential && <LogoSpinner size="sm" className="mr-2" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

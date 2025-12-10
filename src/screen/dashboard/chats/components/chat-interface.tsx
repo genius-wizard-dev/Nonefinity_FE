@@ -281,13 +281,8 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   sessionId,
 }) => {
   const { user } = useUser();
-  const {
-    messages,
-    messagesLoading,
-    fetchSessionMessages,
-    addMessage,
-    selectedSession,
-  } = useChatStore();
+  const { messages, messagesLoading, fetchSessionMessages, addMessage } =
+    useChatStore();
   const [isStreaming, setIsStreaming] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [streamingState, setStreamingState] = useState<StreamingState>({
@@ -647,15 +642,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="border-b p-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">
-            {selectedSession?.name || "Chat Session"}
-          </h2>
-        </div>
-      </div>
-
       <div className="flex-1 min-h-0 overflow-hidden">
         <Conversation className="h-full">
           <ConversationContent>

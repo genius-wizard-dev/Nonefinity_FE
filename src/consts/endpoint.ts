@@ -187,6 +187,7 @@ export const ENDPOINTS = {
     GET: (mcpId: string) => `/mcp/${mcpId}`,
     GET_TOOLS: (mcpId: string) => `/mcp/${mcpId}/tools`,
     SYNC: (mcpId: string) => `/mcp/${mcpId}/sync`,
+    UPDATE: (mcpId: string) => `/mcp/${mcpId}`,
     DELETE: (mcpId: string) => `/mcp/${mcpId}`,
   },
 } as const;

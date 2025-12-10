@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertCircle,
   Brain,
   CheckCircle2,
@@ -160,30 +166,46 @@ export function EmbeddingTaskCard({ task }: EmbeddingTaskCardProps) {
 
           <div className="flex items-center gap-1">
             {isProcessing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancel}
-                title="Cancel task"
-                className="hover:bg-destructive/10 hover:text-destructive"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancel}
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cancel task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {task.ready && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDeleteClick}
-                title={
-                  backendTask
-                    ? "Delete task"
-                    : "Delete task (MongoDB ID not found)"
-                }
-                className="hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDeleteClick}
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {backendTask
+                        ? "Delete task"
+                        : "Delete task (MongoDB ID not found)"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>

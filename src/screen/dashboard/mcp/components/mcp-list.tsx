@@ -16,7 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Trash2, Eye, RotateCcw, Pencil } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Eye, Pencil, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import type { MCPListItem } from "../mcp-service";
 
 interface MCPListProps {
@@ -120,19 +126,40 @@ export function MCPList({
                           Sync
                         </Button>
                       )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => onDelete(mcp)}
-                        disabled={deletingId === mcp.id}
-                      >
-                        {deletingId === mcp.id ? (
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 mr-2" />
-                        )}
-                        Delete
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={mcp.is_used ? 0 : undefined}>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => onDelete(mcp)}
+                                disabled={deletingId === mcp.id}
+                              >
+                                {deletingId === mcp.id ? (
+                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                )}
+                                Delete
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {mcp.is_used && mcp.used_by?.length > 0 && (
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-sm">
+                                In use by:{" "}
+                                {mcp.used_by
+                                  .slice(0, 3)
+                                  .map((c) => c.name)
+                                  .join(", ")}
+                                {mcp.used_by.length > 3 &&
+                                  ` +${mcp.used_by.length - 3} more`}
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -144,4 +171,3 @@ export function MCPList({
     </Card>
   );
 }
-

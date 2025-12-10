@@ -20,7 +20,7 @@ import {
   Settings,
   Wrench,
 } from "lucide-react";
-import React from "react";
+import React, { memo, useEffect } from "react";
 import type { Dataset } from "../../dataset-management/types";
 import type { KnowledgeStore } from "../../knowledge-stores/types";
 import type { Model } from "../../models/type";
@@ -59,6 +59,37 @@ interface ConfigDialogProps {
   onEmbeddingModelChange?: (value: string | null) => void;
 }
 
+const TabsHeader = memo(function TabsHeader() {
+  return (
+    <TabsList className="grid w-full grid-cols-6 mb-4 flex-shrink-0">
+      <TabsTrigger value="basic" className="gap-2">
+        <Settings className="w-4 h-4" />
+        Basic
+      </TabsTrigger>
+      <TabsTrigger value="store" className="gap-2">
+        <BookOpen className="w-4 h-4" />
+        Store
+      </TabsTrigger>
+      <TabsTrigger value="dataset" className="gap-2">
+        <Database className="w-4 h-4" />
+        Dataset
+      </TabsTrigger>
+      <TabsTrigger value="integrate" className="gap-2">
+        <Plug className="w-4 h-4" />
+        Integrate
+      </TabsTrigger>
+      <TabsTrigger value="tools" className="gap-2">
+        <Wrench className="w-4 h-4" />
+        Tools
+      </TabsTrigger>
+      <TabsTrigger value="mcp" className="gap-2">
+        <Server className="w-4 h-4" />
+        MCP
+      </TabsTrigger>
+    </TabsList>
+  );
+});
+
 export const ConfigDialog: React.FC<ConfigDialogProps> = ({
   open,
   onOpenChange,
@@ -80,6 +111,17 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
   idPrefix = "",
   onEmbeddingModelChange,
 }) => {
+  const configActiveTab = useChatStore((state) => state.configActiveTab);
+  const setConfigActiveTab = useChatStore((state) => state.setConfigActiveTab);
+  const resetConfigActiveTab = useChatStore(
+    (state) => state.resetConfigActiveTab
+  );
+
+  useEffect(() => {
+    if (!open) {
+      resetConfigActiveTab();
+    }
+  }, [open, resetConfigActiveTab]);
   const handleDatasetSelectionChange = (selectedIds: string[]) => {
     onFormDataChange({
       ...formData,
@@ -234,33 +276,12 @@ export const ConfigDialog: React.FC<ConfigDialogProps> = ({
             <LoadingSkeleton />
           ) : (
             <form onSubmit={onSubmit} className="flex flex-col">
-              <Tabs defaultValue="basic" className="flex flex-col">
-                <TabsList className="grid w-full grid-cols-6 mb-4 flex-shrink-0">
-                  <TabsTrigger value="basic" className="gap-2">
-                    <Settings className="w-4 h-4" />
-                    Basic
-                  </TabsTrigger>
-                  <TabsTrigger value="store" className="gap-2">
-                    <BookOpen className="w-4 h-4" />
-                    Store
-                  </TabsTrigger>
-                  <TabsTrigger value="dataset" className="gap-2">
-                    <Database className="w-4 h-4" />
-                    Dataset
-                  </TabsTrigger>
-                  <TabsTrigger value="integrate" className="gap-2">
-                    <Plug className="w-4 h-4" />
-                    Integrate
-                  </TabsTrigger>
-                  <TabsTrigger value="tools" className="gap-2">
-                    <Wrench className="w-4 h-4" />
-                    Tools
-                  </TabsTrigger>
-                  <TabsTrigger value="mcp" className="gap-2">
-                    <Server className="w-4 h-4" />
-                    MCP
-                  </TabsTrigger>
-                </TabsList>
+              <Tabs
+                value={configActiveTab}
+                onValueChange={setConfigActiveTab}
+                className="flex flex-col"
+              >
+                <TabsHeader />
 
                 <div className="overflow-y-auto">
                   <TabsContent value="basic" className="space-y-4 mt-0">
