@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DeleteConfirmationModal } from "./components/delete-confirmation-modal";
 import { DriveImportModal } from "./components/drive-import-modal";
 import { FileGrid } from "./components/file-grid";
+import { FilePreviewModal } from "./components/file-preview-modal";
 import { FileStats } from "./components/file-stats";
 import { FileToolbar } from "./components/file-toolbar";
 import { GoogleConnectionDialog } from "./components/google-connection-dialog";
@@ -14,7 +15,7 @@ import { KeyboardShortcuts } from "./components/keyboard-shortcuts";
 import { UploadZone } from "./components/upload-zone";
 import { useBatchDelete } from "./hooks";
 import { useFileStore } from "./store";
-import type { ViewMode } from "./types";
+import type { FileItem, ViewMode } from "./types";
 
 export default function FileManagement() {
   const { getToken } = useAuth();
@@ -35,15 +36,21 @@ export default function FileManagement() {
     renameFile,
     downloadFile,
     fetchStats,
+    refreshData,
     clearError,
     clearSearch,
     startUpload,
     completeUpload,
     failUpload,
     clearUploads,
+    getFileUrl,
   } = useFileStore();
 
-  const { deleteBatch, isDeleting, progress } = useBatchDelete();
+  const {
+    deleteBatch,
+    isDeleting: isBatchDeleting,
+    progress,
+  } = useBatchDelete();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -56,7 +63,13 @@ export default function FileManagement() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
+  const [isSingleDeleting, setIsSingleDeleting] = useState(false);
+
+  // Combined delete loading state
+  const isDeleting = isBatchDeleting || isSingleDeleting;
 
   // Check if user has Google OAuth connection
   // Check externalAccounts with provider === "google" (not oauthAccounts with oauth_google)
@@ -140,6 +153,19 @@ export default function FileManagement() {
 
   // Use search results if we're in search mode, otherwise use all files
   const displayFiles = isInSearchMode ? searchResults : files;
+
+  const handleRefresh = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+
+    if (isInSearchMode && searchQuery.trim()) {
+      await searchFiles(searchQuery.trim(), token);
+    } else {
+      await refreshData(token);
+    }
+
+    setSelectedFiles([]);
+  }, [getToken, isInSearchMode, searchQuery, searchFiles, refreshData]);
 
   const handleFileUpload = useCallback(
     async (filesToUpload: File[]) => {
@@ -383,6 +409,12 @@ export default function FileManagement() {
         }
       }, 500);
 
+      // Refresh stats after all uploads complete
+      const token2 = await getToken();
+      if (token2) {
+        fetchStats(token2).catch(() => {});
+      }
+
       // Clear uploads from store after a delay
       setTimeout(() => {
         clearUploads();
@@ -395,6 +427,7 @@ export default function FileManagement() {
       completeUpload,
       failUpload,
       clearUploads,
+      fetchStats,
     ]
   );
 
@@ -409,17 +442,24 @@ export default function FileManagement() {
 
     if (filesToDelete.length === 1) {
       // Single file delete
-      const success = await deleteFile(filesToDelete[0], token);
-      if (success) {
-        setSelectedFiles([]);
-        // No need to refresh - store already updated
+      setIsSingleDeleting(true);
+      try {
+        const success = await deleteFile(filesToDelete[0], token);
+        if (success) {
+          setSelectedFiles([]);
+          // Refresh stats after delete to update storage size
+          fetchStats(token).catch(() => {});
+        }
+      } finally {
+        setIsSingleDeleting(false);
       }
     } else {
       // Batch delete
       await deleteBatch(filesToDelete, {
-        onSuccess: () => {
+        onSuccess: async () => {
           setSelectedFiles([]);
-          // No need to refresh - store already updated
+          // Refresh stats after delete to update storage size
+          fetchStats(token).catch(() => {});
         },
         onError: () => {
           // Error handled by toast notification
@@ -429,7 +469,7 @@ export default function FileManagement() {
 
     setShowDeleteConfirm(false);
     setFilesToDelete([]);
-  }, [filesToDelete, getToken, deleteFile, deleteBatch]);
+  }, [filesToDelete, getToken, deleteFile, deleteBatch, fetchStats]);
 
   const handleRename = useCallback(
     async (fileId: string, newName: string) => {
@@ -459,6 +499,41 @@ export default function FileManagement() {
       await downloadFile(fileId, token);
     },
     [getToken, downloadFile]
+  );
+
+  const handlePreview = useCallback(
+    async (file: FileItem) => {
+      // 10MB limit
+      if (file.size > 10 * 1024 * 1024) {
+        toast.info(
+          "File is too large for preview (>10MB). Downloading instead."
+        );
+        handleDownload(file.id);
+        return;
+      }
+
+      const validExtensions = [".pdf", ".md", ".txt", ".csv", ".xlsx", ".xls"];
+      const ext = (file.ext || "").toLowerCase();
+      if (!validExtensions.includes(ext)) {
+        toast.info(
+          "Preview not supported for this file type. Downloading instead."
+        );
+        handleDownload(file.id);
+        return;
+      }
+
+      const token = await getToken();
+      if (!token) return;
+
+      const url = await getFileUrl(file.id, token);
+      if (url) {
+        setPreviewFile(file);
+        setPreviewUrl(url);
+      } else {
+        toast.error("Failed to get file URL for preview");
+      }
+    },
+    [getToken, getFileUrl, handleDownload]
   );
 
   // Keyboard shortcuts
@@ -592,6 +667,8 @@ export default function FileManagement() {
         selectedCount={selectedFiles.length}
         onDeleteSelected={() => handleDeleteRequest(selectedFiles)}
         isLoading={isDeleting}
+        onRefresh={handleRefresh}
+        isRefreshing={isLoading || isSearching}
       />
 
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -611,6 +688,7 @@ export default function FileManagement() {
           onStartRename={handleStartRename}
           onCancelRename={handleCancelRename}
           onDownload={handleDownload}
+          onPreview={handlePreview}
           renamingFileId={renamingFileId}
           isLoading={isLoading || isSearching}
         />
@@ -660,6 +738,20 @@ export default function FileManagement() {
           progress={progress}
         />
       )}
+
+      <FilePreviewModal
+        open={!!previewFile}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewFile(null);
+            setPreviewUrl(null);
+          }
+        }}
+        file={previewFile}
+        url={previewUrl}
+        onDownload={handleDownload}
+        onDelete={(fileId) => handleDeleteRequest([fileId])}
+      />
     </div>
   );
 }
