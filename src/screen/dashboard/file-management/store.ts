@@ -70,7 +70,6 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
     // If query is empty, clear search immediately
     if (!query || query.trim() === "") {
-
       set({
         searchResults: [],
         isSearching: false,
@@ -88,7 +87,6 @@ export const useFileStore = create<FileStore>((set, get) => ({
 
     // Create new timeout for debounce
     const timeoutId = setTimeout(async () => {
-
       try {
         const files = await FileService.searchFiles(trimmedQuery, token);
 
@@ -101,8 +99,7 @@ export const useFileStore = create<FileStore>((set, get) => ({
             searchTimeout: null,
             error: null,
           });
-
-        } 
+        }
       } catch (error: any) {
         console.error("Search error:", error);
         const errorMessage =
@@ -244,6 +241,17 @@ export const useFileStore = create<FileStore>((set, get) => ({
     }
   },
 
+  getFileUrl: async (fileId: string, token: string) => {
+    try {
+      return await FileService.downloadFile(fileId, token);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to get file URL";
+      set({ error: errorMessage });
+      return null;
+    }
+  },
+
   addFile: (file: FileItem) => {
     set((state) => ({
       files: [file, ...state.files],
@@ -362,8 +370,6 @@ export const useFileStore = create<FileStore>((set, get) => ({
       isUploading: false,
     });
   },
-
-
 
   reset: () => {
     const { searchTimeout } = get();

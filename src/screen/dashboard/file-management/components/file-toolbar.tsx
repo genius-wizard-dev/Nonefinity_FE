@@ -5,6 +5,7 @@ import {
   Grid3x3,
   Keyboard,
   List,
+  RefreshCcw,
   Search,
   Trash2,
   Upload,
@@ -24,6 +25,8 @@ interface FileToolbarProps {
   selectedCount: number;
   onDeleteSelected: () => void;
   isLoading?: boolean;
+  onRefresh: () => void;
+  isRefreshing?: boolean;
 }
 
 export function FileToolbar({
@@ -37,6 +40,8 @@ export function FileToolbar({
   selectedCount,
   onDeleteSelected,
   isLoading = false,
+  onRefresh,
+  isRefreshing = false,
 }: FileToolbarProps) {
   return (
     <div className="border-b border-border bg-card">
@@ -103,6 +108,21 @@ export function FileToolbar({
                 <List className="h-4 w-4" />
               </Button>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              className="gap-2"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <LogoSpinner size="sm" />
+              ) : (
+                <RefreshCcw className="h-4 w-4" />
+              )}
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
 
             <Button
               onClick={onDriveImportClick}

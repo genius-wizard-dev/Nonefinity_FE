@@ -23,6 +23,8 @@ import { ChatService } from "./services";
 import { useChatStore } from "./store";
 import type { ChatConfig, ChatSession } from "./types";
 
+import { Input } from "@/components/ui/input";
+
 const ChatManager: React.FC = () => {
   const {
     selectedConfig,
@@ -33,6 +35,7 @@ const ChatManager: React.FC = () => {
     refreshConfigs,
   } = useChatStore();
   const [createConfigDialogOpen, setCreateConfigDialogOpen] = useState(false);
+  const [configSearchQuery, setConfigSearchQuery] = useState("");
 
   useEffect(() => {
     fetchConfigs();
@@ -97,8 +100,8 @@ const ChatManager: React.FC = () => {
         {/* Header */}
         <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-fit">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20">
                   <MessageSquare className="w-5 h-5 text-primary" />
                 </div>
@@ -106,12 +109,22 @@ const ChatManager: React.FC = () => {
                   <h1 className="text-xl font-semibold text-foreground">
                     Chat Configs
                   </h1>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground hidden md:block">
                     Select or create a chat configuration
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex-1 max-w-xl mx-4">
+                <Input
+                  placeholder="Search configs..."
+                  className="w-full bg-background/50"
+                  value={configSearchQuery}
+                  onChange={(e) => setConfigSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 min-w-fit">
                 <Button
                   variant="outline"
                   size="icon"
@@ -133,6 +146,7 @@ const ChatManager: React.FC = () => {
           <ConfigList
             onConfigSelect={handleConfigSelect}
             selectedConfigId={undefined}
+            searchQuery={configSearchQuery}
           />
         </div>
 

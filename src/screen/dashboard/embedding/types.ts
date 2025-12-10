@@ -172,7 +172,7 @@ export interface BackendTask {
   _id: string; // MongoDB document ID
   task_id: string; // Celery task ID
   user_id: string;
-  task_type: "embedding" | "text_embedding" | "search";
+  task_type: "embedding" | "text_embedding" | "search" | "export_chat_history";
   status: TaskStatus | "CANCELLED" | "ERROR";
   file_id?: string | null;
   knowledge_store_id?: string | null;

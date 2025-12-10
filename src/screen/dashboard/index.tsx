@@ -14,11 +14,11 @@ import {
   KeyRound,
   LayoutDashboard,
   Link as LinkIcon,
+  ListTodo,
   Menu,
   MessageSquare,
   Server,
   X,
-  Zap,
 } from "lucide-react";
 import "react";
 import { useEffect, useState } from "react";
@@ -93,9 +93,9 @@ export function Layout() {
           icon: KeyRound,
         },
         {
-          name: "Embedding",
+          name: "Tasks",
           href: "/dashboard/embeddings",
-          icon: Zap,
+          icon: ListTodo,
         },
         {
           name: "Integrate",
@@ -113,7 +113,9 @@ export function Layout() {
 
   const isActive = (href: string) => {
     // Check if current path matches or starts with the href (for nested routes)
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+    return (
+      location.pathname === href || location.pathname.startsWith(href + "/")
+    );
   };
 
   return (
@@ -164,11 +166,11 @@ export function Layout() {
 
         <SignedIn>
           {/* Navigation */}
-          <nav 
+          <nav
             className="flex-1 p-4 space-y-3 overflow-y-auto"
             style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'rgba(128, 128, 128, 0.3) transparent'
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(128, 128, 128, 0.3) transparent",
             }}
           >
             {navigationGroups.map((group, groupIndex) => (

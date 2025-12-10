@@ -32,12 +32,11 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch datasets:", response.message);
+        console.error("Failed to fetch datasets:", response.message);
         return [];
       }
 
       const data = response.getData();
-
 
       // Handle different response structures
       let datasetsArray: BackendDataset[] = [];
@@ -54,7 +53,7 @@ export class DatasetService {
 
       return datasets;
     } catch (error) {
-      console.error("❌ Failed to fetch datasets:", error);
+      console.error("Failed to fetch datasets:", error);
       return [];
     }
   }
@@ -74,7 +73,7 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch dataset:", response.message);
+        console.error("Failed to fetch dataset:", response.message);
         return null;
       }
 
@@ -82,7 +81,7 @@ export class DatasetService {
 
       return mapDataset(data);
     } catch (error) {
-      console.error("❌ Failed to fetch dataset:", error);
+      console.error("Failed to fetch dataset:", error);
       return null;
     }
   }
@@ -95,17 +94,14 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-
-
       const response = await httpClient.delete<Dataset>(
         ENDPOINTS.DATASETS.DELETE(datasetId),
         undefined,
         token
       );
 
-
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete dataset:", response.message);
+        console.error("Failed to delete dataset:", response.message);
         return {
           success: false,
           error: response.message || "Failed to delete dataset",
@@ -115,10 +111,12 @@ export class DatasetService {
       const deletedDataset = response.getData();
       return {
         success: true,
-        data: deletedDataset ? mapDataset(deletedDataset as BackendDataset) : undefined,
+        data: deletedDataset
+          ? mapDataset(deletedDataset as BackendDataset)
+          : undefined,
       };
     } catch (error) {
-      console.error("❌ Failed to delete dataset:", error);
+      console.error("Failed to delete dataset:", error);
       return {
         success: false,
         error:
@@ -137,8 +135,6 @@ export class DatasetService {
     token?: string
   ): Promise<DatasetData | null> {
     try {
-
-
       const response = await httpClient.get<BackendDatasetData>(
         ENDPOINTS.DATASETS.DATA(datasetId),
         { skip, limit },
@@ -146,12 +142,11 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch dataset data:", response.message);
+        console.error("Failed to fetch dataset data:", response.message);
         return null;
       }
 
       const data = response.getData();
-
 
       return {
         data: data.data || [],
@@ -160,7 +155,7 @@ export class DatasetService {
         limit: data.limit || limit,
       };
     } catch (error) {
-      console.error("❌ Failed to fetch dataset data:", error);
+      console.error("Failed to fetch dataset data:", error);
       return null;
     }
   }
@@ -192,8 +187,8 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create dataset:", response.message);
-        console.error("❌ Response details:", {
+        console.error("Failed to create dataset:", response.message);
+        console.error("Response details:", {
           isSuccess: response.isSuccess,
           message: response.message,
           error: response.error,
@@ -209,7 +204,7 @@ export class DatasetService {
 
       return { success: true, data: mapDataset(data) };
     } catch (error) {
-      console.error("❌ Dataset creation error:", error);
+      console.error("Dataset creation error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -222,7 +217,6 @@ export class DatasetService {
     token?: string
   ): Promise<Dataset | null> {
     try {
-
       // Use JSON body instead of form data
       const jsonBody = {
         file_id: request.file_id,
@@ -237,7 +231,7 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to convert dataset:", response.message);
+        console.error("Failed to convert dataset:", response.message);
         return null;
       }
 
@@ -245,7 +239,7 @@ export class DatasetService {
 
       return mapDataset(data);
     } catch (error) {
-      console.error("❌ Dataset conversion error:", error);
+      console.error("Dataset conversion error:", error);
       return null;
     }
   }
@@ -259,7 +253,6 @@ export class DatasetService {
     token?: string
   ): Promise<QueryResult | null> {
     try {
-
       const startTime = Date.now();
 
       // Use JSON body instead of form data
@@ -278,7 +271,7 @@ export class DatasetService {
       const executionTime = `${endTime - startTime}ms`;
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to execute query:", response.message);
+        console.error("Failed to execute query:", response.message);
         return {
           columns: [],
           rows: [],
@@ -322,7 +315,7 @@ export class DatasetService {
 
       return result;
     } catch (error) {
-      console.error("❌ Query execution error:", error);
+      console.error("Query execution error:", error);
       return {
         columns: [],
         rows: [],
@@ -342,7 +335,6 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-
       // Prepare JSON body
       const jsonBody: Record<string, string> = {};
       if (request.name) {
@@ -359,7 +351,7 @@ export class DatasetService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update dataset info:", response.message);
+        console.error("Failed to update dataset info:", response.message);
         return {
           success: false,
           error: response.message || "Failed to update dataset",
@@ -369,10 +361,12 @@ export class DatasetService {
       const updatedDataset = response.getData();
       return {
         success: true,
-        data: updatedDataset ? mapDataset(updatedDataset as BackendDataset) : undefined,
+        data: updatedDataset
+          ? mapDataset(updatedDataset as BackendDataset)
+          : undefined,
       };
     } catch (error) {
-      console.error("❌ Dataset update error:", error);
+      console.error("Dataset update error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -386,7 +380,6 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: Dataset; error?: string }> {
     try {
-
       // Prepare JSON body - try sending descriptions directly
       const jsonBody = request.descriptions;
 
@@ -396,7 +389,7 @@ export class DatasetService {
       }>(ENDPOINTS.DATASETS.UPDATE_SCHEMA(datasetId), jsonBody, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update dataset schema:", response.message);
+        console.error("Failed to update dataset schema:", response.message);
         return {
           success: false,
           error: response.message || "Failed to update dataset schema",
@@ -416,7 +409,7 @@ export class DatasetService {
         };
       }
     } catch (error) {
-      console.error("❌ Dataset schema update error:", error);
+      console.error("Dataset schema update error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -430,7 +423,6 @@ export class DatasetService {
     token?: string
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-
       const response = await httpClient.post<{
         success: boolean;
         message: string;
@@ -444,7 +436,7 @@ export class DatasetService {
       }>(ENDPOINTS.DATASETS.INSERT(datasetId, fileId), {}, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to insert data:", response.message);
+        console.error("Failed to insert data:", response.message);
         return {
           success: false,
           error: response.message || "Failed to insert data",
@@ -455,7 +447,7 @@ export class DatasetService {
 
       return { success: true, data };
     } catch (error) {
-      console.error("❌ Insert data error:", error);
+      console.error("Insert data error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -468,8 +460,7 @@ export class DatasetService {
     totalRows: number;
     averageRows: number;
   } | null> {
-    try { 
-
+    try {
       // For now, return mock stats
       // In a real implementation, this would call a stats endpoint
       return {
@@ -478,7 +469,7 @@ export class DatasetService {
         averageRows: 0,
       };
     } catch (error) {
-      console.error("❌ Failed to fetch dataset stats:", error);
+      console.error("Failed to fetch dataset stats:", error);
       return null;
     }
   }

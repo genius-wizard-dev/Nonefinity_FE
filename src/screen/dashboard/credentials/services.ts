@@ -19,7 +19,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider[]> {
     try {
-
       const response = await httpClient.get<ProviderListResponse>(
         ENDPOINTS.PROVIDERS.LIST,
         { active_only: activeOnly },
@@ -27,7 +26,7 @@ export class ProviderService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch providers:", response.message);
+        console.error("Failed to fetch providers:", response.message);
         return [];
       }
 
@@ -35,7 +34,7 @@ export class ProviderService {
 
       return data.providers || [];
     } catch (error) {
-      console.error("❌ Failed to fetch providers:", error);
+      console.error("Failed to fetch providers:", error);
       return [];
     }
   }
@@ -49,7 +48,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider[]> {
     try {
-
       const response = await httpClient.get<ProviderListResponse>(
         ENDPOINTS.PROVIDERS.LIST_BY_TASK(taskType),
         { active_only: activeOnly },
@@ -57,10 +55,7 @@ export class ProviderService {
       );
 
       if (!response.isSuccess) {
-        console.error(
-          "❌ Failed to fetch providers by task:",
-          response.message
-        );
+        console.error("Failed to fetch providers by task:", response.message);
         return [];
       }
 
@@ -68,7 +63,7 @@ export class ProviderService {
 
       return data.providers || [];
     } catch (error) {
-      console.error("❌ Failed to fetch providers by task:", error);
+      console.error("Failed to fetch providers by task:", error);
       return [];
     }
   }
@@ -82,7 +77,6 @@ export class ProviderService {
     token?: string
   ): Promise<Provider | null> {
     try {
-
       const response = await httpClient.get<Provider>(
         ENDPOINTS.PROVIDERS.GET(providerName),
         { active_only: activeOnly },
@@ -90,7 +84,7 @@ export class ProviderService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch provider:", response.message);
+        console.error("Failed to fetch provider:", response.message);
         return null;
       }
 
@@ -98,7 +92,7 @@ export class ProviderService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch provider:", error);
+      console.error("Failed to fetch provider:", error);
       return null;
     }
   }
@@ -112,7 +106,6 @@ export class ProviderService {
     token?: string
   ) {
     try {
-
       const response = await httpClient.get(
         ENDPOINTS.PROVIDERS.GET_TASK_CONFIG(providerName, taskType),
         undefined,
@@ -121,7 +114,7 @@ export class ProviderService {
 
       if (!response.isSuccess) {
         console.error(
-          "❌ Failed to fetch provider task config:",
+          "Failed to fetch provider task config:",
           response.message
         );
         return null;
@@ -131,7 +124,7 @@ export class ProviderService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch provider task config:", error);
+      console.error("Failed to fetch provider task config:", error);
       return null;
     }
   }
@@ -148,7 +141,6 @@ export class CredentialService {
     token?: string
   ): Promise<CredentialListResponse | null> {
     try {
-
       const response = await httpClient.get<CredentialListResponse>(
         ENDPOINTS.CREDENTIALS.LIST,
         { skip, limit },
@@ -156,7 +148,7 @@ export class CredentialService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch credentials:", response.message);
+        console.error("Failed to fetch credentials:", response.message);
         return null;
       }
 
@@ -164,7 +156,7 @@ export class CredentialService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch credentials:", error);
+      console.error("Failed to fetch credentials:", error);
       return null;
     }
   }
@@ -177,7 +169,6 @@ export class CredentialService {
     token?: string
   ): Promise<Credential | null> {
     try {
-
       const response = await httpClient.get<Credential>(
         ENDPOINTS.CREDENTIALS.GET(id),
         undefined,
@@ -185,7 +176,7 @@ export class CredentialService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch credential:", response.message);
+        console.error("Failed to fetch credential:", response.message);
         return null;
       }
 
@@ -193,7 +184,7 @@ export class CredentialService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch credential:", error);
+      console.error("Failed to fetch credential:", error);
       return null;
     }
   }
@@ -206,7 +197,6 @@ export class CredentialService {
     token?: string
   ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
-
       // Prepare JSON body, only including defined fields
       const body: Record<string, any> = {
         name: data.name,
@@ -224,7 +214,7 @@ export class CredentialService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create credential:", response.message);
+        console.error("Failed to create credential:", response.message);
         return {
           success: false,
           error: response.message || "Failed to create credential",
@@ -237,7 +227,7 @@ export class CredentialService {
         data: createdCredential,
       };
     } catch (error) {
-      console.error("❌ Credential creation error:", error);
+      console.error("Credential creation error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -270,7 +260,7 @@ export class CredentialService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update credential:", response.message);
+        console.error("Failed to update credential:", response.message);
         return {
           success: false,
           error: response.message || "Failed to update credential",
@@ -283,7 +273,7 @@ export class CredentialService {
         data: updatedCredential,
       };
     } catch (error) {
-      console.error("❌ Credential update error:", error);
+      console.error("Credential update error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -296,7 +286,6 @@ export class CredentialService {
     token?: string
   ): Promise<{ success: boolean; data?: Credential; error?: string }> {
     try {
-
       const response = await httpClient.delete<Credential>(
         ENDPOINTS.CREDENTIALS.DELETE(id),
         undefined,
@@ -304,7 +293,7 @@ export class CredentialService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete credential:", response.message);
+        console.error("Failed to delete credential:", response.message);
         return {
           success: false,
           error: response.message || "Failed to delete credential",
@@ -317,7 +306,7 @@ export class CredentialService {
         data: deletedCredential,
       };
     } catch (error) {
-      console.error("❌ Credential deletion error:", error);
+      console.error("Credential deletion error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -330,7 +319,6 @@ export class CredentialService {
     token?: string
   ): Promise<CredentialListResponse | null> {
     try {
-
       const response = await httpClient.get<CredentialListResponse>(
         ENDPOINTS.CREDENTIALS.LIST_BY_PROVIDER(providerName),
         undefined,
@@ -339,7 +327,7 @@ export class CredentialService {
 
       if (!response.isSuccess) {
         console.error(
-          "❌ Failed to fetch credentials by provider:",
+          "Failed to fetch credentials by provider:",
           response.message
         );
         return null;
@@ -349,7 +337,7 @@ export class CredentialService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch credentials by provider:", error);
+      console.error("Failed to fetch credentials by provider:", error);
       return null;
     }
   }
