@@ -71,13 +71,20 @@ export function ImportDatasetModal({
         const supportedFiles = files.filter((file) => {
           const fileType = file.type?.toLowerCase() || "";
           const fileName = file.name?.toLowerCase() || "";
+          const fileExt = file.ext?.toLowerCase() || "";
           return (
             fileType.includes("csv") ||
             fileType.includes("excel") ||
             fileType.includes("spreadsheet") ||
             fileName.endsWith(".csv") ||
             fileName.endsWith(".xlsx") ||
-            fileName.endsWith(".xls")
+            fileName.endsWith(".xls") ||
+            fileExt === ".csv" ||
+            fileExt === ".xlsx" ||
+            fileExt === ".xls" ||
+            fileExt === "csv" ||
+            fileExt === "xlsx" ||
+            fileExt === "xls"
           );
         });
         setAvailableFiles(supportedFiles);

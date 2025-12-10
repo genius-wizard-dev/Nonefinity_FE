@@ -48,21 +48,28 @@ export function FileStats({
   // Unstructured files: pdf, txt, md
   const unstructuredExts = ["pdf", "txt", "md"];
 
-  const structuredCount = files.filter((f) => {
-    const ext = getExt(f);
-    const fileType = f.type?.toLowerCase() || "";
-    return structuredTypes.includes(fileType) || structuredExts.includes(ext);
-  }).length;
+  const structuredCount =
+    (stats?.file_types as any)?.structured !== undefined
+      ? (stats?.file_types as any)?.structured
+      : files.filter((f) => {
+          const ext = getExt(f);
+          const fileType = f.type?.toLowerCase() || "";
+          return (
+            structuredTypes.includes(fileType) || structuredExts.includes(ext)
+          );
+        }).length;
 
-  const unstructuredCount = files.filter((f) => {
-    const ext = getExt(f);
-    const fileType = f.type?.toLowerCase() || "";
-    // For unstructured, we need to be more specific since "document" includes txt, md, doc, docx, rtf
-    // We only want pdf, txt, md
-    if (fileType === "pdf") return true;
-    if (unstructuredExts.includes(ext)) return true;
-    return false;
-  }).length;
+  const unstructuredCount =
+    (stats?.file_types as any)?.unstructured !== undefined
+      ? (stats?.file_types as any)?.unstructured
+      : files.filter((f) => {
+          const ext = getExt(f);
+          const fileType = f.type?.toLowerCase() || "";
+          // For unstructured, we only want pdf, txt, md
+          if (fileType === "pdf") return true;
+          if (unstructuredExts.includes(ext)) return true;
+          return false;
+        }).length;
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
