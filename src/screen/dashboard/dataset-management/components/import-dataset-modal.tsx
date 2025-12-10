@@ -15,6 +15,7 @@ import { getClerkToken } from "@/consts/endpoint";
 import {
   FileSpreadsheet,
   FileText,
+  RefreshCw,
   Search,
   Upload,
 } from "lucide-react";
@@ -250,7 +251,23 @@ export function ImportDatasetModal({
         <div className="space-y-4 py-4 overflow-y-auto flex-1">
           {/* File Selection */}
           <div className="space-y-2">
-            <Label>Available Files</Label>
+            <div className="flex items-center justify-between">
+              <Label>Available Files</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={loadAvailableFiles}
+                disabled={isLoadingFiles}
+              >
+                <RefreshCw
+                  className={`h-3 w-3 mr-1 ${
+                    isLoadingFiles ? "animate-spin" : ""
+                  }`}
+                />
+                Refresh
+              </Button>
+            </div>
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -266,10 +283,7 @@ export function ImportDatasetModal({
                 {isLoadingFiles ? (
                   <div className="space-y-2">
                     {Array.from({ length: 3 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-2"
-                      >
+                      <div key={index} className="flex items-center gap-2 p-2">
                         <Skeleton className="h-4 w-4 rounded" />
                         <Skeleton className="h-4 w-32 rounded" />
                         <Skeleton className="h-4 w-16 rounded ml-auto" />
@@ -302,8 +316,8 @@ export function ImportDatasetModal({
                             {file.name}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {file.type} •{" "}
-                            {(file.size / 1024 / 1024).toFixed(1)} MB
+                            {file.type} • {(file.size / 1024 / 1024).toFixed(1)}{" "}
+                            MB
                           </div>
                         </div>
                         {selectedFile?.id === file.id && (
@@ -357,16 +371,12 @@ export function ImportDatasetModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="import-dataset-description">
-                  Description
-                </Label>
+                <Label htmlFor="import-dataset-description">Description</Label>
                 <Textarea
                   id="import-dataset-description"
                   placeholder="Describe what this dataset contains..."
                   value={importDatasetDescription}
-                  onChange={(e) =>
-                    setImportDatasetDescription(e.target.value)
-                  }
+                  onChange={(e) => setImportDatasetDescription(e.target.value)}
                   className="min-h-[60px] resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                 />
               </div>
@@ -395,10 +405,7 @@ export function ImportDatasetModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
@@ -413,4 +420,3 @@ export function ImportDatasetModal({
     </Dialog>
   );
 }
-

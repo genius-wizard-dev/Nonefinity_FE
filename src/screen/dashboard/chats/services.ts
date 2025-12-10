@@ -25,13 +25,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch chat configs:", response.message);
+        console.error("Failed to fetch chat configs:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch chat configs:", error);
+      console.error("Failed to fetch chat configs:", error);
       return null;
     }
   }
@@ -46,13 +46,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create chat config:", response.message);
+        console.error("Failed to create chat config:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to create chat config:", error);
+      console.error("Failed to create chat config:", error);
       return null;
     }
   }
@@ -64,13 +64,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch chat config:", response.message);
+        console.error("Failed to fetch chat config:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch chat config:", error);
+      console.error("Failed to fetch chat config:", error);
       return null;
     }
   }
@@ -127,13 +127,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch chat sessions:", response.message);
+        console.error("Failed to fetch chat sessions:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch chat sessions:", error);
+      console.error("Failed to fetch chat sessions:", error);
       return null;
     }
   }
@@ -148,13 +148,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create chat session:", response.message);
+        console.error("Failed to create chat session:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to create chat session:", error);
+      console.error("Failed to create chat session:", error);
       return null;
     }
   }
@@ -171,13 +171,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch chat session:", response.message);
+        console.error("Failed to fetch chat session:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch chat session:", error);
+      console.error("Failed to fetch chat session:", error);
       return null;
     }
   }
@@ -189,13 +189,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete chat session:", response.message);
+        console.error("Failed to delete chat session:", response.message);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("❌ Failed to delete chat session:", error);
+      console.error("Failed to delete chat session:", error);
       return false;
     }
   }
@@ -208,14 +208,14 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete chat sessions:", response.message);
+        console.error("Failed to delete chat sessions:", response.message);
         return 0;
       }
 
       const data = response.getData();
       return data?.deleted_count || 0;
     } catch (error) {
-      console.error("❌ Failed to delete chat sessions:", error);
+      console.error("Failed to delete chat sessions:", error);
       return 0;
     }
   }
@@ -227,13 +227,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to clear session messages:", response.message);
+        console.error("Failed to clear session messages:", response.message);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("❌ Failed to clear session messages:", error);
+      console.error("Failed to clear session messages:", error);
       return false;
     }
   }
@@ -275,7 +275,7 @@ export class ChatService {
       // Check if response is actually a stream
       const contentType = response.headers.get("content-type");
       if (!contentType?.includes("text/event-stream")) {
-        console.warn("⚠️ Expected text/event-stream, got:", contentType);
+        console.warn("Expected text/event-stream, got:", contentType);
       }
 
       const reader = response.body?.getReader();
@@ -312,7 +312,7 @@ export class ChatService {
         }
       }
     } catch (error) {
-      console.error("❌ Stream error:", error);
+      console.error("Stream error:", error);
 
       // Notify caller of error via onEvent
       onEvent({
@@ -396,21 +396,18 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to save conversation:", response.message);
+        console.error("Failed to save conversation:", response.message);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("❌ Failed to save conversation:", error);
+      console.error("Failed to save conversation:", error);
       return false;
     }
   }
 
-  static async exportChatHistory(
-    sessionId: string,
-    format: "csv" | "json" = "csv"
-  ): Promise<{
+  static async exportChatHistory(sessionId: string): Promise<{
     file_id: string;
     file_name: string;
     download_url: string;
@@ -424,16 +421,16 @@ export class ChatService {
         download_url: string;
         format: string;
         qa_pairs_count: number;
-      }>(ENDPOINTS.CHATS.SESSIONS.EXPORT(sessionId), { format });
+      }>(ENDPOINTS.CHATS.SESSIONS.EXPORT(sessionId), { format: "csv" });
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to export chat history:", response.message);
+        console.error("Failed to export chat history:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to export chat history:", error);
+      console.error("Failed to export chat history:", error);
       return null;
     }
   }
@@ -446,16 +443,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error(
-          "❌ Failed to fetch integration configs:",
-          response.message
-        );
+        console.error("Failed to fetch integration configs:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch integration configs:", error);
+      console.error("Failed to fetch integration configs:", error);
       return null;
     }
   }
@@ -470,13 +464,13 @@ export class ChatService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch available tools:", response.message);
+        console.error("Failed to fetch available tools:", response.message);
         return null;
       }
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch available tools:", error);
+      console.error("Failed to fetch available tools:", error);
       return null;
     }
   }
@@ -497,7 +491,7 @@ export class ChatService {
 
       if (!response.isSuccess) {
         console.error(
-          "❌ Failed to fetch available tools batch:",
+          "Failed to fetch available tools batch:",
           response.message
         );
         // Fallback: fetch individually with Promise.allSettled
@@ -506,7 +500,7 @@ export class ChatService {
 
       return response.getData();
     } catch (error) {
-      console.error("❌ Failed to fetch available tools batch:", error);
+      console.error("Failed to fetch available tools batch:", error);
       // Fallback: fetch individually with Promise.allSettled
       return await this.getAvailableToolsBatchFallback(integrationIds);
     }
@@ -533,5 +527,26 @@ export class ChatService {
     }
 
     return toolsMap;
+  }
+
+  static async exportChatConfigHistory(
+    configId: string
+  ): Promise<{ task_id: string; status: string } | null> {
+    try {
+      const response = await httpClient.post<{
+        task_id: string;
+        status: string;
+      }>(ENDPOINTS.CHATS.CONFIGS.EXPORT(configId), { format: "csv" });
+
+      if (!response.isSuccess) {
+        console.error("Failed to trigger config export:", response.message);
+        return null;
+      }
+
+      return response.getData();
+    } catch (error) {
+      console.error("Failed to trigger config export:", error);
+      return null;
+    }
   }
 }

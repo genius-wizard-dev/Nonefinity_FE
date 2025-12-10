@@ -27,7 +27,7 @@ export class ModelService {
       }>(ENDPOINTS.MODELS.CREATE, data, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to create model:", response.message);
+        console.error("Failed to create model:", response.message);
         return {
           success: false,
           error: response.message || "Failed to create model",
@@ -36,7 +36,7 @@ export class ModelService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Model creation error:", error);
+      console.error("Model creation error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -62,7 +62,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch models:", response.message);
+        console.error("Failed to fetch models:", response.message);
         return null;
       }
 
@@ -70,7 +70,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch models:", error);
+      console.error("Failed to fetch models:", error);
       return null;
     }
   }
@@ -87,7 +87,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch model stats:", response.message);
+        console.error("Failed to fetch model stats:", response.message);
         return null;
       }
 
@@ -95,7 +95,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch model stats:", error);
+      console.error("Failed to fetch model stats:", error);
       return null;
     }
   }
@@ -115,7 +115,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch default model:", response.message);
+        console.error("Failed to fetch default model:", response.message);
         return null;
       }
 
@@ -123,7 +123,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch default model:", error);
+      console.error("Failed to fetch default model:", error);
       return null;
     }
   }
@@ -143,7 +143,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch model:", response.message);
+        console.error("Failed to fetch model:", response.message);
         return null;
       }
 
@@ -151,7 +151,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch model:", error);
+      console.error("Failed to fetch model:", error);
       return null;
     }
   }
@@ -176,7 +176,7 @@ export class ModelService {
       }>(ENDPOINTS.MODELS.UPDATE(modelId), body, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to update model:", response.message);
+        console.error("Failed to update model:", response.message);
         return {
           success: false,
           error: response.message || "Failed to update model",
@@ -185,7 +185,7 @@ export class ModelService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Model update error:", error);
+      console.error("Model update error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -204,7 +204,7 @@ export class ModelService {
       }>(ENDPOINTS.MODELS.DELETE(modelId), undefined, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to delete model:", response.message);
+        console.error("Failed to delete model:", response.message);
         return {
           success: false,
           error: response.message || "Failed to delete model",
@@ -213,7 +213,7 @@ export class ModelService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Model deletion error:", error);
+      console.error("Model deletion error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -232,7 +232,7 @@ export class ModelService {
       }>(ENDPOINTS.MODELS.SET_DEFAULT(modelId), {}, token);
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to set default model:", response.message);
+        console.error("Failed to set default model:", response.message);
         return {
           success: false,
           error: response.message || "Failed to set default model",
@@ -241,7 +241,7 @@ export class ModelService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Set default model error:", error);
+      console.error("Set default model error:", error);
       return { success: false, error: "An unexpected error occurred" };
     }
   }
@@ -262,7 +262,7 @@ export class ModelService {
 
       if (!response.isSuccess) {
         console.error(
-          "❌ Failed to fetch models by credential:",
+          "Failed to fetch models by credential:",
           response.message
         );
         return null;
@@ -272,7 +272,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch models by credential:", error);
+      console.error("Failed to fetch models by credential:", error);
       return null;
     }
   }
@@ -292,10 +292,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error(
-          "❌ Failed to fetch models by task type:",
-          response.message
-        );
+        console.error("Failed to fetch models by task type:", response.message);
         return null;
       }
 
@@ -303,7 +300,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch models by task type:", error);
+      console.error("Failed to fetch models by task type:", error);
       return null;
     }
   }
@@ -320,7 +317,7 @@ export class ModelService {
       );
 
       if (!response.isSuccess) {
-        console.error("❌ Failed to fetch model credential:", response.message);
+        console.error("Failed to fetch model credential:", response.message);
         return null;
       }
 
@@ -328,7 +325,7 @@ export class ModelService {
 
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch model credential:", error);
+      console.error("Failed to fetch model credential:", error);
       return null;
     }
   }

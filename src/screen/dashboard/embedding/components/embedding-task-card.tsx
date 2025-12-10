@@ -39,6 +39,22 @@ export function EmbeddingTaskCard({ task }: EmbeddingTaskCardProps) {
   // Find corresponding backend task to get the MongoDB ID
   const backendTask = backendTasks.find((t) => t.task_id === task.task_id);
 
+  // Get user-friendly task type name
+  const getTaskTypeName = (taskType?: string): string => {
+    switch (taskType) {
+      case "embedding":
+        return "Embedding Task";
+      case "text_embedding":
+        return "Text Embedding";
+      case "export_chat_history":
+        return "Export Chat History";
+      case "search":
+        return "Search Task";
+      default:
+        return "Task";
+    }
+  };
+
   const getStatusConfig = () => {
     switch (task.status) {
       case "PENDING":
@@ -149,11 +165,24 @@ export function EmbeddingTaskCard({ task }: EmbeddingTaskCardProps) {
             {statusConfig.icon}
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-foreground">
-                  {backendTask?.metadata?.file_name ||
-                    task.meta?.model_name ||
-                    "Embedding Task"}
-                </h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <h3 className="font-semibold text-foreground max-w-[200px] truncate">
+                        {backendTask?.metadata?.file_name ||
+                          task.meta?.model_name ||
+                          getTaskTypeName(backendTask?.task_type)}
+                      </h3>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        {backendTask?.metadata?.file_name ||
+                          task.meta?.model_name ||
+                          getTaskTypeName(backendTask?.task_type)}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Badge variant="secondary" className={statusConfig.badge}>
                   {statusConfig.label}
                 </Badge>

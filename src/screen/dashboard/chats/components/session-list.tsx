@@ -28,9 +28,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MessageSquare, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Download,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ChatService } from "../services";
 import { useChatStore } from "../store";
 import type { ChatSession } from "../types";
 
@@ -226,11 +234,14 @@ export const SessionList: React.FC<SessionListProps> = ({
     new Set()
   );
   const [lastConfigId, setLastConfigId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Clear selection when config changes
   useEffect(() => {
     if (configId !== lastConfigId) {
       setSelectedSessions(new Set());
+      setSearchQuery("");
       setLastConfigId(configId);
     }
   }, [configId, lastConfigId]);
@@ -247,17 +258,22 @@ export const SessionList: React.FC<SessionListProps> = ({
   };
 
   const handleConfirmDelete = async () => {
-    if (sessionToDelete) {
-      await deleteSession(sessionToDelete);
-      setSessionToDelete(null);
-    } else if (selectedSessions.size > 0) {
-      await Promise.all(
-        Array.from(selectedSessions).map((id) => deleteSession(id))
-      );
-      toast.success(`Deleted ${selectedSessions.size} session(s)`);
-      setSelectedSessions(new Set());
+    setIsDeleting(true);
+    try {
+      if (sessionToDelete) {
+        await deleteSession(sessionToDelete);
+        setSessionToDelete(null);
+      } else if (selectedSessions.size > 0) {
+        await Promise.all(
+          Array.from(selectedSessions).map((id) => deleteSession(id))
+        );
+        toast.success(`Deleted ${selectedSessions.size} session(s)`);
+        setSelectedSessions(new Set());
+      }
+      setDeleteConfirmOpen(false);
+    } finally {
+      setIsDeleting(false);
     }
-    setDeleteConfirmOpen(false);
   };
 
   const toggleSessionSelection = (id: string) => {
@@ -272,28 +288,135 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Logic assumes filteredSessions but here we use sessions.
-      // Need to filter sessions by configId if store returns all.
-      const filtered = sessions.filter((s) => s.chat_config_id === configId);
+      const filtered = filteredSessions; // Use the filtered list for select all
       setSelectedSessions(new Set(filtered.map((s) => s.id)));
     } else {
       setSelectedSessions(new Set());
     }
   };
 
-  const filteredSessions = sessions.filter(
-    (s) => s.chat_config_id === configId
-  );
+  const filteredSessions = React.useMemo(() => {
+    let result = sessions.filter((s) => s.chat_config_id === configId);
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((s) =>
+        (s.name || "Untitled Session").toLowerCase().includes(query)
+      );
+    }
+    return result;
+  }, [sessions, configId, searchQuery]);
 
-  if (sessionsLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-9 w-28" />
+  const handleExportAll = async () => {
+    try {
+      toast.loading("Starting export as CSV...", {
+        id: "export-config-history",
+      });
+
+      // Trigger background task
+      const result = await ChatService.exportChatConfigHistory(configId);
+
+      if (result && result.status === "PENDING") {
+        toast.success(
+          "Export started in background. Check Tasks for progress.",
+          {
+            id: "export-config-history",
+            duration: 4000,
+          }
+        );
+      } else {
+        // Fallback or error
+        toast.error("Failed to start export task", {
+          id: "export-config-history",
+        });
+      }
+    } catch (error) {
+      console.error("Export config error:", error);
+      toast.error("Failed to start export", { id: "export-config-history" });
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="select-all"
+                checked={
+                  filteredSessions.length > 0 &&
+                  selectedSessions.size === filteredSessions.length
+                }
+                onCheckedChange={(checked) =>
+                  handleSelectAll(checked as boolean)
+                }
+                disabled={filteredSessions.length === 0}
+              />
+              <Label
+                htmlFor="select-all"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Select All
+              </Label>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative w-64 mr-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search sessions..."
+                className="pl-8 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {selectedSessions.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete ({selectedSessions.size})
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={handleExportAll}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => refreshSessions(configId)}
+              title="Refresh sessions"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${sessionsLoading ? "animate-spin" : ""}`}
+              />
+            </Button>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              size="sm"
+              className="h-9"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Session
+            </Button>
+          </div>
         </div>
+      </div>
+
+      {sessionsLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i}>
               <CardHeader>
                 <Skeleton className="h-6 w-3/4" />
@@ -305,64 +428,16 @@ export const SessionList: React.FC<SessionListProps> = ({
             </Card>
           ))}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="select-all"
-              checked={
-                filteredSessions.length > 0 &&
-                selectedSessions.size === filteredSessions.length
-              }
-              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-              disabled={filteredSessions.length === 0}
-            />
-            <Label
-              htmlFor="select-all"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Select All
-            </Label>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {selectedSessions.size > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteConfirmOpen(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Selected ({selectedSessions.size})
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => refreshSessions(configId)}
-            title="Refresh sessions"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            New Session
-          </Button>
-        </div>
-      </div>
-
-      {filteredSessions.length === 0 ? (
+      ) : filteredSessions.length === 0 ? (
         <div className="text-center py-12 border rounded-lg border-dashed">
           <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">No active sessions</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            {searchQuery ? "No matching sessions" : "No active sessions"}
+          </h3>
           <p className="text-muted-foreground mb-4">
-            Start a new conversation to get started
+            {searchQuery
+              ? `No sessions match "${searchQuery}"`
+              : "Start a new conversation to get started"}
           </p>
           <Button onClick={() => setCreateDialogOpen(true)}>
             Create Session
@@ -401,14 +476,21 @@ export const SessionList: React.FC<SessionListProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSessionToDelete(null)}>
+            <AlertDialogCancel
+              onClick={() => setSessionToDelete(null)}
+              disabled={isDeleting}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleConfirmDelete}
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

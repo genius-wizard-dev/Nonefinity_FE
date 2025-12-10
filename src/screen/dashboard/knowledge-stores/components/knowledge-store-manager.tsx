@@ -15,6 +15,7 @@ import {
   Database,
   Layers,
   Plus,
+  RefreshCw,
   Search,
   Upload,
 } from "lucide-react";
@@ -186,7 +187,16 @@ export function KnowledgeStoreManager() {
               spellCheck={false}
             />
           </div>
-          <div className="flex items-stretch">
+          <div className="flex items-stretch gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-full"
+              onClick={() => fetchKnowledgeStores()}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
             <Button
               size="sm"
               className="h-full"
