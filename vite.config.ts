@@ -47,7 +47,6 @@ export default defineConfig({
           "motion-vendor": ["framer-motion", "motion"],
           "highlight-vendor": ["highlight.js"],
           "syntax-highlighter-vendor": ["react-syntax-highlighter"],
-          "refractor-vendor": ["refractor"],
           "flow-vendor": ["@xyflow/react", "reactflow"],
           "icons-vendor": ["lucide-react", "react-icons"],
           "utils-vendor": ["date-fns", "dayjs", "zod", "axios"],
