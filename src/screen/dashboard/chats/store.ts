@@ -34,12 +34,17 @@ interface ChatState {
   selectedConfig: ChatConfig | null;
   configsLoading: boolean;
   configsError: string | null;
+  configsLastFetch: number | null;
+
+  // UI state
+  configActiveTab: string;
 
   // Chat Sessions
   sessions: ChatSession[];
   selectedSession: ChatSession | null;
   sessionsLoading: boolean;
   sessionsError: string | null;
+  sessionsLastFetch: number | null;
 
   // Messages
   messages: ChatMessage[];
@@ -82,7 +87,8 @@ interface ChatState {
   mcpsLastFetch: number | null;
 
   // Actions
-  fetchConfigs: () => Promise<void>;
+  fetchConfigs: (force?: boolean) => Promise<void>;
+  refreshConfigs: () => Promise<void>;
   createConfig: (data: ChatConfigCreate) => Promise<ChatConfig | null>;
   updateConfig: (
     id: string,
@@ -91,7 +97,8 @@ interface ChatState {
   selectConfig: (config: ChatConfig | null) => void;
   deleteConfig: (id: string) => Promise<void>;
 
-  fetchSessions: (configId?: string) => Promise<void>;
+  fetchSessions: (configId?: string, force?: boolean) => Promise<void>;
+  refreshSessions: (configId?: string) => Promise<void>;
   createSession: (data: ChatSessionCreate) => Promise<ChatSession | null>;
   selectSession: (session: ChatSession | null) => void;
   deleteSession: (id: string) => Promise<void>;
@@ -115,6 +122,10 @@ interface ChatState {
   fetchIntegrationToolsBatch: (force?: boolean) => Promise<void>;
   fetchMcps: (token: string, force?: boolean) => Promise<void>;
 
+  // UI actions
+  setConfigActiveTab: (tab: string) => void;
+  resetConfigActiveTab: () => void;
+
   reset: () => void;
 }
 
@@ -123,10 +134,13 @@ const initialState = {
   selectedConfig: null,
   configsLoading: false,
   configsError: null,
+  configsLastFetch: null,
+  configActiveTab: "basic",
   sessions: [],
   selectedSession: null,
   sessionsLoading: false,
   sessionsError: null,
+  sessionsLastFetch: null,
   messages: [],
   messagesLoading: false,
   googleSheets: [],
@@ -159,12 +173,26 @@ const initialState = {
 export const useChatStore = create<ChatState>((set, get) => ({
   ...initialState,
 
-  fetchConfigs: async () => {
+  fetchConfigs: async (force = false) => {
+    const state = get();
+    // Don't fetch if already loading
+    if (state.configsLoading) return;
+
+    // Check cache validity (5 minutes)
+    if (!force && state.configs.length > 0 && state.configsLastFetch) {
+      const cacheAge = Date.now() - state.configsLastFetch;
+      if (cacheAge < 5 * 60 * 1000) return;
+    }
+
     set({ configsLoading: true, configsError: null });
     try {
       const data = await ChatService.listConfigs();
       if (data) {
-        set({ configs: data.chat_configs, configsLoading: false });
+        set({
+          configs: data.chat_configs,
+          configsLoading: false,
+          configsLastFetch: Date.now(),
+        });
       } else {
         set({ configsLoading: false, configsError: "Failed to fetch configs" });
       }
@@ -174,6 +202,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         configsError: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+
+  refreshConfigs: async () => {
+    await get().fetchConfigs(true);
   },
 
   createConfig: async (data: ChatConfigCreate) => {
@@ -232,16 +264,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  fetchSessions: async (configId?: string) => {
+  fetchSessions: async (configId?: string, force = false) => {
+    const state = get();
+    if (state.sessionsLoading) return;
+
+    if (!force && state.sessions.length > 0 && state.sessionsLastFetch) {
+      // If filtering by configId, check if we have sessions for that config
+      if (configId) {
+        const hasSessionsForConfig = state.sessions.some(
+          (s) => s.chat_config_id === configId
+        );
+        if (hasSessionsForConfig) {
+          const cacheAge = Date.now() - state.sessionsLastFetch;
+          if (cacheAge < 5 * 60 * 1000) return;
+        }
+      } else {
+        const cacheAge = Date.now() - state.sessionsLastFetch;
+        if (cacheAge < 5 * 60 * 1000) return;
+      }
+    }
+
     set({ sessionsLoading: true, sessionsError: null });
     try {
       const data = await ChatService.listSessions();
       if (data) {
         let sessions = data.chat_sessions;
+        // logic below filters by configId if provided but actually lists ALL sessions then filters
+        // optimization: maybe backend supports filtering? For now stick to existing logic but filter in-memory
         if (configId) {
           sessions = sessions.filter((s) => s.chat_config_id === configId);
         }
-        set({ sessions, sessionsLoading: false });
+        set({
+          sessions,
+          sessionsLoading: false,
+          sessionsLastFetch: Date.now(),
+        });
       } else {
         set({
           sessionsLoading: false,
@@ -254,6 +311,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sessionsError: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+
+  refreshSessions: async (configId?: string) => {
+    await get().fetchSessions(configId, true);
   },
 
   createSession: async (data: ChatSessionCreate) => {
@@ -588,6 +649,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.error("Failed to fetch MCPs:", error);
       set({ mcpsLoading: false });
     }
+  },
+
+  setConfigActiveTab: (tab: string) => {
+    set({ configActiveTab: tab });
+  },
+
+  resetConfigActiveTab: () => {
+    set({ configActiveTab: "basic" });
   },
 
   reset: () => {

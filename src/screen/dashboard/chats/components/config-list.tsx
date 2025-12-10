@@ -17,28 +17,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
 import { Check, Copy, Edit, MessageSquare, Trash2 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  useFetchStoresByDimension,
-  useKnowledgeStores,
-} from "../../knowledge-stores/store";
-import {
-  useChatModels,
-  useChatModelsLoading,
-  useChatStore,
-  useDatasets,
-  useDatasetsLoading,
-  useEmbeddingModels,
-  useEmbeddingModelsLoading,
-  useIntegrations,
-  useIntegrationsLoading,
-  useIntegrationToolsLoading,
-  useMcps,
-  useMcpsLoading,
-} from "../store";
-import type { ChatConfig, ChatConfigCreate, ChatConfigUpdate } from "../types";
+import React, { useEffect, useState } from "react";
+import { useChatConfigFormStore } from "../chat-config-form-store";
+import { useChatStore, useIntegrations } from "../store";
+import type { ChatConfig } from "../types";
 import { ConfigSheet } from "./config-sheet";
 
 interface CreateConfigDialogProps {
@@ -51,99 +41,14 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
   onOpenChange,
 }) => {
   const { createConfig } = useChatStore();
-  const [formData, setFormData] = useState<ChatConfigCreate>({
-    name: "",
-    chat_model_id: "",
-    embedding_model_id: null,
-    knowledge_store_id: null,
-    dataset_ids: null,
-    instruction_prompt: "",
-    selected_tools: null,
-  });
-  const [submitting, setSubmitting] = useState(false);
-
-  // Use store selectors for cached data
-  const chatModels = useChatModels();
-  const chatModelsLoading = useChatModelsLoading();
-  const embeddingModels = useEmbeddingModels();
-  const embeddingModelsLoading = useEmbeddingModelsLoading();
-  const datasets = useDatasets();
-  const datasetsLoading = useDatasetsLoading();
-  const integrations = useIntegrations();
-  const integrationsLoading = useIntegrationsLoading();
-  const integrationToolsLoading = useIntegrationToolsLoading();
-  const mcps = useMcps();
-  const mcpsLoading = useMcpsLoading();
-
-  // Use knowledge store hooks
-  const knowledgeStores = useKnowledgeStores();
-  const fetchStoresByDimension = useFetchStoresByDimension();
-
-  // Calculate loading states
-  const modelsLoading =
-    chatModelsLoading ||
-    embeddingModelsLoading ||
-    datasetsLoading ||
-    integrationsLoading ||
-    integrationToolsLoading ||
-    mcpsLoading;
-
-  const dataLoaded = !modelsLoading;
-
-  // Get selected embedding model data
-  const selectedEmbeddingModel = useMemo(() => {
-    if (!formData.embedding_model_id) return null;
-    return embeddingModels.find((m) => m.id === formData.embedding_model_id);
-  }, [formData.embedding_model_id, embeddingModels]);
-
-  // Filter knowledge stores by dimension of selected embedding model
-  const filteredKnowledgeStores = useMemo(() => {
-    if (!selectedEmbeddingModel?.dimension) return [];
-    return knowledgeStores.filter(
-      (store) => store.dimension === selectedEmbeddingModel.dimension
-    );
-  }, [selectedEmbeddingModel, knowledgeStores]);
+  const { formData, setSubmitting, resetForm } = useChatConfigFormStore();
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setFormData({
-        name: "",
-        chat_model_id: "",
-        embedding_model_id: null,
-        knowledge_store_id: null,
-        dataset_ids: null,
-        instruction_prompt: "",
-        mcp_ids: null,
-        selected_tools: null,
-      });
+      resetForm();
     }
-  }, [open]);
-
-  // Fetch stores by dimension when embedding model changes
-  useEffect(() => {
-    if (selectedEmbeddingModel?.dimension) {
-      fetchStoresByDimension(selectedEmbeddingModel.dimension);
-    }
-  }, [selectedEmbeddingModel?.dimension, fetchStoresByDimension]);
-
-  // Clear knowledge store selection when filtered stores don't include current selection
-  useEffect(() => {
-    if (
-      formData.embedding_model_id &&
-      formData.knowledge_store_id &&
-      filteredKnowledgeStores.length > 0 &&
-      !filteredKnowledgeStores.some(
-        (store) => store.id === formData.knowledge_store_id
-      )
-    ) {
-      setFormData((prev) => ({ ...prev, knowledge_store_id: null }));
-    }
-  }, [
-    filteredKnowledgeStores,
-    formData.embedding_model_id,
-    formData.knowledge_store_id,
-  ]);
+  }, [open, resetForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +71,8 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
     try {
       const config = await createConfig({
         ...formData,
+        name: formData.name || "",
+        chat_model_id: formData.chat_model_id || "",
         embedding_model_id: formData.embedding_model_id || null,
         knowledge_store_id: formData.knowledge_store_id || null,
         dataset_ids:
@@ -178,6 +85,7 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
             ? formData.mcp_ids
             : null,
         selected_tools: formData.selected_tools || null,
+        middleware: formData.middleware || null,
       });
 
       if (config) {
@@ -196,20 +104,6 @@ export const CreateConfigDialog: React.FC<CreateConfigDialogProps> = ({
       onOpenChange={onOpenChange}
       title="Create Chat Config"
       description="Configure a new chat configuration with AI model and optional knowledge store"
-      formData={formData}
-      onFormDataChange={(data: ChatConfigCreate | ChatConfigUpdate) =>
-        setFormData(data as ChatConfigCreate)
-      }
-      chatModels={chatModels}
-      embeddingModels={embeddingModels}
-      datasets={datasets}
-      filteredKnowledgeStores={filteredKnowledgeStores}
-      integrations={integrations}
-      mcps={mcps}
-      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
-      modelsLoading={modelsLoading}
-      dataLoaded={dataLoaded}
-      submitting={submitting}
       onSubmit={handleSubmit}
     />
   );
@@ -227,63 +121,12 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
   config,
 }) => {
   const { updateConfig } = useChatStore();
-  const [formData, setFormData] = useState<ChatConfigUpdate>({
-    name: "",
-    chat_model_id: "",
-    embedding_model_id: null,
-    knowledge_store_id: null,
-    dataset_ids: null,
-    instruction_prompt: "",
-    selected_tools: null,
-  });
-  const [submitting, setSubmitting] = useState(false);
-
-  // Use store selectors for cached data
-  const chatModels = useChatModels();
-  const chatModelsLoading = useChatModelsLoading();
-  const embeddingModels = useEmbeddingModels();
-  const embeddingModelsLoading = useEmbeddingModelsLoading();
-  const datasets = useDatasets();
-  const datasetsLoading = useDatasetsLoading();
-  const integrations = useIntegrations();
-  const integrationsLoading = useIntegrationsLoading();
-  const integrationToolsLoading = useIntegrationToolsLoading();
-  const mcps = useMcps();
-  const mcpsLoading = useMcpsLoading();
-
-  // Use knowledge store hooks
-  const knowledgeStores = useKnowledgeStores();
-  const fetchStoresByDimension = useFetchStoresByDimension();
-
-  // Calculate loading states
-  const modelsLoading =
-    chatModelsLoading ||
-    embeddingModelsLoading ||
-    datasetsLoading ||
-    integrationsLoading ||
-    integrationToolsLoading ||
-    mcpsLoading;
-
-  const dataLoaded = !modelsLoading;
-
-  // Get selected embedding model data
-  const selectedEmbeddingModel = useMemo(() => {
-    if (!formData.embedding_model_id) return null;
-    return embeddingModels.find((m) => m.id === formData.embedding_model_id);
-  }, [formData.embedding_model_id, embeddingModels]);
-
-  // Filter knowledge stores by dimension of selected embedding model
-  const filteredKnowledgeStores = useMemo(() => {
-    if (!selectedEmbeddingModel?.dimension) return [];
-    return knowledgeStores.filter(
-      (store) => store.dimension === selectedEmbeddingModel.dimension
-    );
-  }, [selectedEmbeddingModel, knowledgeStores]);
+  const { formData, setSubmitting, initializeForm } = useChatConfigFormStore();
 
   // Initialize form data when dialog opens with a config
   useEffect(() => {
     if (open && config) {
-      setFormData({
+      initializeForm({
         name: config.name,
         chat_model_id: config.chat_model_id,
         embedding_model_id: config.embedding_model_id || null,
@@ -292,34 +135,10 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
         instruction_prompt: config.instruction_prompt || "",
         mcp_ids: config.mcp_ids || null,
         selected_tools: config.selected_tools || null,
+        middleware: config.middleware || null,
       });
     }
-  }, [open, config]);
-
-  // Fetch stores by dimension when embedding model changes
-  useEffect(() => {
-    if (selectedEmbeddingModel?.dimension) {
-      fetchStoresByDimension(selectedEmbeddingModel.dimension);
-    }
-  }, [selectedEmbeddingModel?.dimension, fetchStoresByDimension]);
-
-  // Clear knowledge store selection when filtered stores don't include current selection
-  useEffect(() => {
-    if (
-      formData.embedding_model_id &&
-      formData.knowledge_store_id &&
-      filteredKnowledgeStores.length > 0 &&
-      !filteredKnowledgeStores.some(
-        (store) => store.id === formData.knowledge_store_id
-      )
-    ) {
-      setFormData((prev) => ({ ...prev, knowledge_store_id: null }));
-    }
-  }, [
-    filteredKnowledgeStores,
-    formData.embedding_model_id,
-    formData.knowledge_store_id,
-  ]);
+  }, [open, config, initializeForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,6 +173,7 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
             ? formData.mcp_ids
             : null,
         selected_tools: formData.selected_tools || null,
+        middleware: formData.middleware || null,
       });
 
       if (updatedConfig) {
@@ -374,20 +194,6 @@ export const EditConfigDialog: React.FC<EditConfigDialogProps> = ({
       onOpenChange={onOpenChange}
       title="Edit Chat Config"
       description="Update the chat configuration settings"
-      formData={formData}
-      onFormDataChange={(data: ChatConfigCreate | ChatConfigUpdate) =>
-        setFormData(data as ChatConfigUpdate)
-      }
-      chatModels={chatModels}
-      embeddingModels={embeddingModels}
-      datasets={datasets}
-      filteredKnowledgeStores={filteredKnowledgeStores}
-      integrations={integrations}
-      mcps={mcps}
-      selectedEmbeddingModel={selectedEmbeddingModel ?? null}
-      modelsLoading={modelsLoading}
-      dataLoaded={dataLoaded}
-      submitting={submitting}
       onSubmit={handleSubmit}
       idPrefix="edit-"
     />
@@ -426,79 +232,135 @@ export const ConfigCard: React.FC<ConfigCardProps> = ({
 
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${
-        isSelected ? "ring-2 ring-primary" : ""
+      className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 group ${
+        isSelected ? "ring-2 ring-primary border-primary" : "border-border/50"
       }`}
       onClick={onSelect}
     >
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <CardTitle className="text-lg">{config.name}</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold leading-none mb-1.5">
+                {config.name}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Created {new Date(config.created_at).toLocaleDateString()}
+              </CardDescription>
+            </div>
           </div>
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              disabled={config.is_used}
-              title={
-                config.is_used
-                  ? "Cannot delete: config is being used by sessions"
-                  : "Delete"
-              }
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit config</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!config.is_used) {
+                          onDelete();
+                        }
+                      }}
+                      disabled={config.is_used}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {config.is_used
+                      ? "Cannot delete: Config is being used by sessions."
+                      : "Delete config"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-        <CardDescription>
-          Created {new Date(config.created_at).toLocaleDateString()}
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {config.id_alias && (
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-muted/50 border border-border/50 group/alias w-fit"
+              onClick={(e) => e.stopPropagation()}
+            >
               <span className="text-[10px] font-mono text-muted-foreground">
                 {config.id_alias}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5"
+                className="h-4 w-4 opacity-0 group-hover/alias:opacity-100 transition-opacity"
                 onClick={handleCopyIdAlias}
                 title="Copy ID"
               >
                 {copied ? (
-                  <Check className="w-3 h-3 text-green-600" />
+                  <Check className="w-2.5 h-2.5 text-green-600" />
                 ) : (
-                  <Copy className="w-3 h-3" />
+                  <Copy className="w-2.5 h-2.5 text-muted-foreground" />
                 )}
               </Button>
             </div>
           )}
-          <div className="space-y-1 text-sm text-muted-foreground">
-            {config.embedding_model_id && <p>✓ Embedding model configured</p>}
-            {config.knowledge_store_id && <p>✓ Knowledge store configured</p>}
-            {config.dataset_ids && config.dataset_ids.length > 0 && (
-              <p>✓ {config.dataset_ids.length} dataset(s) configured</p>
+
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+              Chat Model
+            </div>
+            {config.embedding_model_id && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+                Embedding
+              </div>
             )}
-            {config.instruction_prompt && <p>✓ Custom instructions set</p>}
+            {config.knowledge_store_id && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+                Knowledge
+              </div>
+            )}
+            {config.dataset_ids && config.dataset_ids.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+                {config.dataset_ids.length} Dataset
+                {config.dataset_ids.length > 1 ? "s" : ""}
+              </div>
+            )}
+            {config.instruction_prompt && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+                Custom Prompt
+              </div>
+            )}
+            {config.middleware && config.middleware.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground">
+                {config.middleware.length} Middleware
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

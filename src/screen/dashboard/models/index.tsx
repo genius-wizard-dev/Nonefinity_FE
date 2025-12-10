@@ -43,7 +43,7 @@ const ModelManagement = () => {
   const [addingModel, setAddingModel] = useState(false);
   const [editingModelLoading, setEditingModelLoading] = useState(false);
   const [deletingModel, setDeletingModel] = useState(false);
-  const [deletingModelId, setDeletingModelId] = useState<string | null>(null);
+
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
 
   const [filteredCredentialsForAdd, setFilteredCredentialsForAdd] = useState<
@@ -196,25 +196,6 @@ const ModelManagement = () => {
     }
   };
 
-  const handleDirectDelete = async (modelId: string) => {
-    setDeletingModelId(modelId);
-    try {
-      await deleteModel(modelId);
-      toast.success("Model deleted", {
-        description: "The model has been permanently removed.",
-      });
-    } catch (error: any) {
-      toast.error("Failed to delete model", {
-        description:
-          error?.response?.data?.message ||
-          error?.message ||
-          "An unexpected error occurred.",
-      });
-    } finally {
-      setDeletingModelId(null);
-    }
-  };
-
   const handleToggleStatus = async (
     modelId: string,
     currentStatus: boolean
@@ -313,9 +294,9 @@ const ModelManagement = () => {
         loading={loading}
         credentials={credentials}
         togglingStatus={togglingStatus}
-        deletingModelId={deletingModelId}
+        deletingModelId={null}
         onEdit={openEditDialog}
-        onDelete={handleDirectDelete}
+        onDelete={setDeleteId}
         onToggleStatus={handleToggleStatus}
       />
 

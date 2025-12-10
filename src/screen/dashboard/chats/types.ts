@@ -54,6 +54,7 @@ export interface ChatConfig {
   updated_at: string;
   mcp_ids?: string[] | null;
   selected_tools?: Record<string, { tools: string[] }> | null;
+  middleware?: Record<string, any>[] | null;
 }
 
 export interface ChatConfigCreate {
@@ -66,6 +67,7 @@ export interface ChatConfigCreate {
   integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
   selected_tools?: Record<string, { tools: string[] }> | null;
+  middleware?: Record<string, any>[] | null;
 }
 
 export interface ChatConfigUpdate {
@@ -78,6 +80,7 @@ export interface ChatConfigUpdate {
   integration_ids?: string[] | null;
   mcp_ids?: string[] | null;
   selected_tools?: Record<string, { tools: string[] }> | null;
+  middleware?: Record<string, any>[] | null;
 }
 
 // Integration Config Types

@@ -198,8 +198,27 @@ export function MCPFormDialog({
 
   // Convert config object to form data
   const configToForm = (config: Record<string, any>): boolean => {
-    const keys = Object.keys(config);
-    if (keys.length !== 1) {
+    let configToUse = config;
+    // Support copy-paste from claude_desktop_config.json
+    if (
+      config.mcpServers &&
+      typeof config.mcpServers === "object" &&
+      !Array.isArray(config.mcpServers)
+    ) {
+      configToUse = config.mcpServers;
+    }
+
+    const keys = Object.keys(configToUse);
+    if (keys.length === 0) {
+      setJsonError("Config must contain at least one server configuration");
+      return false;
+    }
+
+    // specific strict check: if we started with normal config, it should typically be 1.
+    // But if we unwrap mcpServers, we just take the first one.
+    if (keys.length !== 1 && configToUse === config) {
+      // Only enforce single key if NOT using mcpServers wrapper (to allow standard single-server config)
+      // Actually, the app only supports ONE server per entry. So we must pick one.
       setJsonError("Config must contain exactly one server configuration");
       return false;
     }
@@ -211,7 +230,7 @@ export function MCPFormDialog({
       return false;
     }
 
-    const serverConfig = config[name];
+    const serverConfig = configToUse[name];
 
     if (
       typeof serverConfig !== "object" ||
@@ -424,9 +443,26 @@ export function MCPFormDialog({
 
     try {
       const parsed = JSON.parse(jsonValue);
-      const keys = Object.keys(parsed);
+      let configToUse = parsed;
 
-      if (keys.length !== 1) {
+      // Support copy-paste from claude_desktop_config.json
+      if (
+        parsed.mcpServers &&
+        typeof parsed.mcpServers === "object" &&
+        !Array.isArray(parsed.mcpServers)
+      ) {
+        configToUse = parsed.mcpServers;
+      }
+
+      const keys = Object.keys(configToUse);
+
+      if (keys.length === 0) {
+        return "Config must contain at least one server configuration";
+      }
+
+      // If we are unwrapping mcpServers, we assume we take the first one.
+      // If straightforward config, ensure exactly one.
+      if (keys.length !== 1 && configToUse === parsed) {
         return "Config must contain exactly one server configuration";
       }
 
@@ -436,7 +472,7 @@ export function MCPFormDialog({
         return nameValidation;
       }
 
-      const serverConfig = parsed[serverName];
+      const serverConfig = configToUse[serverName];
 
       if (
         typeof serverConfig !== "object" ||
@@ -506,7 +542,19 @@ export function MCPFormDialog({
         return;
       }
       try {
-        config = JSON.parse(jsonValue);
+        const parsed = JSON.parse(jsonValue);
+        // Normalize if wrapped in mcpServers
+        if (
+          parsed.mcpServers &&
+          typeof parsed.mcpServers === "object" &&
+          !Array.isArray(parsed.mcpServers)
+        ) {
+          const keys = Object.keys(parsed.mcpServers);
+          // validateJson guarantees we have at least 1 key if we passed it
+          config = { [keys[0]]: parsed.mcpServers[keys[0]] };
+        } else {
+          config = parsed;
+        }
       } catch {
         setJsonError("Invalid JSON format");
         return;
