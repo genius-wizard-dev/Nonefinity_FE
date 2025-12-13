@@ -349,12 +349,12 @@ export function Layout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto pt-16">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden pt-16">
           <SignedOut>
             <Navigate to="/sign-in" replace />
           </SignedOut>
           <SignedIn>
-            <div className="h-full">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <Outlet />
             </div>
           </SignedIn>
