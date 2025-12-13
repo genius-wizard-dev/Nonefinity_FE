@@ -106,6 +106,7 @@ interface ChatState {
 
   fetchSessionMessages: (sessionId: string) => Promise<void>;
   addMessage: (message: ChatMessage) => void;
+  removeLastMessage: () => void;
   clearMessages: () => void;
 
   fetchGoogleSheets: (token: string, force?: boolean) => Promise<void>;
@@ -411,6 +412,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   addMessage: (message: ChatMessage) => {
     set((state) => ({
       messages: [...state.messages, message],
+    }));
+  },
+
+  removeLastMessage: () => {
+    set((state) => ({
+      messages: state.messages.slice(0, -1),
     }));
   },
 
