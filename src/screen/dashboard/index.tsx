@@ -1,10 +1,15 @@
 import { ThemeToggle } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import {
   BookOpen,
   Brain,
@@ -26,6 +31,7 @@ import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 export function Layout() {
   const location = useLocation();
   const { theme } = useTheme();
+  const { user } = useUser();
   // Use public assets for logo; dark mode => Nonefinity_Light.png (for contrast)
   const currentLogo =
     theme === "dark" ? "/Nonefinity_Light.png" : "/Nonefinity_Dark.png";
@@ -129,7 +135,7 @@ export function Layout() {
       >
         <div
           className={cn(
-            "h-16 flex items-center justify-center px-4 border-b flex-shrink-0",
+            "h-16 flex items-center px-4 border-b flex-shrink-0",
             sidebarOpen ? "justify-between" : "justify-center"
           )}
         >
@@ -147,21 +153,18 @@ export function Layout() {
               Nonefinity
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            {sidebarOpen && <ThemeToggle className="flex-shrink-0" />}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex-shrink-0 hover:bg-accent transition-colors"
-            >
-              {sidebarOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex-shrink-0 hover:bg-accent transition-colors"
+          >
+            {sidebarOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </Button>
         </div>
 
         <SignedIn>
@@ -225,133 +228,128 @@ export function Layout() {
               </div>
             ))}
           </nav>
-
-          {/* User Section */}
-          <div className="h-20 border-t flex items-center px-4 flex-shrink-0">
-            <div
-              className={`flex items-center gap-3 w-full ${
-                sidebarOpen ? "" : "justify-center"
-              }`}
-            >
-              <div className="flex-shrink-0">
-                <UserButton
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: "w-10 h-10",
-                    },
-                  }}
-                />
-              </div>
-              {sidebarOpen && (
-                <div className="flex-1 min-w-0 animate-in fade-in duration-200">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    Welcome back!
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    Manage your data
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
         </SignedIn>
       </aside>
 
-      {/* Mobile Sidebar */}
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden fixed top-4 left-4 z-50 shadow-md"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="h-16 flex items-center justify-between px-6 border-b flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <img
-                  src={currentLogo}
-                  alt="Logo"
-                  className="w-5 h-5 flex-shrink-0"
-                />
-                <span className="text-lg font-semibold text-foreground">
-                  Nonefinity
-                </span>
-              </div>
-              <ThemeToggle />
-            </div>
-
-            <SignedIn>
-              {/* Navigation */}
-              <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
-                {navigationGroups.map((group, groupIndex) => (
-                  <div key={groupIndex} className="space-y-1">
-                    {group.label && (
-                      <div className="px-3 py-2">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          {group.label}
-                        </span>
-                      </div>
-                    )}
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const active = isActive(item.href);
-                      return (
-                        <Link key={item.name} to={item.href}>
-                          <Button
-                            variant={active ? "secondary" : "ghost"}
-                            className="w-full justify-start h-11"
-                          >
-                            <Icon className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-sm font-medium ml-3">
-                              {item.name}
-                            </span>
-                          </Button>
-                        </Link>
-                      );
-                    })}
+      {/* Header Bar */}
+      <SignedIn>
+        <header
+          className={cn(
+            "fixed top-0 left-0 right-0 h-16 z-50 bg-background/95 backdrop-blur-sm border-b border-border flex items-center justify-between px-4 lg:px-6 flex-shrink-0 transition-all duration-300 ease-in-out",
+            sidebarOpen ? "lg:left-64" : "lg:left-20"
+          )}
+        >
+          {/* Left Side - Menu Button (Mobile) & User Info */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Mobile Menu Button */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden h-9 w-9 flex-shrink-0 hover:bg-accent transition-colors"
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                showCloseButton={false}
+                className="w-[280px] sm:w-64 p-0 max-w-[85vw]"
+              >
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="h-14 sm:h-16 flex items-center justify-between px-2 sm:px-4 border-b flex-shrink-0 gap-1.5 sm:gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                      <img
+                        src={currentLogo}
+                        alt="Logo"
+                        className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
+                      />
+                      <span className="text-sm sm:text-base lg:text-lg font-semibold text-foreground truncate hidden sm:inline">
+                        Nonefinity
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                      <SheetClose asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
+                          aria-label="Close menu"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </SheetClose>
+                    </div>
                   </div>
-                ))}
-              </nav>
 
-              <Separator />
-
-              {/* User Section */}
-              <div className="h-20 flex items-center gap-3 px-6 flex-shrink-0">
-                <UserButton
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: "w-10 h-10",
-                    },
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    Welcome back!
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    Manage your data
-                  </p>
+                  <SignedIn>
+                    {/* Navigation */}
+                    <nav className="flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto">
+                      {navigationGroups.map((group, groupIndex) => (
+                        <div key={groupIndex} className="space-y-1">
+                          {group.label && (
+                            <div className="px-2 sm:px-3 py-1.5 sm:py-2">
+                              <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                {group.label}
+                              </span>
+                            </div>
+                          )}
+                          {group.items.map((item) => {
+                            const Icon = item.icon;
+                            const active = isActive(item.href);
+                            return (
+                              <Link key={item.name} to={item.href}>
+                                <Button
+                                  variant={active ? "secondary" : "ghost"}
+                                  className="w-full justify-start h-10 sm:h-11 text-sm"
+                                >
+                                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                  <span className="font-medium ml-2 sm:ml-3 truncate">
+                                    {item.name}
+                                  </span>
+                                </Button>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </nav>
+                  </SignedIn>
                 </div>
-              </div>
-            </SignedIn>
+              </SheetContent>
+            </Sheet>
+
+            {/* User Info */}
+            <div className="flex flex-col min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                Manage your data
+              </p>
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+
+          {/* UserButton - Right Side */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <ThemeToggle />
+            <UserButton
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "w-9 h-9 sm:w-10 sm:h-10",
+                  userButtonPopoverCard: "z-[100]",
+                },
+              }}
+            />
+          </div>
+        </header>
+      </SignedIn>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Theme Toggle for collapsed sidebar - fixed bottom-right */}
-        {!sidebarOpen && (
-          <div className="fixed bottom-4 right-4 z-50 lg:block hidden">
-            <ThemeToggle className="shadow-md" />
-          </div>
-        )}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-16">
           <SignedOut>
             <Navigate to="/sign-in" replace />
           </SignedOut>

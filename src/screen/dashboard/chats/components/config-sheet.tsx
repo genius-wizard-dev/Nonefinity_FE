@@ -486,28 +486,28 @@ export const ConfigSheet: React.FC<ConfigSheetProps> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl lg:max-w-4xl flex flex-col p-0"
+        className="w-full sm:max-w-2xl lg:max-w-4xl flex flex-col p-0 max-h-screen"
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b bg-muted/30 flex-shrink-0">
           <SheetTitle className="text-xl">{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {!dataLoaded ? (
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               <LoadingSkeleton />
             </div>
           ) : (
-            <form onSubmit={onSubmit} className="flex flex-col h-full">
+            <form onSubmit={onSubmit} className="flex flex-col h-full min-h-0">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
-                className="flex flex-col h-full"
+                className="flex flex-col flex-1 min-h-0"
               >
                 <TabsHeader />
 
-                <ScrollArea className="flex-1 px-6">
+                <ScrollArea className="flex-1 min-h-0 px-6">
                   <div className="py-4 space-y-4">
                     <TabsContent value="basic" className="mt-0 space-y-4">
                       <BasicTabContent idPrefix={idPrefix} />
@@ -536,7 +536,7 @@ export const ConfigSheet: React.FC<ConfigSheetProps> = ({
                 </ScrollArea>
               </Tabs>
 
-              <SheetFooter className="flex-shrink-0 border-t px-6 py-4 bg-background">
+              <SheetFooter className="flex-shrink-0 border-t px-6 py-4 bg-background mt-auto">
                 <div className="flex gap-3 w-full justify-end">
                   <Button
                     type="button"
