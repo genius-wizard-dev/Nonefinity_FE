@@ -4,7 +4,6 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Loader } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageAvatar,
@@ -28,6 +27,7 @@ import { ChatService } from "../services";
 import { useChatStore } from "../store";
 import type { ChatMessage } from "../types";
 import { ChatInput } from "./chat-input";
+import { MessagesLoadingSkeleton } from "./chat-skeletons";
 import { OptimizedToolDisplay } from "./optimized-tool-display";
 
 interface ChatInterfaceProps {
@@ -498,7 +498,7 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
           }
         });
 
-        // Save conversation
+        // Save conversation and update UI BEFORE resetting streaming to prevent flash
         if (accumulatedContent) {
           const finalContent =
             typeof accumulatedContent === "string"
@@ -521,21 +521,37 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
             owner_id: "",
             role: "assistant",
             content: finalContent,
+            tools: accumulatedTools.map((t) => ({
+              name: t.name,
+              arguments: t.arguments,
+              result: t.result,
+            })),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
 
+          // Add message to store BEFORE resetting streaming to prevent flash
           addMessage(assistantMessage);
-          await ChatService.saveConversation(sessionId, messagesToSave);
+
+          // Reset streaming AFTER message is in store
+          resetStreaming();
+
+          // Save to backend in background (don't await to prevent blocking)
+          ChatService.saveConversation(sessionId, messagesToSave).catch(
+            (err) => {
+              console.error("Failed to save conversation:", err);
+            }
+          );
+        } else {
+          // No content case - just reset streaming
+          resetStreaming();
         }
       } catch (error) {
         console.error("Failed to stream message:", error);
         setError(
           error instanceof Error ? error.message : "Failed to send message"
         );
-      } finally {
         resetStreaming();
-        await fetchSessionMessages(sessionId);
       }
     },
     [
@@ -552,7 +568,6 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
       addTool,
       setToolContent,
       resetStreaming,
-      fetchSessionMessages,
     ]
   );
 
@@ -563,12 +578,7 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
         <Conversation className="h-full">
           <ConversationContent>
             {messagesLoading && conversationMessages.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader size={24} />
-                <span className="ml-2 text-muted-foreground">
-                  Loading messages...
-                </span>
-              </div>
+              <MessagesLoadingSkeleton />
             ) : conversationMessages.length === 0 && !isStreaming ? (
               <ConversationEmptyState
                 title="No messages yet"
