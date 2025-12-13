@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import {
+  ArrowLeft,
   Download,
   FileJson,
   FileText,
@@ -169,15 +170,17 @@ const ChatManager: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => {
                     selectConfig(null);
                     selectSession(null);
                   }}
+                  aria-label="Back to Configs"
+                  className="ml-12 lg:ml-0"
                 >
-                  ← Back
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-6 hidden sm:block" />
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20">
                     <MessageSquare className="w-5 h-5 text-primary" />
@@ -212,22 +215,24 @@ const ChatManager: React.FC = () => {
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => {
                   selectSession(null);
                 }}
+                className="flex-shrink-0 ml-12 lg:ml-0"
+                aria-label="Back to Sessions"
               >
-                ← Back to Sessions
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
-              <Separator orientation="vertical" className="h-6" />
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <span className="font-semibold">
+              <Separator orientation="vertical" className="h-6 hidden sm:block" />
+              <div className="flex items-center gap-2 min-w-0">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                <span className="font-semibold text-sm sm:text-base truncate">
                   {selectedSession.name || "Chat Session"}
                 </span>
               </div>

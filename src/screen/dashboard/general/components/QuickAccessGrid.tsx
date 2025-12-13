@@ -4,8 +4,8 @@ import {
   Database,
   FileText,
   Key,
+  ListTodo,
   MessageSquare,
-  Zap,
 } from "lucide-react";
 import { QuickAccessCard } from "./QuickAccessCard";
 
@@ -48,9 +48,9 @@ export function QuickAccessGrid() {
     },
     {
       to: "/dashboard/embeddings",
-      icon: <Zap className="w-full h-full" />,
-      title: "Embedding",
-      description: "Configure AI models and embedding services",
+      icon: <ListTodo className="w-full h-full" />,
+      title: "Tasks",
+      description: "Task Management",
       gradient: "bg-gradient-to-br from-yellow-500/10 to-amber-500/10",
     },
     {

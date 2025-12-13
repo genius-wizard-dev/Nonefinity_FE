@@ -278,3 +278,23 @@
 .dark *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(200, 200, 200, 0.4);
 }
+
+/* Fix link color in user messages - links should be visible on primary background */
+.is-user a,
+.group.is-user a {
+  color: hsl(var(--primary-foreground)) !important;
+  opacity: 0.9;
+}
+
+.is-user a:hover,
+.group.is-user a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Increase z-index for Clerk UserButton menu to appear above sidebar */
+.cl-userButtonPopoverCard,
+[class*="cl-userButtonPopover"],
+[class*="cl-userButtonPopoverCard"] {
+  z-index: 9999 !important;
+}

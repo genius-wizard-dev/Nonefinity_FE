@@ -1,4 +1,3 @@
-import { CodeBlock } from "@/components/ai-elements/code-block";
 import {
   Conversation,
   ConversationContent,
@@ -11,271 +10,272 @@ import {
   MessageAvatar,
   MessageContent,
 } from "@/components/ai-elements/message";
-import {
-  PromptInput,
-  PromptInputProvider,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Tool, ToolContent, ToolHeader } from "@/components/ai-elements/tool";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useUser } from "@clerk/clerk-react";
+import { Brain, MessageSquare } from "lucide-react";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-  Brain,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  FileTextIcon,
-  MessageSquare,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+  useChatStreamingStore,
+  useIsStreaming,
+  useIsThinking,
+  useStreamingError,
+  useStreamingMessage,
+  useToolContent,
+} from "../chat-streaming-store";
 import { ChatService } from "../services";
 import { useChatStore } from "../store";
 import type { ChatMessage } from "../types";
+import { ChatInput } from "./chat-input";
+import { OptimizedToolDisplay } from "./optimized-tool-display";
 
 interface ChatInterfaceProps {
   sessionId: string;
 }
 
-interface ToolCall {
-  id: string;
-  name: string;
-  args: Record<string, any>;
-  state:
-    | "input-streaming"
-    | "input-available"
-    | "output-available"
-    | "output-error";
-  content?: string;
-}
+// ============================================================================
+// Memoized Message Components
+// ============================================================================
 
-interface StreamingState {
+interface UserMessageProps {
   content: string;
-  tools: Map<string, ToolCall>;
+  userImageUrl?: string;
+  userName?: string;
 }
 
-// Component to render tool results in a beautiful, professional format
-const ToolResultDisplay: React.FC<{ content: any; uniquePrefix?: string }> = ({
-  content,
-  uniquePrefix = "",
-}) => {
-  // Generate a unique prefix to avoid ID conflicts across multiple messages/tools
-  const prefix =
-    uniquePrefix ||
-    `tool-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+const UserMessage = memo<UserMessageProps>(
+  ({ content, userImageUrl, userName }) => (
+    <Message from="user">
+      <MessageAvatar
+        src={userImageUrl || ""}
+        name={userName?.charAt(0) || "Y"}
+      />
+      <MessageContent variant="contained">
+        <Response>{content}</Response>
+      </MessageContent>
+    </Message>
+  )
+);
+UserMessage.displayName = "UserMessage";
 
-  if (Array.isArray(content)) {
-    if (
-      content.length > 0 &&
-      typeof content[0] === "object" &&
-      !Array.isArray(content[0])
-    ) {
-      const keys = Object.keys(content[0]);
-      if (keys.length === 1) {
-        // Component for each document item with better UI
-        const DocumentItem: React.FC<{
-          item: any;
-          index: number;
-          keyName: string;
-        }> = ({ item, index, keyName }) => {
-          const [isOpen, setIsOpen] = useState(false);
-          const contentValue = item[keyName];
-          const isLongContent =
-            typeof contentValue === "string" && contentValue.length > 200;
+// ============================================================================
+// Tool Display with Lazy Content Loading
+// ============================================================================
 
-          return (
-            <div className="w-full group">
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 font-medium bg-secondary/50 hover:bg-secondary border border-border/50 rounded-lg transition-all duration-200 cursor-pointer select-none group-hover:border-primary/30 hover:shadow-sm"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/10 text-primary text-xs font-bold">
-                      {index + 1}
-                    </div>
-                    <FileTextIcon className="size-4 text-primary flex-shrink-0" />
-                  </div>
-                  <span className="text-sm text-foreground font-medium truncate">
-                    Document {index + 1}
-                  </span>
-                  {isLongContent && !isOpen && (
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      Click to expand
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {isLongContent && (
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
-                      {contentValue.length} chars
-                    </span>
-                  )}
-                  {isOpen ? (
-                    <ChevronUp className="size-4 text-muted-foreground transition-transform" />
-                  ) : (
-                    <ChevronDown className="size-4 text-muted-foreground transition-transform" />
-                  )}
-                </div>
-              </button>
-              {isOpen && (
-                <div className="mt-2 ml-2 pl-6 border-l-2 border-primary/20 animate-in slide-in-from-top-2 duration-200">
-                  <div className="p-4 bg-muted/30 rounded-md border border-border/30 text-sm text-foreground whitespace-pre-wrap break-words">
-                    {typeof contentValue === "string" ? (
-                      <pre className="font-sans whitespace-pre-wrap break-words">
-                        {contentValue}
-                      </pre>
-                    ) : (
-                      <pre className="font-sans whitespace-pre-wrap break-words">
-                        {JSON.stringify(contentValue, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        };
+interface ToolDisplayProps {
+  tool: {
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+    state:
+      | "input-streaming"
+      | "input-available"
+      | "output-available"
+      | "output-error";
+    content?: unknown;
+    contentRef?: string;
+  };
+  messageId?: string;
+  isFromHistory?: boolean;
+}
 
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Results
-              </div>
-              <Badge variant="secondary" className="text-xs font-mono">
-                {content.length}{" "}
-                {content.length === 1 ? "document" : "documents"}
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              {content.map((item, idx) => (
-                <DocumentItem
-                  key={idx}
-                  item={item}
-                  index={idx}
-                  keyName={keys[0]}
+const ToolDisplay = memo<ToolDisplayProps>(({ tool, isFromHistory }) => {
+  // For history messages, content is inline
+  // For streaming messages, content is in the separate store
+  const storedContent = useToolContent(tool.contentRef);
+  const content = isFromHistory ? tool.content : storedContent;
+
+  return (
+    <OptimizedToolDisplay
+      toolId={tool.id}
+      toolName={tool.name}
+      toolArgs={tool.args}
+      state={tool.state}
+      staticContent={content}
+      contentRef={tool.contentRef}
+      defaultCollapsed={true} // Always collapsed by default
+    />
+  );
+});
+ToolDisplay.displayName = "ToolDisplay";
+
+// ============================================================================
+// Assistant Message Component
+// ============================================================================
+
+interface AssistantMessageProps {
+  content: string;
+  tools?: Array<{
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+    state:
+      | "input-streaming"
+      | "input-available"
+      | "output-available"
+      | "output-error";
+    content?: unknown;
+    contentRef?: string;
+  }>;
+  messageId?: string;
+  isStreaming?: boolean;
+  isThinking?: boolean;
+  isFromHistory?: boolean;
+}
+
+const AssistantMessage = memo<AssistantMessageProps>(
+  ({
+    content,
+    tools,
+    messageId,
+    isStreaming = false,
+    isThinking = false,
+    isFromHistory = false,
+  }) => {
+    const hasTools = tools && tools.length > 0;
+    const hasContent = content && content.length > 0;
+
+    // Check if all tools are completed
+    const allToolsCompleted =
+      hasTools &&
+      tools.every(
+        (t) => t.state === "output-available" || t.state === "output-error"
+      );
+
+    // Show generating when tools are done but no content yet
+    const isGenerating =
+      isStreaming &&
+      hasTools &&
+      allToolsCompleted &&
+      !hasContent &&
+      !isThinking;
+
+    return (
+      <Message from="assistant">
+        <Avatar className="size-8 ring-1 ring-border bg-primary/10 flex items-center justify-center">
+          <Brain className="w-4 h-4 text-primary" />
+        </Avatar>
+        <MessageContent variant="contained">
+          {/* Tools Section */}
+          {hasTools && (
+            <div className="space-y-2 mb-3">
+              {tools.map((tool) => (
+                <ToolDisplay
+                  key={tool.id}
+                  tool={tool}
+                  messageId={messageId}
+                  isFromHistory={isFromHistory}
                 />
               ))}
             </div>
-          </div>
-        );
-      }
-    }
-    if (content.every((item) => typeof item === "string")) {
-      return (
-        <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Results ({content.length})
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {content.map((item, idx) => (
-              <Badge
-                key={idx}
-                variant="secondary"
-                className="gap-1.5 px-3 py-1.5 text-sm font-medium border border-border/50"
-              >
-                <CheckCircle2 className="size-3.5 text-green-600" />
-                {item}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-2">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Results ({content.length} items)
-        </div>
-        <CodeBlock code={JSON.stringify(content, null, 2)} language="json" />
-      </div>
-    );
-  }
+          )}
 
-  if (
-    typeof content === "object" &&
-    content !== null &&
-    !Array.isArray(content)
-  ) {
-    const entries = Object.entries(content);
-    if (
-      entries.length <= 5 &&
-      entries.every(([, v]) => typeof v !== "object" || v === null)
-    ) {
-      return (
-        <div className="space-y-3">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Details
-          </div>
-          <div className="space-y-2.5">
-            {entries.map(([key, value]) => (
-              <div
-                key={key}
-                className="flex items-start gap-3 text-sm border-l-2 border-primary/20 pl-3 py-1"
-              >
-                <span className="font-semibold text-foreground min-w-[100px]">
-                  {key}:
-                </span>
-                <Badge
-                  variant="outline"
-                  className="font-normal bg-muted/50 border-border/50"
-                >
-                  {String(value)}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    // For complex objects, use code block
-    return (
-      <div className="space-y-2">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Data
-        </div>
-        <CodeBlock code={JSON.stringify(content, null, 2)} language="json" />
-      </div>
-    );
-  }
-
-  // If content is a string
-  if (typeof content === "string") {
-    // Try to parse as JSON
-    try {
-      const parsed = JSON.parse(content);
-      return <ToolResultDisplay content={parsed} uniquePrefix={prefix} />;
-    } catch {
-      // If not JSON, display as plain text or code block if it looks like code
-      if (content.includes("\n") || content.length > 100) {
-        return (
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Output
+          {/* Content Section - with smooth transition */}
+          {hasContent && (
+            <div className="inline-flex items-baseline gap-0.5 animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
+              <Response>{content}</Response>
+              {isStreaming && (
+                <span className="inline-block w-0.5 h-4 bg-primary animate-pulse" />
+              )}
             </div>
-            <CodeBlock code={content} language="text" />
-          </div>
-        );
-      }
-      return (
-        <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border/50 text-sm text-foreground">
-          {content}
-        </div>
-      );
-    }
+          )}
+
+          {/* Generating State - after tools complete but before AI responds */}
+          {isGenerating && (
+            <div className="flex items-center gap-2 py-2 animate-in fade-in-0 duration-200">
+              <div className="flex gap-1">
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </div>
+              <Shimmer
+                as="span"
+                className="text-sm text-muted-foreground"
+                duration={2}
+                spread={2}
+              >
+                Generating response...
+              </Shimmer>
+            </div>
+          )}
+
+          {/* Thinking State - initial state before any tools or content */}
+          {isStreaming && !hasContent && !hasTools && isThinking && (
+            <div className="flex items-center gap-2 py-1.5">
+              <Shimmer
+                as="span"
+                className="text-sm font-medium"
+                duration={2}
+                spread={2}
+              >
+                Thinking
+              </Shimmer>
+            </div>
+          )}
+
+          {/* Loading dots when no content, no tools, and not thinking */}
+          {isStreaming && !hasContent && !hasTools && !isThinking && (
+            <div className="flex items-center gap-2 py-1">
+              <div className="flex gap-1">
+                <div
+                  className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <div
+                  className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <div
+                  className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </div>
+            </div>
+          )}
+        </MessageContent>
+      </Message>
+    );
   }
+);
+AssistantMessage.displayName = "AssistantMessage";
+
+// ============================================================================
+// Streaming Message Component (separate to isolate re-renders)
+// ============================================================================
+
+const StreamingMessageDisplay: React.FC = memo(() => {
+  const streamingMessage = useStreamingMessage();
+  const isStreaming = useIsStreaming();
+  const isThinking = useIsThinking();
+
+  if (!isStreaming || !streamingMessage) return null;
 
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border/50 text-sm text-foreground">
-      {String(content)}
-    </div>
+    <AssistantMessage
+      content={streamingMessage.content}
+      tools={streamingMessage.tools}
+      messageId={streamingMessage.id}
+      isStreaming={true}
+      isThinking={isThinking}
+      isFromHistory={false}
+    />
   );
-};
+});
+StreamingMessageDisplay.displayName = "StreamingMessageDisplay";
+
+// ============================================================================
+// Main Chat Content Component
+// ============================================================================
 
 const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   sessionId,
@@ -283,31 +283,35 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   const { user } = useUser();
   const { messages, messagesLoading, fetchSessionMessages, addMessage } =
     useChatStore();
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
-  const [streamingState, setStreamingState] = useState<StreamingState>({
-    content: "",
-    tools: new Map(),
-  });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [conversationMessages, setConversationMessages] = useState<
-    Array<{
-      role: "user" | "assistant" | "system" | "tool";
-      content: string;
-      id?: string;
-      tools?: ToolCall[];
-    }>
-  >([]);
+
+  // Use streaming store
+  const isStreaming = useIsStreaming();
+  const errorMessage = useStreamingError();
+  const {
+    startStreaming,
+    ensureStreaming,
+    stopStreaming,
+    setThinking,
+    setError,
+    appendContent,
+    setContent,
+    addTool,
+    setToolContent,
+    reset: resetStreaming,
+  } = useChatStreamingStore();
+
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch messages on session change
   useEffect(() => {
     if (sessionId) {
       fetchSessionMessages(sessionId);
     }
   }, [sessionId, fetchSessionMessages]);
 
-  useEffect(() => {
-    const convMessages = messages.map((msg) => ({
+  // Convert store messages to display format
+  const conversationMessages = useMemo(() => {
+    return messages.map((msg) => ({
       role: msg.role as "user" | "assistant" | "system" | "tool",
       content: msg.content,
       id: msg.id,
@@ -315,333 +319,246 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
         msg.tools?.map((t, idx) => ({
           id: `${t.name}-${idx}-${msg.id}`,
           name: t.name,
-          args: t.arguments || {},
+          args: (t.arguments as Record<string, unknown>) || {},
           state: "output-available" as const,
           content: t.result,
         })) || [],
     }));
-    setConversationMessages(convMessages);
   }, [messages]);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversationMessages, streamingState, isThinking]);
+  }, [conversationMessages, isStreaming]);
 
-  const handleSend = async (message: { text?: string; files?: any[] }) => {
-    const inputText = message.text || "";
-    if (!inputText.trim() || isStreaming) return;
+  // Handle sending message
+  const handleSend = useCallback(
+    async (inputText: string) => {
+      if (!inputText.trim() || isStreaming) return;
 
-    const userMessage: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      session_id: sessionId,
-      owner_id: "",
-      role: "user",
-      content: inputText,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    addMessage(userMessage);
-    setIsStreaming(true);
-    setIsThinking(true);
-    setStreamingState({
-      content: "",
-      tools: new Map(),
-    });
-
-    const assistantMessageId = `temp-assistant-${Date.now()}`;
-    let accumulatedContent = "";
-    const messagesToSave: Array<{
-      role: string;
-      content: string;
-      tools?: Array<{
-        name: string;
-        arguments?: Record<string, any>;
-        result?: any;
-      }>;
-      models?: Record<string, any>;
-      interrupt?: Record<string, any>;
-    }> = [
-      {
+      const userMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        session_id: sessionId,
+        owner_id: "",
         role: "user",
-        content: userMessage.content,
-      },
-    ];
+        content: inputText,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-    setErrorMessage(null);
-    const accumulatedTools: Array<{
-      id: string;
-      name: string;
-      arguments?: Record<string, any>;
-      result?: any;
-    }> = [];
-    try {
-      await ChatService.streamMessage(sessionId, inputText, (event) => {
-        try {
-          const preview =
-            typeof event.data === "string"
-              ? event.data.slice(0, 200)
-              : JSON.stringify(event.data)?.slice(0, 200);
-          console.debug(
-            "[chat-interface] event:",
-            event.event,
-            "data:",
-            preview
-          );
-        } catch {
-          console.debug("[chat-interface] event:", event.event);
-        }
+      addMessage(userMessage);
+      startStreaming();
 
-        const parseMaybeJSON = (v: any) => {
-          if (typeof v !== "string") return v;
-          try {
-            return JSON.parse(v);
-          } catch {
-            return v;
-          }
-        };
+      let accumulatedContent = "";
+      const accumulatedTools: Array<{
+        id: string;
+        name: string;
+        arguments?: Record<string, unknown>;
+        result?: unknown;
+      }> = [];
 
-        if (event.event === "error") {
-          console.error("Stream error:", event.data);
-          const errorMsg = event.data?.message || "An error occurred";
-          setErrorMessage(errorMsg);
-          setIsStreaming(false);
-          setIsThinking(false);
-          return;
-        }
+      const messagesToSave: Array<{
+        role: string;
+        content: string;
+        tools?: Array<{
+          name: string;
+          arguments?: Record<string, unknown>;
+          result?: unknown;
+        }>;
+      }> = [
+        {
+          role: "user",
+          content: userMessage.content,
+        },
+      ];
 
-        if (event.event === "start") {
-          // Chat started - reset streaming state
-          setStreamingState({
-            content: "",
-            tools: new Map(),
-          });
-          setIsStreaming(true);
-          setIsThinking(true);
-          return;
-        }
-
-        // Events from backend: tool_calls, tool_results, ai_result
-        if (event.event === "tool_calls") {
-          // Backend sends a single tool call with { type, name, arguments }
-          const payload = parseMaybeJSON(event.data) as any;
-          const toolName = payload?.name || "unknown";
-          const args = payload?.arguments || {};
-          const incomingId = payload?.id || `${toolName}-${Date.now()}`;
-
-          // Stop thinking when tool is called
-          setIsThinking(false);
-
-          setStreamingState((prev) => {
-            const newTools = new Map(prev.tools);
-            if (!newTools.has(incomingId)) {
-              newTools.set(incomingId, {
-                id: incomingId,
-                name: toolName,
-                args,
-                state: "input-available",
-                content: undefined,
-              });
+      try {
+        await ChatService.streamMessage(sessionId, inputText, (event) => {
+          const parseMaybeJSON = (v: unknown) => {
+            if (typeof v !== "string") return v;
+            try {
+              return JSON.parse(v);
+            } catch {
+              return v;
             }
-            return { ...prev, tools: newTools };
-          });
-          // Track for saving later (avoid relying on async state)
-          const existingIdx = accumulatedTools.findIndex((t) =>
-            payload?.id ? t.id === payload.id : t.name === toolName
-          );
-          if (existingIdx >= 0) {
-            accumulatedTools[existingIdx] = {
-              ...accumulatedTools[existingIdx],
-              arguments: args,
+          };
+
+          if (event.event === "error") {
+            const errorMsg =
+              (event.data as { message?: string })?.message ||
+              "An error occurred";
+            setError(errorMsg);
+            return;
+          }
+
+          if (event.event === "start") {
+            // Use ensureStreaming to avoid resetting tools if already streaming
+            ensureStreaming();
+            return;
+          }
+
+          if (event.event === "tool_calls") {
+            const payload = parseMaybeJSON(event.data) as {
+              id?: string;
+              name?: string;
+              arguments?: Record<string, unknown>;
             };
-          } else {
-            accumulatedTools.push({
+            const toolName = payload?.name || "unknown";
+            const args = payload?.arguments || {};
+            const incomingId = payload?.id || `${toolName}-${Date.now()}`;
+
+            setThinking(false);
+            addTool({
               id: incomingId,
               name: toolName,
-              arguments: args,
-            });
-          }
-        } else if (
-          event.event === "tool_result" ||
-          event.event === "tool_results"
-        ) {
-          // Handle tool result - tool has finished and returned result
-          const payload = parseMaybeJSON(event.data) as any;
-          const toolName = payload?.name || "unknown";
-          const toolContent = payload?.result ?? payload?.content ?? "";
-          const incomingId = payload?.id as string | undefined;
-
-          setStreamingState((prev) => {
-            const newTools = new Map(prev.tools);
-
-            let toolId =
-              incomingId && newTools.has(incomingId) ? incomingId : "";
-            if (!toolId) {
-              for (const [id, tool] of newTools.entries()) {
-                if (
-                  tool.name === toolName &&
-                  tool.state === "input-available"
-                ) {
-                  toolId = id;
-                  break;
-                }
-              }
-            }
-            if (!toolId) toolId = `${toolName}-${Date.now()}`;
-
-            let parsedContent = toolContent;
-            if (typeof toolContent === "string") {
-              try {
-                parsedContent = JSON.parse(toolContent);
-              } catch {
-                parsedContent = toolContent;
-              }
-            }
-
-            const existingTool = newTools.get(toolId);
-            newTools.set(toolId, {
-              id: toolId,
-              name: toolName,
-              args: existingTool?.args || {},
-              content: parsedContent,
-              state: "output-available",
+              args,
+              state: "input-available",
             });
 
-            return {
-              ...prev,
-              tools: newTools,
-            };
-          });
-          const contentToSave =
-            typeof toolContent === "string"
-              ? toolContent
-              : JSON.stringify(toolContent);
-          const argsFromState = (() => {
-            const existing = Array.from(streamingState.tools.values()).find(
-              (t) =>
-                t.name === toolName &&
-                (t.id === incomingId ||
-                  t.state === "input-available" ||
-                  t.state === "output-available")
+            // Track for saving
+            const existingIdx = accumulatedTools.findIndex(
+              (t) => t.id === incomingId
             );
-            return (
-              existing?.args ||
-              (payload?.arguments as Record<string, any>) ||
-              {}
-            );
-          })();
-          const revIdx = accumulatedTools
-            .slice()
-            .reverse()
-            .findIndex((t) =>
-              incomingId ? t.id === incomingId : t.name === toolName
-            );
-          const idx = revIdx >= 0 ? accumulatedTools.length - 1 - revIdx : -1;
-          if (idx >= 0) {
-            accumulatedTools[idx] = {
-              ...accumulatedTools[idx],
-              arguments: accumulatedTools[idx].arguments || argsFromState,
-              result: contentToSave,
-            };
-          } else {
-            accumulatedTools.push({
-              id: incomingId || `${toolName}-${Date.now()}`,
-              name: toolName,
-              arguments: argsFromState,
-              result: contentToSave,
-            });
-          }
-        } else if (event.event === "ai_result") {
-          const payload = parseMaybeJSON(event.data) as any;
-          const content = payload?.content || "";
-          const isDelta = payload?.is_delta === true;
-
-          if (content) {
-            setIsThinking(false);
-
-            if (isDelta) {
-              accumulatedContent += content;
+            if (existingIdx >= 0) {
+              accumulatedTools[existingIdx] = {
+                ...accumulatedTools[existingIdx],
+                arguments: args,
+              };
             } else {
-              accumulatedContent = content;
+              accumulatedTools.push({
+                id: incomingId,
+                name: toolName,
+                arguments: args,
+              });
             }
+          } else if (
+            event.event === "tool_result" ||
+            event.event === "tool_results"
+          ) {
+            const payload = parseMaybeJSON(event.data) as {
+              id?: string;
+              name?: string;
+              result?: unknown;
+              content?: unknown;
+            };
+            const toolName = payload?.name || "unknown";
+            const toolContent = payload?.result ?? payload?.content ?? "";
+            const incomingId = payload?.id;
 
-            setStreamingState((prev) => ({
-              ...prev,
-              content: accumulatedContent,
-            }));
+            setToolContent(
+              incomingId || `${toolName}-${Date.now()}`,
+              toolContent
+            );
+
+            // Update accumulated tools
+            const revIdx = accumulatedTools
+              .slice()
+              .reverse()
+              .findIndex((t) =>
+                incomingId ? t.id === incomingId : t.name === toolName
+              );
+            const idx = revIdx >= 0 ? accumulatedTools.length - 1 - revIdx : -1;
+            if (idx >= 0) {
+              accumulatedTools[idx] = {
+                ...accumulatedTools[idx],
+                result: toolContent,
+              };
+            } else {
+              accumulatedTools.push({
+                id: incomingId || `${toolName}-${Date.now()}`,
+                name: toolName,
+                result: toolContent,
+              });
+            }
+          } else if (event.event === "ai_result") {
+            const payload = parseMaybeJSON(event.data) as {
+              content?: string;
+              is_delta?: boolean;
+            };
+            const content = payload?.content || "";
+            const isDelta = payload?.is_delta === true;
+
+            if (content) {
+              setThinking(false);
+              if (isDelta) {
+                accumulatedContent += content;
+                appendContent(content);
+              } else {
+                accumulatedContent = content;
+                setContent(content);
+              }
+            }
           }
-        }
 
-        if (event.data?.done === true || event.data === "[DONE]") {
-          setIsStreaming(false);
-        }
-      });
-
-      if (accumulatedContent) {
-        const finalContent =
-          typeof accumulatedContent === "string"
-            ? accumulatedContent
-            : JSON.stringify(accumulatedContent);
-
-        messagesToSave.push({
-          role: "assistant",
-          content: finalContent,
-          tools: accumulatedTools.map((t) => ({
-            name: t.name,
-            arguments: t.arguments,
-            result: t.result,
-          })),
+          if (
+            (event.data as { done?: boolean })?.done === true ||
+            event.data === "[DONE]"
+          ) {
+            stopStreaming();
+          }
         });
 
-        const assistantMessage: ChatMessage = {
-          id: assistantMessageId,
-          session_id: sessionId,
-          owner_id: "",
-          role: "assistant",
-          content: finalContent,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+        // Save conversation
+        if (accumulatedContent) {
+          const finalContent =
+            typeof accumulatedContent === "string"
+              ? accumulatedContent
+              : JSON.stringify(accumulatedContent);
 
-        addMessage(assistantMessage);
+          messagesToSave.push({
+            role: "assistant",
+            content: finalContent,
+            tools: accumulatedTools.map((t) => ({
+              name: t.name,
+              arguments: t.arguments,
+              result: t.result,
+            })),
+          });
 
-        // Save conversation to backend
-        await ChatService.saveConversation(sessionId, messagesToSave);
+          const assistantMessage: ChatMessage = {
+            id: `temp-assistant-${Date.now()}`,
+            session_id: sessionId,
+            owner_id: "",
+            role: "assistant",
+            content: finalContent,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          addMessage(assistantMessage);
+          await ChatService.saveConversation(sessionId, messagesToSave);
+        }
+      } catch (error) {
+        console.error("Failed to stream message:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to send message"
+        );
+      } finally {
+        resetStreaming();
+        await fetchSessionMessages(sessionId);
       }
-    } catch (error) {
-      console.error("Failed to stream message:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to send message"
-      );
-    } finally {
-      setIsStreaming(false);
-      setIsThinking(false);
-      setStreamingState({
-        content: "",
-        tools: new Map(),
-      });
-      await fetchSessionMessages(sessionId);
-    }
-  };
-
-  const displayMessages = [
-    ...conversationMessages,
-    ...(isStreaming &&
-    (streamingState.content || streamingState.tools.size > 0 || isThinking)
-      ? [
-          {
-            role: "assistant" as const,
-            content: streamingState.content,
-            id: "streaming",
-            tools: Array.from(streamingState.tools.values()),
-            isThinking,
-          },
-        ]
-      : []),
-  ];
+    },
+    [
+      sessionId,
+      isStreaming,
+      addMessage,
+      startStreaming,
+      ensureStreaming,
+      stopStreaming,
+      setThinking,
+      setError,
+      appendContent,
+      setContent,
+      addTool,
+      setToolContent,
+      resetStreaming,
+      fetchSessionMessages,
+    ]
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      {/* Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <Conversation className="h-full">
           <ConversationContent>
@@ -652,7 +569,7 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
                   Loading messages...
                 </span>
               </div>
-            ) : displayMessages.length === 0 ? (
+            ) : conversationMessages.length === 0 && !isStreaming ? (
               <ConversationEmptyState
                 title="No messages yet"
                 description="Start a conversation by typing a message below"
@@ -660,126 +577,31 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
               />
             ) : (
               <>
-                {displayMessages.map((msg, idx) => (
-                  <Message
-                    key={msg.id || idx}
-                    from={msg.role === "tool" ? "assistant" : msg.role}
-                  >
-                    {msg.role === "user" ? (
-                      <MessageAvatar
-                        src={user?.imageUrl || ""}
-                        name={user?.fullName?.charAt(0) || "Y"}
-                      />
-                    ) : (
-                      <Avatar className="size-8 ring-1 ring-border bg-primary/10 flex items-center justify-center">
-                        <Brain className="w-4 h-4 text-primary" />
-                      </Avatar>
-                    )}
-                    <MessageContent variant="contained">
-                      {msg.tools && msg.tools.length > 0 && (
-                        <div className="space-y-3 mb-3">
-                          {msg.tools.map((tool) => (
-                            <Tool
-                              key={tool.id}
-                              defaultOpen={tool.state === "output-available"}
-                              className="border-border/50"
-                            >
-                              <ToolHeader
-                                title={tool.name}
-                                type={`tool-${tool.name}`}
-                                state={tool.state}
-                              />
-                              <ToolContent>
-                                {tool.args &&
-                                  Object.keys(tool.args).length > 0 && (
-                                    <div className="p-4 pt-2 border-b border-border/50">
-                                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                                        Parameters
-                                      </div>
-                                      <CodeBlock
-                                        code={JSON.stringify(
-                                          tool.args,
-                                          null,
-                                          2
-                                        )}
-                                        language="json"
-                                      />
-                                    </div>
-                                  )}
+                {/* History Messages */}
+                {conversationMessages.map((msg, idx) =>
+                  msg.role === "user" ? (
+                    <UserMessage
+                      key={msg.id || idx}
+                      content={msg.content}
+                      userImageUrl={user?.imageUrl}
+                      userName={user?.fullName || undefined}
+                    />
+                  ) : (
+                    <AssistantMessage
+                      key={msg.id || idx}
+                      content={msg.content}
+                      tools={msg.tools}
+                      messageId={msg.id}
+                      isStreaming={false}
+                      isThinking={false}
+                      isFromHistory={true}
+                    />
+                  )
+                )}
 
-                                {tool.content !== undefined && (
-                                  <div className="p-4 pt-2">
-                                    <div className="">
-                                      <ToolResultDisplay
-                                        content={tool.content}
-                                        uniquePrefix={`${msg.id || "msg"}-${
-                                          tool.id || "tool"
-                                        }`}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                                {tool.state === "input-available" &&
-                                  tool.content === undefined && (
-                                    <div className="p-4 pt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                                      <Loader size={16} />
-                                      <span>Executing tool...</span>
-                                    </div>
-                                  )}
-                              </ToolContent>
-                            </Tool>
-                          ))}
-                        </div>
-                      )}
-                      {msg.content && (
-                        <div className="inline-flex items-baseline gap-0.5">
-                          <Response>{msg.content}</Response>
-                          {isStreaming && msg.id === "streaming" && (
-                            <span className="inline-block w-0.5 h-4 bg-primary animate-pulse" />
-                          )}
-                        </div>
-                      )}
-                      {isStreaming &&
-                        msg.id === "streaming" &&
-                        !msg.content &&
-                        msg.tools?.length === 0 &&
-                        (msg as any).isThinking && (
-                          <div className="flex items-center gap-2 py-1.5">
-                            <Shimmer
-                              as="span"
-                              className="text-sm font-medium"
-                              duration={2}
-                              spread={2}
-                            >
-                              Thinking
-                            </Shimmer>
-                          </div>
-                        )}
-                      {isStreaming &&
-                        msg.id === "streaming" &&
-                        !msg.content &&
-                        msg.tools?.length === 0 &&
-                        !(msg as any).isThinking && (
-                          <div className="flex items-center gap-2 py-1">
-                            <div className="flex gap-1">
-                              <div
-                                className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
-                                style={{ animationDelay: "0ms" }}
-                              />
-                              <div
-                                className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
-                                style={{ animationDelay: "150ms" }}
-                              />
-                              <div
-                                className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
-                                style={{ animationDelay: "300ms" }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                    </MessageContent>
-                  </Message>
-                ))}
+                {/* Streaming Message */}
+                <StreamingMessageDisplay />
+
                 <div ref={conversationEndRef} />
               </>
             )}
@@ -788,34 +610,31 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
         </Conversation>
       </div>
 
+      {/* Error Message */}
       {errorMessage && (
         <div className="px-4 py-2 bg-destructive/10 text-destructive text-sm border-t flex-shrink-0">
           {errorMessage}
         </div>
       )}
 
-      <Separator className="flex-shrink-0" />
-
-      <div className="p-4 border-t flex-shrink-0">
-        <PromptInput onSubmit={handleSend}>
-          <PromptInputTextarea
+      {/* Input Area - Modern Design */}
+      <div className="flex-shrink-0 border-t bg-gradient-to-t from-background via-background to-transparent">
+        <div className="p-4 pb-6">
+          <ChatInput
+            onSend={handleSend}
+            isStreaming={isStreaming}
             placeholder="Type your message..."
-            disabled={isStreaming}
           />
-          <PromptInputSubmit
-            status={isStreaming ? "streaming" : undefined}
-            disabled={isStreaming}
-          />
-        </PromptInput>
+        </div>
       </div>
     </div>
   );
 };
 
+// ============================================================================
+// Main Export
+// ============================================================================
+
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
-  return (
-    <PromptInputProvider>
-      <ChatInterfaceContent sessionId={sessionId} />
-    </PromptInputProvider>
-  );
+  return <ChatInterfaceContent sessionId={sessionId} />;
 };
