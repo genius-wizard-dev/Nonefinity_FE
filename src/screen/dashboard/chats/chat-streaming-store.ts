@@ -68,6 +68,9 @@ interface StreamingState {
   isThinking: boolean;
   errorMessage: string | null;
 
+  // Failed message - for retry functionality
+  failedMessage: string | null;
+
   // Actions
   startStreaming: () => void;
   ensureStreaming: () => void; // Safe to call multiple times, won't reset state
@@ -83,6 +86,10 @@ interface StreamingState {
   addTool: (tool: Omit<StreamingToolCall, "contentRef">) => void;
   updateToolState: (toolId: string, state: StreamingToolCall["state"]) => void;
   setToolContent: (toolId: string, content: unknown) => void;
+
+  // Failed message management
+  setFailedMessage: (message: string | null) => void;
+  clearFailedMessage: () => void;
 
   // Reset
   reset: () => void;
@@ -100,6 +107,7 @@ export const useChatStreamingStore = create<StreamingState>((set) => ({
   isStreaming: false,
   isThinking: false,
   errorMessage: null,
+  failedMessage: null,
 
   startStreaming: () => {
     // Clear any previous tool content
@@ -257,6 +265,14 @@ export const useChatStreamingStore = create<StreamingState>((set) => ({
     });
   },
 
+  setFailedMessage: (message: string | null) => {
+    set({ failedMessage: message });
+  },
+
+  clearFailedMessage: () => {
+    set({ failedMessage: null });
+  },
+
   reset: () => {
     useToolContentStore.getState().clearAllContents();
     set({
@@ -264,6 +280,7 @@ export const useChatStreamingStore = create<StreamingState>((set) => ({
       isStreaming: false,
       isThinking: false,
       errorMessage: null,
+      failedMessage: null,
     });
   },
 }));
@@ -275,6 +292,8 @@ export const useIsThinking = () =>
   useChatStreamingStore((state) => state.isThinking);
 export const useStreamingError = () =>
   useChatStreamingStore((state) => state.errorMessage);
+export const useFailedMessage = () =>
+  useChatStreamingStore((state) => state.failedMessage);
 export const useStreamingMessage = () =>
   useChatStreamingStore((state) => state.streamingMessage);
 export const useStreamingContent = () =>
