@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ArrowUp, Loader2, Square } from "lucide-react";
-import React, { useCallback, useRef, useState } from "react";
+import { ArrowUp, Loader2, RotateCcw, Square, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -9,6 +9,8 @@ interface ChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  failedMessage?: string | null;
+  onClearFailedMessage?: () => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -17,13 +19,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   disabled = false,
   placeholder = "Type your message...",
   className,
+  failedMessage,
+  onClearFailedMessage,
 }) => {
   const [inputValue, setInputValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasLoadedFailedMessage = useRef(false);
+
+  // Load failed message into input when it changes
+  useEffect(() => {
+    if (failedMessage && !hasLoadedFailedMessage.current) {
+      setInputValue(failedMessage);
+      hasLoadedFailedMessage.current = true;
+      // Focus the textarea
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        // Auto-resize
+        textareaRef.current.style.height = "auto";
+        const scrollHeight = Math.min(textareaRef.current.scrollHeight, 200);
+        textareaRef.current.style.height = `${scrollHeight}px`;
+      }
+    } else if (!failedMessage) {
+      hasLoadedFailedMessage.current = false;
+    }
+  }, [failedMessage]);
 
   const handleSubmit = useCallback(() => {
     const trimmed = inputValue.trim();
     if (!trimmed || isStreaming || disabled) return;
+
+    // Clear the failed message state when sending
+    if (onClearFailedMessage) {
+      onClearFailedMessage();
+    }
 
     onSend(trimmed);
     setInputValue("");
@@ -32,7 +60,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [inputValue, isStreaming, disabled, onSend]);
+  }, [inputValue, isStreaming, disabled, onSend, onClearFailedMessage]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -59,9 +87,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   );
 
   const canSend = inputValue.trim().length > 0 && !isStreaming && !disabled;
+  const isRetrying = failedMessage && inputValue === failedMessage;
 
   return (
     <div className={cn("relative", className)}>
+      {/* Retry indicator */}
+      {isRetrying && (
+        <div className="mb-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between gap-2 animate-in fade-in-0 slide-in-from-bottom-1 duration-200">
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+            <RotateCcw className="h-4 w-4" />
+            <span className="text-sm font-medium">Ready to retry</span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 rounded-full hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+            onClick={() => {
+              setInputValue("");
+              if (onClearFailedMessage) {
+                onClearFailedMessage();
+              }
+            }}
+          >
+            <X className="h-3.5 w-3.5" />
+            <span className="sr-only">Dismiss</span>
+          </Button>
+        </div>
+      )}
+
       {/* Modern gradient border effect */}
       <div className="relative rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 p-[1px] transition-all duration-300 focus-within:from-primary/40 focus-within:via-primary/30 focus-within:to-primary/40">
         <div className="relative flex items-end gap-2 rounded-2xl bg-background/95 backdrop-blur-sm px-4 py-3">

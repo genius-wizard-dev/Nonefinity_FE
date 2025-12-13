@@ -15,8 +15,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { useUser } from "@clerk/clerk-react";
 import { Brain, MessageSquare } from "lucide-react";
 import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import {
   useChatStreamingStore,
+  useFailedMessage,
   useIsStreaming,
   useIsThinking,
   useStreamingError,
@@ -281,12 +283,18 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
   sessionId,
 }) => {
   const { user } = useUser();
-  const { messages, messagesLoading, fetchSessionMessages, addMessage } =
-    useChatStore();
+  const {
+    messages,
+    messagesLoading,
+    fetchSessionMessages,
+    addMessage,
+    removeLastMessage,
+  } = useChatStore();
 
   // Use streaming store
   const isStreaming = useIsStreaming();
   const errorMessage = useStreamingError();
+  const failedMessage = useFailedMessage();
   const {
     startStreaming,
     ensureStreaming,
@@ -297,6 +305,8 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
     setContent,
     addTool,
     setToolContent,
+    setFailedMessage,
+    clearFailedMessage,
     reset: resetStreaming,
   } = useChatStreamingStore();
 
@@ -387,6 +397,20 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
             const errorMsg =
               (event.data as { message?: string })?.message ||
               "An error occurred";
+
+            // Show toast notification
+            toast.error("Failed to send message", {
+              description: errorMsg,
+              duration: 5000,
+            });
+
+            // Save the failed message for retry
+            setFailedMessage(inputText);
+
+            // Remove the optimistically added user message
+            removeLastMessage();
+
+            // Stop streaming and set error
             setError(errorMsg);
             return;
           }
@@ -548,9 +572,23 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
         }
       } catch (error) {
         console.error("Failed to stream message:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to send message"
-        );
+        const errorMsg =
+          error instanceof Error ? error.message : "Failed to send message";
+
+        // Show toast notification
+        toast.error("Failed to send message", {
+          description: errorMsg,
+          duration: 5000,
+        });
+
+        // Save the failed message for retry
+        setFailedMessage(inputText);
+
+        // Remove the optimistically added user message
+        removeLastMessage();
+
+        // Set error and reset streaming
+        setError(errorMsg);
         resetStreaming();
       }
     },
@@ -558,11 +596,13 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
       sessionId,
       isStreaming,
       addMessage,
+      removeLastMessage,
       startStreaming,
       ensureStreaming,
       stopStreaming,
       setThinking,
       setError,
+      setFailedMessage,
       appendContent,
       setContent,
       addTool,
@@ -634,6 +674,8 @@ const ChatInterfaceContent: React.FC<{ sessionId: string }> = ({
             onSend={handleSend}
             isStreaming={isStreaming}
             placeholder="Type your message..."
+            failedMessage={failedMessage}
+            onClearFailedMessage={clearFailedMessage}
           />
         </div>
       </div>
