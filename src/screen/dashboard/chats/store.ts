@@ -179,8 +179,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // Don't fetch if already loading
     if (state.configsLoading) return;
 
-    // Check cache validity (5 minutes)
-    if (!force && state.configs.length > 0 && state.configsLastFetch) {
+    if (!force && state.configsLastFetch) {
       const cacheAge = Date.now() - state.configsLastFetch;
       if (cacheAge < 5 * 60 * 1000) return;
     }
@@ -195,12 +194,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
           configsLastFetch: Date.now(),
         });
       } else {
-        set({ configsLoading: false, configsError: "Failed to fetch configs" });
+        // Still set lastFetch to prevent infinite retries
+        set({
+          configsLoading: false,
+          configsError: "Failed to fetch configs",
+          configsLastFetch: Date.now(),
+        });
       }
     } catch (error) {
       set({
         configsLoading: false,
         configsError: error instanceof Error ? error.message : "Unknown error",
+        // Set lastFetch to prevent infinite retries on error
+        configsLastFetch: Date.now(),
       });
     }
   },
@@ -269,13 +275,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     if (state.sessionsLoading) return;
 
-    if (!force && state.sessions.length > 0 && state.sessionsLastFetch) {
-      // If filtering by configId, check if we have sessions for that config
+    // Use sessionsLastFetch to determine if we've already fetched (even if list is empty)
+    if (!force && state.sessionsLastFetch) {
+      // If filtering by configId, check if we have sessions for that config OR if cache is still valid
       if (configId) {
         const hasSessionsForConfig = state.sessions.some(
           (s) => s.chat_config_id === configId
         );
+        // If we have sessions for this config or cache is still valid, skip fetch
         if (hasSessionsForConfig) {
+          const cacheAge = Date.now() - state.sessionsLastFetch;
+          if (cacheAge < 5 * 60 * 1000) return;
+        }
+        // If no sessions for this config exist in cache, we need to fetch
+        // But only if we haven't fetched recently (even with empty results)
+        if (!hasSessionsForConfig && state.sessions.length === 0) {
           const cacheAge = Date.now() - state.sessionsLastFetch;
           if (cacheAge < 5 * 60 * 1000) return;
         }
@@ -301,15 +315,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
           sessionsLastFetch: Date.now(),
         });
       } else {
+        // Still set lastFetch to prevent infinite retries
         set({
           sessionsLoading: false,
           sessionsError: "Failed to fetch sessions",
+          sessionsLastFetch: Date.now(),
         });
       }
     } catch (error) {
       set({
         sessionsLoading: false,
         sessionsError: error instanceof Error ? error.message : "Unknown error",
+        // Set lastFetch to prevent infinite retries on error
+        sessionsLastFetch: Date.now(),
       });
     }
   },
